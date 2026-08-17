@@ -4,10 +4,15 @@ info:
   version: 0.1.0
   description: >
     Canonical external REST contract for the Life Platform API, per
-    docs/architecture/api-contracts.md. This is a v1 skeleton (P0-005): the
-    reusable envelope/pagination/idempotency components and a single real
-    path to prove the generation pipeline end to end. Domain paths land with
-    their owning task (see P0-009's contract pack for Phase 1 schemas).
+    docs/architecture/api-contracts.md. P0-005 established the reusable
+    envelope/pagination/idempotency components and /health. P0-009 adds the
+    Phase 1 contract pack: Family/ParentMembership/ChildProfile,
+    TaskTemplate/TaskAssignment/TaskCompletion, VerificationResult,
+    MediaEvidence and RewardLedgerEntry, with a representative (not
+    exhaustive) set of paths -- enough for Backend/Parent Web/Child Web/QA
+    to start building against a frozen shape per
+    tasks/packets/P0-009-phase1-contract-pack.md. Full CRUD surfaces land
+    with each entity's own P1 implementation task.
 
 servers:
   - url: /api/v1
@@ -27,6 +32,252 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+        "5XX":
+          $ref: "#/components/responses/Error"
+
+  /families:
+    post:
+      operationId: createFamily
+      summary: Register a new family. Creates it in PENDING_INVITE status.
+      tags: [family]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ownerParentId]
+              properties:
+                ownerParentId:
+                  type: string
+              additionalProperties: false
+      responses:
+        "201":
+          description: Family created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Family"
+        "5XX":
+          $ref: "#/components/responses/Error"
+
+  /families/{familyId}:
+    get:
+      operationId: getFamily
+      summary: >-
+        Fetch a family. Authorization -- "Family is the security boundary
+        for child data" (docs/product/actors-and-permissions.md): callable
+        only by an ACTIVE member of this family or a scoped admin.
+      tags: [family]
+      parameters:
+        - $ref: "#/components/parameters/FamilyIdPath"
+      responses:
+        "200":
+          description: The family.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Family"
+        "404":
+          $ref: "#/components/responses/Error"
+        "5XX":
+          $ref: "#/components/responses/Error"
+
+  /families/{familyId}/children:
+    post:
+      operationId: addChildToFamily
+      summary: >-
+        Add a child profile to a family. Requires the CHILD_POLICY
+        capability (docs/product/family-lifecycle.md).
+      tags: [family]
+      parameters:
+        - $ref: "#/components/parameters/FamilyIdPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [displayName, birthYear]
+              properties:
+                displayName:
+                  type: string
+                birthYear:
+                  type: integer
+              additionalProperties: false
+      responses:
+        "201":
+          description: Child profile created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChildProfile"
+        "5XX":
+          $ref: "#/components/responses/Error"
+
+  /families/{familyId}/task-templates:
+    get:
+      operationId: listTaskTemplates
+      summary: List task templates for a family (cursor paginated).
+      tags: [task]
+      parameters:
+        - $ref: "#/components/parameters/FamilyIdPath"
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/PageLimit"
+      responses:
+        "200":
+          description: A page of task templates.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/CursorPage"
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/TaskTemplate"
+        "5XX":
+          $ref: "#/components/responses/Error"
+    post:
+      operationId: createTaskTemplate
+      summary: Create a task template.
+      tags: [task]
+      parameters:
+        - $ref: "#/components/parameters/FamilyIdPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TaskTemplate"
+      responses:
+        "201":
+          description: Task template created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskTemplate"
+        "5XX":
+          $ref: "#/components/responses/Error"
+
+  /task-templates/{taskTemplateId}/assignments:
+    post:
+      operationId: assignTask
+      summary: >-
+        Assign a task template to a child. Emits TASK_ASSIGNED
+        (docs/architecture/events.md).
+      tags: [task]
+      parameters:
+        - name: taskTemplateId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [assignedToChildId]
+              properties:
+                assignedToChildId:
+                  type: string
+                dueAt:
+                  type: string
+                  format: date-time
+              additionalProperties: false
+      responses:
+        "201":
+          description: Task assignment created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskAssignment"
+        "5XX":
+          $ref: "#/components/responses/Error"
+
+  /task-assignments/{taskAssignmentId}:
+    get:
+      operationId: getTaskAssignment
+      summary: Fetch a task assignment.
+      tags: [task]
+      parameters:
+        - $ref: "#/components/parameters/TaskAssignmentIdPath"
+      responses:
+        "200":
+          description: The task assignment.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskAssignment"
+        "5XX":
+          $ref: "#/components/responses/Error"
+
+  /task-assignments/{taskAssignmentId}/completions:
+    post:
+      operationId: submitTaskCompletion
+      summary: >-
+        Child submits a completion. Idempotent -- "completion submissions"
+        is explicitly listed in docs/architecture/api-contracts.md's
+        Idempotency rule. Emits TASK_COMPLETED, then the Verification
+        Engine asynchronously produces a VerificationResult and emits
+        VERIFICATION_COMPLETED.
+      tags: [task, verification]
+      parameters:
+        - $ref: "#/components/parameters/TaskAssignmentIdPath"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TaskCompletion"
+      responses:
+        "201":
+          description: Completion recorded.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskCompletion"
+        "5XX":
+          $ref: "#/components/responses/Error"
+
+  /children/{childId}/reward-ledger:
+    get:
+      operationId: listRewardLedger
+      summary: >-
+        Cursor-paginated reward ledger entries for a child. There is no
+        balance endpoint -- "Never store mutable balance as sole truth"
+        (docs/architecture/data-architecture.md); a balance is derived by
+        summing entries client- or service-side.
+      tags: [reward]
+      parameters:
+        - name: childId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/PageLimit"
+      responses:
+        "200":
+          description: A page of reward ledger entries.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/CursorPage"
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/RewardLedgerEntry"
         "5XX":
           $ref: "#/components/responses/Error"
 
@@ -66,6 +317,20 @@ components:
         minimum: 1
         maximum: 100
         default: 20
+    FamilyIdPath:
+      name: familyId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    TaskAssignmentIdPath:
+      name: taskAssignmentId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
 
   schemas:
     HealthStatus:
@@ -122,6 +387,277 @@ components:
             next_cursor:
               type: string
               nullable: true
+
+    # ---- Phase 1 contract pack (P0-009) ----
+    # Mirrors packages/domain-types' zod schemas 1:1. Keep them in sync by
+    # hand for now; a schema-diff check is a good P0-012 candidate.
+
+    ParentCapability:
+      type: string
+      enum: [CHILD_POLICY, MONEY_REWARDS, SOCIAL_PERMISSIONS, CHAT_VISIBILITY, ACCOUNT_DELETION]
+
+    ParentMembership:
+      type: object
+      required: [parentId, familyId, status, isFamilyOwner, capabilities, invitedAt]
+      properties:
+        parentId:
+          type: string
+        familyId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [INVITED, ACTIVE, REVOKED]
+        isFamilyOwner:
+          type: boolean
+        capabilities:
+          type: array
+          items:
+            $ref: "#/components/schemas/ParentCapability"
+        invitedAt:
+          type: string
+          format: date-time
+        activatedAt:
+          type: string
+          format: date-time
+        revokedAt:
+          type: string
+          format: date-time
+
+    ChildProfile:
+      type: object
+      required: [childId, familyId, displayName, birthYear]
+      properties:
+        childId:
+          type: string
+          format: uuid
+        familyId:
+          type: string
+          format: uuid
+        displayName:
+          type: string
+        birthYear:
+          type: integer
+        avatarId:
+          type: string
+
+    Family:
+      type: object
+      required: [familyId, status, createdAt, parents, children]
+      properties:
+        familyId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [PENDING_INVITE, ACTIVE, SUSPENDED, ARCHIVED]
+        createdAt:
+          type: string
+          format: date-time
+        parents:
+          type: array
+          items:
+            $ref: "#/components/schemas/ParentMembership"
+        children:
+          type: array
+          items:
+            $ref: "#/components/schemas/ChildProfile"
+
+    VerificationStrategy:
+      type: string
+      enum:
+        [
+          MANUAL_SELF,
+          PARENT_APPROVAL,
+          PHOTO_PROOF,
+          VIDEO_PROOF,
+          CAMERA_EXERCISE,
+          TIMER,
+          COUNTER,
+          AUDIO_PROOF,
+          ALICE_SESSION,
+          COMPOSITE,
+        ]
+
+    TaskTemplate:
+      type: object
+      required:
+        [taskTemplateId, familyId, createdByParentId, title, verificationStrategy, rewardXp, rewardCoins, isActive, createdAt]
+      properties:
+        taskTemplateId:
+          type: string
+          format: uuid
+        familyId:
+          type: string
+          format: uuid
+        createdByParentId:
+          type: string
+        title:
+          type: string
+        verificationStrategy:
+          $ref: "#/components/schemas/VerificationStrategy"
+        rewardXp:
+          type: integer
+          minimum: 0
+        rewardCoins:
+          type: integer
+          minimum: 0
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+
+    TaskAssignment:
+      type: object
+      required: [taskAssignmentId, taskTemplateId, familyId, assignedToChildId, status, assignedAt]
+      properties:
+        taskAssignmentId:
+          type: string
+          format: uuid
+        taskTemplateId:
+          type: string
+          format: uuid
+        familyId:
+          type: string
+          format: uuid
+        assignedToChildId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [ASSIGNED, IN_PROGRESS, SUBMITTED, APPROVED, REJECTED]
+        assignedAt:
+          type: string
+          format: date-time
+        dueAt:
+          type: string
+          format: date-time
+
+    TaskCompletion:
+      type: object
+      required: [taskCompletionId, taskAssignmentId, childId, submittedAt]
+      properties:
+        taskCompletionId:
+          type: string
+          format: uuid
+        taskAssignmentId:
+          type: string
+          format: uuid
+        childId:
+          type: string
+          format: uuid
+        submittedAt:
+          type: string
+          format: date-time
+        mediaEvidenceId:
+          type: string
+          format: uuid
+        counterValue:
+          type: integer
+          minimum: 0
+        timerSeconds:
+          type: integer
+          minimum: 0
+        selfReportNote:
+          type: string
+          maxLength: 500
+
+    VerificationResult:
+      type: object
+      required: [taskAssignmentId, childId, strategy, outcome, verifiedAt]
+      properties:
+        taskAssignmentId:
+          type: string
+          format: uuid
+        childId:
+          type: string
+          format: uuid
+        strategy:
+          $ref: "#/components/schemas/VerificationStrategy"
+        outcome:
+          type: string
+          enum: [PASSED, FAILED, PENDING_REVIEW]
+        mediaEvidenceId:
+          type: string
+          format: uuid
+        verifiedAt:
+          type: string
+          format: date-time
+        reviewedByParentId:
+          type: string
+        notes:
+          type: string
+          maxLength: 500
+
+    MediaEvidence:
+      type: object
+      required: [mediaEvidenceId, familyId, childId, kind, storageKey, contentType, sizeBytes, uploadedAt]
+      properties:
+        mediaEvidenceId:
+          type: string
+          format: uuid
+        familyId:
+          type: string
+          format: uuid
+        childId:
+          type: string
+          format: uuid
+        kind:
+          type: string
+          enum: [PHOTO, VIDEO, AUDIO]
+        storageKey:
+          type: string
+          description: >-
+            Opaque S3-compatible storage key. Never a public URL -- access
+            is via a short-lived signed URL minted server-side.
+        contentType:
+          type: string
+        sizeBytes:
+          type: integer
+          minimum: 1
+        uploadedAt:
+          type: string
+          format: date-time
+        retentionExpiresAt:
+          type: string
+          format: date-time
+
+    RewardLedgerEntry:
+      type: object
+      required: [rewardLedgerEntryId, familyId, childId, kind, amount, reason, idempotencyKey, postedAt]
+      properties:
+        rewardLedgerEntryId:
+          type: string
+          format: uuid
+        familyId:
+          type: string
+          format: uuid
+        childId:
+          type: string
+          format: uuid
+        kind:
+          type: string
+          enum: [XP, COINS, MONEY]
+        amount:
+          type: integer
+          description: >-
+            Signed -- positive for grants, negative for
+            redemptions/deductions. No balance field anywhere -- balances
+            are always derived by summing entries, never stored mutably.
+        reason:
+          type: string
+          enum: [TASK_COMPLETION, PARENT_ADJUSTMENT, REWARD_REDEMPTION, STREAK_BONUS]
+        sourceTaskAssignmentId:
+          type: string
+          format: uuid
+        adjustedByParentId:
+          type: string
+        idempotencyKey:
+          type: string
+        postedAt:
+          type: string
+          format: date-time
 
   responses:
     Error:

@@ -21,6 +21,143 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/families": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Register a new family. Creates it in PENDING_INVITE status. */
+        post: operations["createFamily"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/families/{familyId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Fetch a family. Authorization -- "Family is the security boundary for child data" (docs/product/actors-and-permissions.md): callable only by an ACTIVE member of this family or a scoped admin. */
+        get: operations["getFamily"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/families/{familyId}/children": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add a child profile to a family. Requires the CHILD_POLICY capability (docs/product/family-lifecycle.md). */
+        post: operations["addChildToFamily"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/families/{familyId}/task-templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List task templates for a family (cursor paginated). */
+        get: operations["listTaskTemplates"];
+        put?: never;
+        /** Create a task template. */
+        post: operations["createTaskTemplate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/task-templates/{taskTemplateId}/assignments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Assign a task template to a child. Emits TASK_ASSIGNED (docs/architecture/events.md). */
+        post: operations["assignTask"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/task-assignments/{taskAssignmentId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Fetch a task assignment. */
+        get: operations["getTaskAssignment"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/task-assignments/{taskAssignmentId}/completions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Child submits a completion. Idempotent -- "completion submissions" is explicitly listed in docs/architecture/api-contracts.md's Idempotency rule. Emits TASK_COMPLETED, then the Verification Engine asynchronously produces a VerificationResult and emits VERIFICATION_COMPLETED. */
+        post: operations["submitTaskCompletion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/children/{childId}/reward-ledger": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Cursor-paginated reward ledger entries for a child. There is no balance endpoint -- "Never store mutable balance as sole truth" (docs/architecture/data-architecture.md); a balance is derived by summing entries client- or service-side. */
+        get: operations["listRewardLedger"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -50,6 +187,142 @@ export interface components {
                 next_cursor?: string | null;
             };
         };
+        /** @enum {string} */
+        ParentCapability: "CHILD_POLICY" | "MONEY_REWARDS" | "SOCIAL_PERMISSIONS" | "CHAT_VISIBILITY" | "ACCOUNT_DELETION";
+        ParentMembership: {
+            parentId: string;
+            /** Format: uuid */
+            familyId: string;
+            /** @enum {string} */
+            status: "INVITED" | "ACTIVE" | "REVOKED";
+            isFamilyOwner: boolean;
+            capabilities: components["schemas"]["ParentCapability"][];
+            /** Format: date-time */
+            invitedAt: string;
+            /** Format: date-time */
+            activatedAt?: string;
+            /** Format: date-time */
+            revokedAt?: string;
+        };
+        ChildProfile: {
+            /** Format: uuid */
+            childId: string;
+            /** Format: uuid */
+            familyId: string;
+            displayName: string;
+            birthYear: number;
+            avatarId?: string;
+        };
+        Family: {
+            /** Format: uuid */
+            familyId: string;
+            /** @enum {string} */
+            status: "PENDING_INVITE" | "ACTIVE" | "SUSPENDED" | "ARCHIVED";
+            /** Format: date-time */
+            createdAt: string;
+            parents: components["schemas"]["ParentMembership"][];
+            children: components["schemas"]["ChildProfile"][];
+        };
+        /** @enum {string} */
+        VerificationStrategy: "MANUAL_SELF" | "PARENT_APPROVAL" | "PHOTO_PROOF" | "VIDEO_PROOF" | "CAMERA_EXERCISE" | "TIMER" | "COUNTER" | "AUDIO_PROOF" | "ALICE_SESSION" | "COMPOSITE";
+        TaskTemplate: {
+            /** Format: uuid */
+            taskTemplateId: string;
+            /** Format: uuid */
+            familyId: string;
+            createdByParentId: string;
+            title: string;
+            verificationStrategy: components["schemas"]["VerificationStrategy"];
+            rewardXp: number;
+            rewardCoins: number;
+            isActive: boolean;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        TaskAssignment: {
+            /** Format: uuid */
+            taskAssignmentId: string;
+            /** Format: uuid */
+            taskTemplateId: string;
+            /** Format: uuid */
+            familyId: string;
+            /** Format: uuid */
+            assignedToChildId: string;
+            /** @enum {string} */
+            status: "ASSIGNED" | "IN_PROGRESS" | "SUBMITTED" | "APPROVED" | "REJECTED";
+            /** Format: date-time */
+            assignedAt: string;
+            /** Format: date-time */
+            dueAt?: string;
+        };
+        TaskCompletion: {
+            /** Format: uuid */
+            taskCompletionId: string;
+            /** Format: uuid */
+            taskAssignmentId: string;
+            /** Format: uuid */
+            childId: string;
+            /** Format: date-time */
+            submittedAt: string;
+            /** Format: uuid */
+            mediaEvidenceId?: string;
+            counterValue?: number;
+            timerSeconds?: number;
+            selfReportNote?: string;
+        };
+        VerificationResult: {
+            /** Format: uuid */
+            taskAssignmentId: string;
+            /** Format: uuid */
+            childId: string;
+            strategy: components["schemas"]["VerificationStrategy"];
+            /** @enum {string} */
+            outcome: "PASSED" | "FAILED" | "PENDING_REVIEW";
+            /** Format: uuid */
+            mediaEvidenceId?: string;
+            /** Format: date-time */
+            verifiedAt: string;
+            reviewedByParentId?: string;
+            notes?: string;
+        };
+        MediaEvidence: {
+            /** Format: uuid */
+            mediaEvidenceId: string;
+            /** Format: uuid */
+            familyId: string;
+            /** Format: uuid */
+            childId: string;
+            /** @enum {string} */
+            kind: "PHOTO" | "VIDEO" | "AUDIO";
+            /** @description Opaque S3-compatible storage key. Never a public URL -- access is via a short-lived signed URL minted server-side. */
+            storageKey: string;
+            contentType: string;
+            sizeBytes: number;
+            /** Format: date-time */
+            uploadedAt: string;
+            /** Format: date-time */
+            retentionExpiresAt?: string;
+        };
+        RewardLedgerEntry: {
+            /** Format: uuid */
+            rewardLedgerEntryId: string;
+            /** Format: uuid */
+            familyId: string;
+            /** Format: uuid */
+            childId: string;
+            /** @enum {string} */
+            kind: "XP" | "COINS" | "MONEY";
+            /** @description Signed -- positive for grants, negative for redemptions/deductions. No balance field anywhere -- balances are always derived by summing entries, never stored mutably. */
+            amount: number;
+            /** @enum {string} */
+            reason: "TASK_COMPLETION" | "PARENT_ADJUSTMENT" | "REWARD_REDEMPTION" | "STREAK_BONUS";
+            /** Format: uuid */
+            sourceTaskAssignmentId?: string;
+            adjustedByParentId?: string;
+            idempotencyKey: string;
+            /** Format: date-time */
+            postedAt: string;
+        };
     };
     responses: {
         /** @description Stable error envelope; never a raw database/provider error. */
@@ -68,6 +341,8 @@ export interface components {
         /** @description Opaque pagination cursor. Cursor pagination is used for social feeds, messages, catalogs and activity history per docs/architecture/api-contracts.md ("Pagination"); offset pagination is not used for these. */
         Cursor: string;
         PageLimit: number;
+        FamilyIdPath: string;
+        TaskAssignmentIdPath: string;
     };
     requestBodies: never;
     headers: never;
@@ -91,6 +366,256 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HealthStatus"];
+                };
+            };
+            "5XX": components["responses"]["Error"];
+        };
+    };
+    createFamily: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    ownerParentId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Family created. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Family"];
+                };
+            };
+            "5XX": components["responses"]["Error"];
+        };
+    };
+    getFamily: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                familyId: components["parameters"]["FamilyIdPath"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The family. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Family"];
+                };
+            };
+            404: components["responses"]["Error"];
+            "5XX": components["responses"]["Error"];
+        };
+    };
+    addChildToFamily: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                familyId: components["parameters"]["FamilyIdPath"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    displayName: string;
+                    birthYear: number;
+                };
+            };
+        };
+        responses: {
+            /** @description Child profile created. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChildProfile"];
+                };
+            };
+            "5XX": components["responses"]["Error"];
+        };
+    };
+    listTaskTemplates: {
+        parameters: {
+            query?: {
+                /** @description Opaque pagination cursor. Cursor pagination is used for social feeds, messages, catalogs and activity history per docs/architecture/api-contracts.md ("Pagination"); offset pagination is not used for these. */
+                cursor?: components["parameters"]["Cursor"];
+                limit?: components["parameters"]["PageLimit"];
+            };
+            header?: never;
+            path: {
+                familyId: components["parameters"]["FamilyIdPath"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of task templates. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CursorPage"] & {
+                        items?: components["schemas"]["TaskTemplate"][];
+                    };
+                };
+            };
+            "5XX": components["responses"]["Error"];
+        };
+    };
+    createTaskTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                familyId: components["parameters"]["FamilyIdPath"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TaskTemplate"];
+            };
+        };
+        responses: {
+            /** @description Task template created. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskTemplate"];
+                };
+            };
+            "5XX": components["responses"]["Error"];
+        };
+    };
+    assignTask: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                taskTemplateId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    assignedToChildId: string;
+                    /** Format: date-time */
+                    dueAt?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Task assignment created. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskAssignment"];
+                };
+            };
+            "5XX": components["responses"]["Error"];
+        };
+    };
+    getTaskAssignment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                taskAssignmentId: components["parameters"]["TaskAssignmentIdPath"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The task assignment. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskAssignment"];
+                };
+            };
+            "5XX": components["responses"]["Error"];
+        };
+    };
+    submitTaskCompletion: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Required for reward redemption, money ledger writes, completion submissions and integration callbacks, per docs/architecture/api-contracts.md ("Idempotency"). Client-generated, unique per logical operation; replaying the same key returns the original result instead of repeating the side effect. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                taskAssignmentId: components["parameters"]["TaskAssignmentIdPath"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TaskCompletion"];
+            };
+        };
+        responses: {
+            /** @description Completion recorded. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskCompletion"];
+                };
+            };
+            "5XX": components["responses"]["Error"];
+        };
+    };
+    listRewardLedger: {
+        parameters: {
+            query?: {
+                /** @description Opaque pagination cursor. Cursor pagination is used for social feeds, messages, catalogs and activity history per docs/architecture/api-contracts.md ("Pagination"); offset pagination is not used for these. */
+                cursor?: components["parameters"]["Cursor"];
+                limit?: components["parameters"]["PageLimit"];
+            };
+            header?: never;
+            path: {
+                childId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of reward ledger entries. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CursorPage"] & {
+                        items?: components["schemas"]["RewardLedgerEntry"][];
+                    };
                 };
             };
             "5XX": components["responses"]["Error"];
