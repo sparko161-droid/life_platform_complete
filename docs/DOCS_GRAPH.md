@@ -48,6 +48,13 @@
 - `ux/ux-quality-gates.md`
 - `ux/screens/*.md`
 
+## Vertical slice
+- `architecture/vertical-slice/task-to-reward.md`
+- `architecture/vertical-slice/api-and-events.md`
+- `architecture/vertical-slice/state-trace.md`
+- `architecture/vertical-slice/test-matrix.md`
+- `architecture/vertical-slice/ownership-map.md`
+
 ## Planning
 - `planning/roadmap-overview.md`
 - `planning/dependency-graph.md`
