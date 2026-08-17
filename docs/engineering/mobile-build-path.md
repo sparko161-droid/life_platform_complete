@@ -31,22 +31,40 @@ internal-verification-only** artifacts:
   artifact (not installable on a device without signing — this proves
   the build compiles, not that it's distributable).
 
-## Known limitation — read before relying on these
+## Android: what was actually verified locally, and where it stopped
 
-`apps/mobile/` currently has no `android/`/`ios/` platform folders —
-nobody has run `flutter create --platforms=android,ios .` locally and
-committed the result yet (this repo's environment doesn't have Flutter
-installed, so that couldn't be done as part of this task either). Both
-workflows self-heal by running `flutter create --platforms=... .` if the
-folder is missing, so they're exercisable today, but **this is a stopgap,
-not verified by an actual run** — no Flutter/Android SDK/Xcode toolchain
-was available to actually execute either workflow end to end while
-writing them; only their YAML structure was validated. The self-heal
-step should be replaced with a plain `flutter pub get` once someone with
-a working Flutter install generates and commits the real platform
-folders (and reviews whatever native config `flutter create` produces,
-which regenerating on every CI run would silently discard any future
-customization to).
+`android/` is now a real, committed platform folder — installed Flutter
+3.47.0, a JDK and the Android SDK (platform-tools, `android-34`,
+`android-36`, matching build-tools) on this dev machine for real, ran
+`flutter create --platforms=android .` for real (it only added
+`android/`/`.metadata`/`analysis_options.yaml`/`test/`/`pubspec.lock` —
+confirmed `lib/main.dart` and `pubspec.yaml` were untouched), and
+`flutter doctor` confirms a fully working Android toolchain.
+
+The actual `flutter build apk --debug` compile step could not be
+completed on this machine: it fails with
+`java.io.IOException: Unable to establish loopback connection`. Traced
+this past Gradle entirely to a bare `java.nio.channels.Selector.open()`
+call failing the same way — the JVM's internal loopback pipe now uses a
+Unix-domain-socket connect on Windows, and `connect()` returns `EINVAL`
+in this specific sandboxed session. Reproduced identically on both JDK
+21 and JDK 17, so it isn't a JDK-version choice; this reads as a
+sandbox-level restriction on `AF_UNIX` sockets, not a project
+misconfiguration — and not something to work around by changing system
+network settings, which is out of scope for a coding agent to touch.
+**This is a local-environment limitation, not a workflow-correctness
+one**: `.github/workflows/mobile-android.yml` runs on GitHub's own
+`ubuntu-latest` runners, which don't share this sandbox's restriction —
+the workflow itself was not blocked by this, only this one manual local
+verification attempt was.
+
+## iOS: not locally verifiable at all
+
+`ios/` was not generated — Xcode is macOS-only and this dev machine runs
+Windows, so there is no local path to generate or build the iOS platform
+folder here regardless of the above. `mobile-ios.yml`'s YAML structure
+was validated but the workflow itself has not been run end to end
+against real GitHub `macos-latest` infrastructure yet.
 
 ## Signing (not resolved here)
 
