@@ -2,7 +2,7 @@
 
 - [ ] Git remote created and branch protection configured. Remote: done. Branch protection: exact settings documented in `docs/engineering/branch-protection.md`, not applied yet — needs GitHub repo-admin credentials no coding agent holds.
 - [ ] Owner accounts and AI service identities separated. Human/org action (GitHub org membership, bot vs. human accounts) — not something a coding agent can execute; see `docs/engineering/branch-protection.md`'s note.
-- [ ] Dev/Stage/Prod environments defined.
+- [x] Dev/Stage/Prod environments defined. Config model (env vars, Doppler config mapping, promotion flow) in `docs/engineering/environments.md`. `stg`/`prd` are *defined*, not yet *provisioned* — hosting provider is a separate, still-open human decision (`docs/planning/phases/phase-0.md`'s "Human decisions").
 - [x] Docker Compose local stack verified on developer machine. Real docker compose up + health-check cycle, P0-002.
 - [x] PostgreSQL migration tooling selected. `node-pg-migrate`, `services/api/migrations/`; up/down/up verified against the live stack, see `docs/architecture/data-architecture.md`.
 - [x] Seed data and synthetic family fixtures added. `packages/fixtures`, P0-006.
