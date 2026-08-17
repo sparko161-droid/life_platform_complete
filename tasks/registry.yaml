@@ -4,10 +4,12 @@ tasks:
     phase: 0
     title: Protect main and configure CI gates
     primary: devops-lead
-    status: READY
+    status: REVIEW
     deps: []
-    reviewer: null
-    gate_owners: []
+    reviewer: chief-architect
+    gate_owners:
+      - qa-lead
+      - security-child-safety
     discovery_links: []
     blocked_reason: null
     human_decisions: []
@@ -17,10 +19,11 @@ tasks:
     phase: 0
     title: Provision local dev stack and health checks
     primary: devops-lead
-    status: READY
+    status: REVIEW
     deps: []
-    reviewer: null
-    gate_owners: []
+    reviewer: chief-architect
+    gate_owners:
+      - qa-lead
     discovery_links: []
     blocked_reason: null
     human_decisions: []
@@ -30,11 +33,27 @@ tasks:
     phase: 0
     title: Implement task registry lifecycle and dependency fields
     primary: ai-cto
-    status: READY
+    status: REVIEW
     deps: []
-    reviewer: null
-    gate_owners: []
-    discovery_links: []
+    reviewer: chief-architect
+    gate_owners:
+      - qa-lead
+      - security-child-safety
+    discovery_links:
+      - discovery_id: DISC-P0-003-1
+        source_task: P0-003
+        type: ARCHITECTURE_GAP
+        finding: claim refuses a task whose dependency is REVIEW (not DONE), but docs/planning/phase-handoff.md explicitly endorses starting downstream work against a frozen not-yet-merged contract
+        why_it_matters: P0-004/P0-006/P0-007/P0-009 all legitimately implemented against their dependency's branch tip and are now merged, but claim/handoff cannot record that through the normal CLI path, forcing a manual registry.yaml edit instead
+        affected_domains: []
+        architecture_impact: null
+        security_impact: null
+        ux_impact: null
+        recommended_solution: null
+        alternatives: []
+        priority: MEDIUM
+        blocking: false
+        proposed_task: P0-011
     blocked_reason: null
     human_decisions: []
     origin_discovery: null
@@ -43,11 +62,12 @@ tasks:
     phase: 0
     title: Implement agent worktree and handoff conventions
     primary: ai-cto
-    status: READY
+    status: REVIEW
     deps:
       - P0-003
-    reviewer: null
-    gate_owners: []
+    reviewer: chief-architect
+    gate_owners:
+      - qa-lead
     discovery_links: []
     blocked_reason: null
     human_decisions: []
@@ -57,10 +77,11 @@ tasks:
     phase: 0
     title: Define OpenAPI and typed client generation path
     primary: backend-lead
-    status: READY
+    status: REVIEW
     deps: []
-    reviewer: null
-    gate_owners: []
+    reviewer: chief-architect
+    gate_owners:
+      - qa-lead
     discovery_links: []
     blocked_reason: null
     human_decisions: []
@@ -70,11 +91,12 @@ tasks:
     phase: 0
     title: Create synthetic family fixtures and seed data
     primary: qa-lead
-    status: READY
+    status: REVIEW
     deps:
       - P0-005
-    reviewer: null
-    gate_owners: []
+    reviewer: chief-architect
+    gate_owners:
+      - security-child-safety
     discovery_links: []
     blocked_reason: null
     human_decisions: []
@@ -84,11 +106,12 @@ tasks:
     phase: 0
     title: Baseline observability and error reporting
     primary: devops-lead
-    status: READY
+    status: REVIEW
     deps:
       - P0-002
-    reviewer: null
-    gate_owners: []
+    reviewer: chief-architect
+    gate_owners:
+      - qa-lead
     discovery_links: []
     blocked_reason: null
     human_decisions: []
@@ -98,10 +121,11 @@ tasks:
     phase: 0
     title: Establish security baseline and secrets policy
     primary: security-child-safety
-    status: READY
+    status: REVIEW
     deps: []
-    reviewer: null
-    gate_owners: []
+    reviewer: chief-architect
+    gate_owners:
+      - qa-lead
     discovery_links: []
     blocked_reason: null
     human_decisions: []
@@ -111,12 +135,14 @@ tasks:
     phase: 0
     title: Create Phase 1 contract pack
     primary: chief-architect
-    status: READY
+    status: REVIEW
     deps:
       - P0-005
       - P0-008
-    reviewer: null
-    gate_owners: []
+    reviewer: ai-cto
+    gate_owners:
+      - qa-lead
+      - security-child-safety
     discovery_links: []
     blocked_reason: null
     human_decisions: []
