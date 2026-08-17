@@ -28,6 +28,16 @@
 - `mechanics/child-daily-loop.md`
 - `mechanics/completion-reward-chain.md`
 
+## UX / frontend contracts
+- `ux/ui-architecture.md`
+- `ux/screen-map.md`
+- `ux/child-flows.md`
+- `ux/parent-flows.md`
+- `ux/frontend-backend-contract.md`
+- `ux/design-system.md`
+- `ux/state-contracts.md`
+- `ux/screen-api-matrix.md`
+
 ## Planning
 - `planning/roadmap-overview.md`
 - `planning/dependency-graph.md`
