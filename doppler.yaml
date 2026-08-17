@@ -1,0 +1,11 @@
+# Pins which Doppler project/config this repo uses, so `doppler setup` is
+# non-interactive and every developer lands on the same config by default.
+# Contains no secrets -- only the project/config names. Safe to commit.
+# See docs/security/secrets-policy.md.
+#
+# To use a personal override config instead (e.g. dev_personal), run:
+#   doppler setup --config dev_personal
+# which stores the choice locally without changing this file.
+setup:
+  project: life-platform
+  config: dev
