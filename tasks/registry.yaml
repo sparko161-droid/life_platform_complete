@@ -1,4 +1,4 @@
-version: 5
+version: 6
 tasks:
 - id: P0-001
   phase: 0
@@ -137,13 +137,19 @@ tasks:
   title: Core screen E2E journeys and interaction traceability
   primary: journey-agent
   status: PLANNED
-  deps: [P1-010]
+  deps: [P1-010, P1-013]
 - id: P1-012
   phase: 1
   title: Russian-only UI localization lint and forbidden-term checks
   primary: uiux-lead
   status: PLANNED
   deps: [P1-009]
+- id: P1-013
+  phase: 1
+  title: Finalize core screen contracts and action/API traceability
+  primary: uiux-lead
+  status: READY
+  deps: [P1-009, P0-005]
 - id: P2-001
   phase: 2
   title: XP/coins/progression and streak engine
