@@ -1,4 +1,4 @@
-version: 6
+version: 7
 tasks:
 - id: P0-001
   phase: 0
@@ -113,7 +113,7 @@ tasks:
   title: End-to-end family vertical slice
   primary: qa-lead
   status: PLANNED
-  deps: [P1-001, P1-002, P1-003, P1-004, P1-005, P1-006, P1-009, P1-010]
+  deps: [P1-001, P1-002, P1-003, P1-004, P1-005, P1-006, P1-009, P1-010, P1-014, P1-015]
 - id: P1-008
   phase: 1
   title: Completion/verification/reward idempotency rules and fixtures
@@ -137,7 +137,7 @@ tasks:
   title: Core screen E2E journeys and interaction traceability
   primary: journey-agent
   status: PLANNED
-  deps: [P1-010, P1-013]
+  deps: [P1-010, P1-013, P1-016]
 - id: P1-012
   phase: 1
   title: Russian-only UI localization lint and forbidden-term checks
@@ -150,6 +150,36 @@ tasks:
   primary: uiux-lead
   status: READY
   deps: [P1-009, P0-005]
+- id: P1-014
+  phase: 1
+  title: Implement first task-to-reward vertical slice contract and event path
+  primary: chief-architect
+  status: READY
+  deps: [P0-009, P0-010]
+- id: P1-015
+  phase: 1
+  title: Implement vertical slice state, idempotency and conflict fixtures
+  primary: backend-lead
+  status: PLANNED
+  deps: [P1-008, P1-014]
+- id: P1-016
+  phase: 1
+  title: Implement vertical slice API/client wiring and recovery states
+  primary: frontend-lead
+  status: PLANNED
+  deps: [P1-013, P1-014]
+- id: P1-017
+  phase: 1
+  title: Execute vertical slice QA/security/journey gates
+  primary: qa-lead
+  status: PLANNED
+  deps: [P1-015, P1-016]
+- id: P1-018
+  phase: 1
+  title: Verify vertical slice against source-of-truth and lifecycle rules
+  primary: chief-architect
+  status: PLANNED
+  deps: [P1-015, P1-016]
 - id: P2-001
   phase: 2
   title: XP/coins/progression and streak engine
