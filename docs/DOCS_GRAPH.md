@@ -7,17 +7,26 @@
 - `product/principles.md`
 - `product/actors-and-permissions.md`
 - `product/roadmap.md`
+- `product/family-lifecycle.md`
+- `product/daily-load.md`
+- `product/learning-profile.md`
+- `product/avatar.md`
 
 ## Family / task / learning
-- `product/family-lifecycle.md`
 - `game/task-engine.md`
 - `game/task-builder-rules.md`
 - `game/verification.md`
 - `game/exercise-engine.md`
 - `game/economy.md`
+- `game/progression.md`
+- `game/scenarios.md`
 - `game/competition-fairness.md`
-- `product/learning-profile.md`
-- `product/avatar.md`
+- `game/reward-redemption.md`
+- `game/completion-reward-chain.md`
+
+## Mechanics
+- `mechanics/child-daily-loop.md`
+- `mechanics/completion-reward-chain.md`
 
 ## Planning
 - `planning/roadmap-overview.md`
@@ -26,12 +35,16 @@
 - `planning/phase-handoff.md`
 - `planning/implementation-map.md`
 - `planning/responsibility-matrix.md`
+- `planning/mechanics-contract-map.md`
+- `planning/mechanics-gaps.md`
 - `planning/phases/*.md`
 
 ## AI team
 - `ai-team/organization.md`
 - `ai-team/roles.md`
 - `ai-team/agent-registry.yaml`
+- `ai-team/instructions/README.md`
+- `ai-team/instructions/role-charters.md`
 - `ai-team/workflow.md`
 - `ai-team/task-lifecycle.md`
 - `ai-team/discovery-rework.md`
@@ -54,7 +67,10 @@
 ## Social / safety
 - `social/graph.md`
 - `social/parent-social.md`
+- `social/parent-social-loop.md`
 - `social/messaging.md`
+- `social/chat-lifecycle.md`
+- `social/competition.md`
 - `social/notifications.md`
 - `security/child-safety.md`
 - `security/permissions.md`
@@ -76,7 +92,7 @@
 `cases/` contains user journeys linked to domains and acceptance tests.
 
 ## Audit
-`audit/coverage.md` records which discussed mechanics are covered and where remaining gaps are tracked.
+`audit/coverage.md` records discussion coverage. `planning/mechanics-gaps.md` tracks cross-domain gaps.
 
 ## ADR
 Foundational decisions live under `adr/`.
