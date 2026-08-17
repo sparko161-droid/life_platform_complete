@@ -19,9 +19,11 @@
     "dev:seed": "pnpm db:migrate:up && pnpm --filter @life/fixtures run build && pnpm --filter @life/fixtures run seed",
     "format": "pnpm exec prettier . --write",
     "check": "pnpm lint && pnpm typecheck && pnpm test",
-    "task-registry": "pnpm --filter @life/tools-task-registry run dev"
+    "task-registry": "pnpm --filter @life/tools-task-registry run dev",
+    "quality:dead-code": "knip"
   },
   "devDependencies": {
+    "knip": "^5.63.1",
     "prettier": "^3.6.2",
     "typescript": "^5.9.2"
   },

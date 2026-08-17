@@ -11,10 +11,10 @@
 - [x] AI agent registry created. `docs/ai-team/agent-registry.yaml`.
 - [x] Worktree allocation convention documented. `tools/task-registry` `worktree` subcommand + `docs/implementations/phase-0-agent-worktrees.md`, P0-004.
 - [x] Task registry/dashboard chosen or built. `tools/task-registry` CLI, P0-003; `tasks/registry.yaml` as the machine-readable source of truth.
-- [x] Architecture/QA/Security gates automated at least at baseline. CI runs lint/typecheck/test/build/gitleaks/audit on every PR.
+- [x] Architecture/QA/Security gates automated at least at baseline. CI runs lint/typecheck/test/build/gitleaks/audit/knip on every PR.
 - [x] OpenAPI generation path established. `services/api/openapi/openapi.yaml` + `packages/api-client`, P0-005.
 - [x] Observability baseline established. `packages/observability`, P0-007.
 - [x] Backup/restore procedure tested in non-production. `pnpm db:backup`/`db:restore`, real drop-and-restore cycle verified against the live stack — see `docs/engineering/backup-dr.md`.
 - [x] macOS build node plan created for iOS. GitHub-hosted `macos-latest` Actions runner (no dedicated Mac needed for CI-only unsigned builds); `.github/workflows/mobile-ios.yml`. See `docs/engineering/mobile-build-path.md` for the honest caveat: written and YAML-validated, not run end to end — no Flutter/Xcode toolchain available in this environment, and `apps/mobile` has no `ios/` platform folder committed yet.
 - [x] Android internal build path created. `.github/workflows/mobile-android.yml`, unsigned debug APK as a CI artifact. `android/` is a real, committed platform folder (Flutter/JDK/Android SDK actually installed and `flutter create` actually run on this dev machine) — the compile step itself hit a sandbox-specific `AF_UNIX`-socket loopback restriction on this particular machine (not a code/config issue, see `docs/engineering/mobile-build-path.md`), so the workflow has not been run end to end on GitHub's own runners yet.
-- [ ] Telegram/MAX/Alice integration sandboxes separated from production.
+- [x] Telegram/MAX/Alice integration sandboxes separated from production. Policy + token storage shape in `docs/integrations/sandbox-separation.md`. Creating the actual sandbox bot/skill accounts is a human step (needs a phone number/Yandex account) — the Human Architect has agreed to create these and hand over the tokens.

@@ -80,3 +80,28 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm audit --audit-level=high
+
+  quality-gate-baseline:
+    name: knip (dead code / unused exports)
+    runs-on: ubuntu-latest
+    # docs/ai-team/gates.md "Quality Gate: Checks duplicates, dead code,
+    # complexity, naming and dependency direction" -- baseline automation
+    # for the dead-code/unused-export slice of that. Non-blocking for now:
+    # this is a young, fast-moving codebase where "unused today" often
+    # means "not wired up yet", not "should be deleted" -- knip.json
+    # documents the deliberate exclusions (migration files scanned by
+    # node-pg-migrate's own convention, not imported; @sentry/node as a
+    # disclosed optional peer dependency). Promote to blocking once the
+    # baseline finding count is something a reviewer actually triages.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run quality:dead-code
