@@ -1,33 +1,22 @@
 # Telegram Integration
 
-**Status:** Planned
-**Owner:** Integrations Lead
+**Status:** Foundation
+**Owner:** AI CTO
+**Depends on:** MASTER_SPEC
+**Related:** MASTER_SPEC
+
 
 ## Surfaces
+Bot + Mini App.
 
-- Bot
-- Mini App
+## Web client
+Mini App is a web surface using Telegram WebApp APIs.
 
-Telegram Mini Apps are web applications that can launch inside Telegram and support authorization and other platform capabilities.
+## Security
+Validate `initData` on the server. Never trust `initDataUnsafe`. Validate freshness/auth_date and signature according to Telegram rules. citeturn232758search2
 
-## Architecture
+## Identity
+Map verified Telegram user identity to a Life identity through explicit linking, not by trusting client-supplied child IDs.
 
-Telegram Bot/Web App → Telegram Adapter → Life API.
-
-## Rules
-
-Telegram user identity is mapped to an internal external-account record; it is not the primary Life identity.
-
-No business logic is duplicated in Telegram handlers.
-
-## Candidate features
-
-- task status
-- parent quick actions
-- notifications/links
-- lightweight parent dashboard
-- controlled child experience where product policy allows
-
-## Source
-
-https://core.telegram.org/bots/webapps
+## Scope
+Status, reminders, task summaries and approved parent flows first. Do not expose child-sensitive data without Life policy checks.

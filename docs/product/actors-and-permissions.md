@@ -1,57 +1,35 @@
 # Actors and Permissions
 
 **Status:** Foundation
-**Owner:** Security + Product
+**Owner:** AI CTO
+**Depends on:** MASTER_SPEC
+**Related:** MASTER_SPEC
+
 
 ## Actors
+- Platform Admin
+- Safety Moderator
+- Support Agent
+- Family Owner
+- Parent
+- Child
+- AI Agent
+- Integration App
 
-- CHILD
-- PARENT_OWNER
-- PARENT_ADMIN
-- PARENT
-- PARENT_OBSERVER
-- PLATFORM_ADMIN
-- MODERATOR
-- SUPPORT
-- AI_AGENT
+## Core rules
+Family is the security boundary for child data.
+Parent permissions are scoped to the family and selected children.
+AI agents are service principals, not users.
+Integrations receive explicit scopes.
 
-## Core objects
+## Child access
+Child can read own tasks/progress and approved social content. Child cannot alter monetary ledger or security policies.
 
-Family is the main tenancy boundary.
+## Parent access
+Parent can manage permitted children, tasks, rewards, friendship consent and social policies according to family role.
 
-Child data must always be scoped to a Family and permission checked server-side.
+## Admin access
+Admin access is separated by capability; moderators do not automatically receive financial or infrastructure permissions.
 
-## Child social permissions
-
-- friends
-- text chat
-- voice
-- video circles
-- group chat
-- cooperative games
-- competitive games
-
-## Parent controls
-
-Parent controls can disable a channel without deleting its data model.
-
-## Chat visibility policy
-
-`FULL` — parent may read child messages.
-`METADATA_ONLY` — parent sees participants/time/activity but not content.
-`DISABLED` — parent does not have content access.
-
-The policy is evaluated at read time by backend authorization.
-
-## Money permissions
-
-Only parent/system services can mutate the child financial ledger.
-
-## AI permissions
-
-AI agents may read only the tools/data explicitly granted by the current task.
-AI agents never receive production credentials by default.
-
-## Admin permissions
-
-Platform admins manage platform objects, not arbitrary family data without audited reason and access policy.
+## Authorization
+Every sensitive API call resolves: actor → family scope → child scope → resource ownership → policy → action.

@@ -1,193 +1,101 @@
 # Master Specification — «Жизнь»
 
-**Версия:** 0.1
-**Статус:** Foundation / Architecture Baseline
-**Владелец:** Human Architect / Product Owner
+**Version:** 0.3
+**Status:** Foundation / Architecture Baseline
+**Owner:** Human Architect / Product Owner
 
-## 1. Product mission
-
-«Жизнь» превращает реальные действия ребёнка в игровую систему развития: задания → выполнение → подтверждение → прогресс → игра → социальное взаимодействие → награда.
-
-Цель — не заставить ребёнка выполнять chores, а сделать самостоятельность, обучение, спорт и общение частью игры.
+## 1. Mission
+«Жизнь» — Russian-language family platform where a child turns real-life activities, learning, sport and responsibility into a game with progress, friends, family interaction and rewards.
 
 ## 2. Core principles
-
-1. Реальная жизнь является главным игровым миром.
-2. Ребёнок — игрок, родитель — создатель и оператор правил семьи.
-3. Деньги — только один вид награды, а не основная мотивация.
-4. Родительские правила гибкие: система предлагает, родитель решает.
-5. Детские функции проектируются privacy-first.
-6. Social graph родителей и детей разделён.
-7. Mobile/web clients не содержат доменную логику.
-8. AI предлагает и помогает, но критические решения принадлежат человеку.
-9. ML/CV используется как сенсор; deterministic engine принимает решение о зачёте упражнений.
-10. Любой новый домен сначала получает архитектурный контракт.
+1. Real life is the primary game world.
+2. Child is the player; parent owns family rules.
+3. Money is optional, not the only motivator.
+4. Recommendations are optional; parent policy is authoritative.
+5. Child privacy and safety are first-class architecture constraints.
+6. Parent and child social graphs are separate.
+7. Clients contain presentation/state management, not authoritative domain rules.
+8. AI proposes/assists; critical product, privacy and money decisions remain human-controlled.
+9. ML/CV senses; deterministic engines decide exercise verification.
+10. New domains need an architecture contract before implementation.
+11. Documentation is a graph of short authoritative files, not a giant specification.
+12. AI development follows gates and independent review.
 
 ## 3. Product domains
-
-- Identity / Auth
-- Family / Parents / Children
-- Tasks / Habits / Quests / Scenarios
-- Verification Engine
-- Exercise / Pose Engine
-- XP / Coins / Money / Rewards
-- Game Engine
-- Social Graph
-- Messenger
-- Notifications
-- AI / Knowledge Base / Avatar
-- Catalog / Cases / Marketplace
-- Learning
-- Safety / Moderation
-- Analytics
-- Integrations
-- Admin
+Identity, Family, Tasks, Quests, Verification, Exercise, Economy, Rewards, Games, Social, Messenger, Notifications, Media, Learning, AI, Knowledge Base, Content, Marketplace, Safety, Analytics, Integrations, Admin.
 
 ## 4. Client surfaces
+Child Web/PWA, Parent Web, Admin Web, Flutter Android/iOS, Telegram Mini App/Bot, MAX Mini App/Bot, Alice skill.
 
-- Child Web/PWA
-- Parent Web
-- Admin Web
-- Android App
-- iOS App
-- Telegram Mini App / Bot
-- MAX Mini App / Bot
-- Alice skill
+## 5. Technical stack
+TypeScript/Node.js, React/Next.js, Tailwind + shared design system, NestJS, PostgreSQL, Redis, BullMQ, WebSocket, S3-compatible storage, REST/OpenAPI, Flutter/Dart, Docker, CI/CD, OpenTelemetry/Sentry-class observability.
 
-## 5. Technical foundation
+## 6. Architecture shape
+Start with a modular monolith + workers + realtime. Extract services only by ADR after evidence.
 
-- Monorepo
-- TypeScript for web/backend/shared packages
-- NestJS modular monolith + workers
-- PostgreSQL as source of truth
-- Redis for cache/locks/queue transport
-- BullMQ for async jobs
-- WebSocket for realtime
-- S3-compatible storage for media
-- Flutter for Android/iOS
-- REST/OpenAPI for core integration
-- Adapter pattern for Alice/Telegram/MAX/AI providers
-- Docker Compose for local development
+## 7. Data rules
+PostgreSQL is source of truth. Money uses an append-only ledger. Media is outside PostgreSQL. Child data is access-controlled by family/child policy.
 
-## 6. Architecture direction
+## 8. Task Engine
+Task = content + schedule + rules + verification + reward + gameplay + notifications.
+Initial strategies: MANUAL_SELF, PARENT_APPROVAL, PHOTO_PROOF, VIDEO_PROOF, CAMERA_EXERCISE, TIMER, COUNTER, AUDIO_PROOF, ALICE_SESSION, COMPOSITE.
 
-Начинаем с modular monolith + workers + realtime. Микросервисы выделяются только при подтверждённой необходимости.
+## 9. Verification
+`Task → Verification → Result → Event/Reward`.
+Camera: `Camera → PoseProvider → landmarks → overlay → deterministic ExerciseEngine → result`.
+Raw exercise frames are not stored by default.
 
-Домены общаются через application services и domain events, а не прямым доступом к чужим таблицам.
+## 10. Social
+Parent Friendship, Child Friendship, Family Friendship and Groups are separate graphs. No unrestricted child discovery.
 
-## 7. Task Engine foundation
+## 11. Messenger
+TEXT, VOICE, VIDEO_CIRCLE, IMAGE, SYSTEM, GAME_INVITE, ACHIEVEMENT, QUEST. Parent visibility can be FULL, METADATA_ONLY or DISABLED by policy.
 
-Task состоит из content, schedule, rules, verification, reward, gameplay и notifications.
+## 12. Game/Economy
+XP, Coins, Money Ledger, Coupons, Levels, Streaks, Skills, Achievements and Game Sessions are separate concepts.
 
-Initial verification strategies:
+## 13. AI
+AI Gateway hides providers. AI tools are typed, scoped and policy-checked. MCP is an adapter. Knowledge Base is versioned and evidence-backed. AI cannot diagnose, authorize or move money.
 
-- MANUAL_SELF
-- PARENT_APPROVAL
-- PHOTO_PROOF
-- VIDEO_PROOF
-- CAMERA_EXERCISE
-- TIMER
-- COUNTER
-- AUDIO_PROOF
-- COMPOSITE
+## 14. Integrations
+Telegram/MAX are web adapters; Alice is a skill adapter using official account-linking mechanisms. Integrations do not own business state.
 
-## 8. Verification principle
+## 15. Security
+Least privilege, server-side authorization, audit logs, rate limits, secret isolation, private media, moderation and child-safety workflows are mandatory.
 
-`Task → Verification Strategy → Result → Reward/Event`.
+## 16. Engineering governance
+Monorepo; protected main; one worktree per agent; PR gates; tests; docs; ADRs for foundational changes.
 
-Для камеры:
-`Camera → Pose Provider → Landmarks → Exercise Engine → Result`.
+## 17. AI organization
+Human Architect → AI CTO → domain leads → implementation agents → independent reviewers. Around 20 defined roles can be orchestrated in parallel.
 
-Видео по умолчанию не отправляется на сервер; сервер получает результат проверки.
+## 18. AI workflow
+Intake → Context → Architecture Gate → Plan → Parallel Build → Self Review → Peer Review → QA → Security → Architecture Review → AI CTO → Human Acceptance → Merge → Knowledge Update.
 
-## 9. Social foundation
+## 19. Definition of Ready
+Architecture exists or a decision is approved; dependencies known; reuse checked; contracts defined; permissions/data impact understood; test plan exists.
 
-Separate graphs:
+## 20. Definition of Done
+Implementation + tests + contracts/docs + migration safety + observability + security/child-safety checks + independent review + acceptance.
 
-- Parent Friendship
-- Child Friendship
-- Family Friendship
-- Groups / Challenges
+## 21. Phase roadmap
+0 Workspace/AI team. 1 Family/Auth/Task. 2 Game loop/PWA. 3 Mobile/Camera. 4 Social/Messenger. 5 AI/Learning/Alice/Telegram/MAX. 6 Games/Marketplace/Community.
 
-Ребёнок не получает unrestricted discovery of unknown children.
+## 22. Foundation non-goals
+No Kubernetes-first architecture, no unrestricted child discovery, no direct AI-to-DB access, no public marketplace without moderation, no production money rail in the foundation, no giant documentation file.
 
-## 10. Messenger foundation
+## 23. Authority docs
+See `docs/DOCS_GRAPH.md`. Foundational changes require ADR and Human Architect approval.
 
-Типы: TEXT, VOICE, VIDEO_CIRCLE, IMAGE, SYSTEM, GAME_INVITE, ACHIEVEMENT, QUEST.
 
-Доступ родителя к детским чатам управляется policy, чтобы в будущем можно было перейти от FULL к METADATA_ONLY или DISABLED без переделки Messenger.
+## 24. Development scope control
+Review outcomes are PASS, PASS_WITH_DISCOVERIES, REWORK or BLOCKED. New findings outside accepted scope become Discoveries and, after triage, separate tasks linked to the source task.
 
-## 11. AI foundation
+## 25. Delivery planning
+Detailed phases, parallel workstreams, dependency graphs, implementation maps and responsibility matrices live under `docs/planning/`.
 
-Все AI providers скрыты за `AI Gateway`. AI не получает прямой доступ к БД.
+## 26. Task traceability
+Every task has one primary executor, independent reviewer(s), gate owners and explicit source/dependency links. Scope changes are never hidden inside rework.
 
-AI использует Knowledge Base, task/domain APIs и ограниченные tools.
-
-MCP — интеграционный слой, не источник бизнес-логики.
-
-## 12. Integrations
-
-Telegram/MAX — web mini-app adapters.
-Alice — skill adapter + OAuth account linking.
-
-Внешние каналы не содержат собственной бизнес-логики.
-
-## 13. Data safety
-
-Минимизировать сбор данных детей. Медиа приватны по умолчанию. Доступ к детским данным проверяется permission policy на backend.
-
-Для РФ необходим отдельный legal/privacy review перед production.
-
-## 14. AI Engineering Organization
-
-AI CTO координирует специализированных агентов. Human Architect принимает продуктовые и архитектурные решения, влияющие на фундамент.
-
-Работа проходит через gates: Architecture → Implementation → Quality → QA → Security → Human Acceptance.
-
-## 15. Definition of Ready
-
-Задача не переходит в implementation, пока:
-
-- найден существующий domain;
-- определены зависимости;
-- проверены дубли;
-- определены API/events/contracts;
-- понятен test strategy;
-- архитектурные вопросы вынесены человеку.
-
-## 16. Definition of Done
-
-Code + tests + docs + migration + observability + security checks + architecture review + QA + acceptance.
-
-## 17. Repository governance
-
-Каждый агент работает в своей ветке/worktree. `main` защищён. Merge только через PR и обязательные gates.
-
-Production secrets не доступны обычным coding agents.
-
-## 18. Documentation governance
-
-Каждый domain имеет короткие связанные документы. Master Specification только фиксирует фундамент и ссылки.
-
-Изменение фундаментального решения требует ADR.
-
-## 19. Initial delivery sequence
-
-Phase 0 — workspace and AI-team infrastructure.
-Phase 1 — family/auth/task foundation.
-Phase 2 — verification/rewards/PWA.
-Phase 3 — Android/iOS.
-Phase 4 — social/messenger.
-Phase 5 — AI/Alice/learning.
-Phase 6 — games/marketplace/community.
-
-## 20. Non-goals for foundation
-
-Не строим сразу Kubernetes, полноценную микросервисную сеть, открытый child social discovery, real-money payment rail, public marketplace без moderation.
-
-## 21. Source anchors
-
-Flutter iOS setup: https://docs.flutter.dev/platform-integration/ios/setup
-Telegram Mini Apps: https://core.telegram.org/bots/webapps
-Alice skills: https://yandex.ru/dev/dialogs/alice/
-Alice OAuth/account linking: https://yandex.ru/dev/dialogs/alice/doc/ru/auth/how-it-works
+## 27. Repository authority
+`docs/MASTER_SPEC.md` is the index. Detailed rules are authoritative only in the linked domain documents listed by `docs/DOCS_GRAPH.md`.
