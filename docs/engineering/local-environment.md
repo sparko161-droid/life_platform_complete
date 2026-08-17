@@ -22,3 +22,6 @@ Use synthetic family/child accounts only. Seed scripts must be deterministic.
 
 ## Debugging
 Prefer application logs and traces over database inspection as the first diagnostic step.
+
+## Secrets
+Copy `.env.example` to `.env`, or (preferred) `doppler setup && doppler run -- <command>` so nothing lands on disk in plaintext. See `docs/security/secrets-policy.md`.

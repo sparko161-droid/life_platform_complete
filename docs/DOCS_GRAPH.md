@@ -114,6 +114,7 @@
 - `security/privacy.md`
 - `security/threat-model.md`
 - `security/legal-ru.md`
+- `security/secrets-policy.md`
 
 ## AI / integrations
 - `ai/architecture.md`
