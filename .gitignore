@@ -52,3 +52,6 @@ venv/
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# Claude Code local overrides (personal, not team-shared)
+.claude/settings.local.json
