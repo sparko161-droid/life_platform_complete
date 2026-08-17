@@ -1,4 +1,4 @@
-version: 2
+version: 3
 tasks:
 - id: P0-001
   phase: 0
@@ -114,12 +114,18 @@ tasks:
   primary: qa-lead
   status: PLANNED
   deps: [P1-001, P1-002, P1-003, P1-004, P1-005, P1-006]
+- id: P1-008
+  phase: 1
+  title: Completion/verification/reward idempotency rules and fixtures
+  primary: backend-lead
+  status: PLANNED
+  deps: [P1-002, P1-006]
 - id: P2-001
   phase: 2
   title: XP/coins/progression and streak engine
   primary: game-engine-lead
   status: PLANNED
-  deps: [P1-007]
+  deps: [P1-007, P1-008]
 - id: P2-002
   phase: 2
   title: Quest/scenario engine
@@ -138,6 +144,18 @@ tasks:
   primary: game-engine-lead
   status: PLANNED
   deps: [P2-001]
+- id: P2-005
+  phase: 2
+  title: Reward redemption, expiry and conflict rules
+  primary: game-engine-lead
+  status: PLANNED
+  deps: [P1-006, P2-001]
+- id: P2-006
+  phase: 2
+  title: Age-aware daily-load policy and anti-grind limits
+  primary: child-experience-lead
+  status: PLANNED
+  deps: [P1-002, P2-001]
 - id: P3-001
   phase: 3
   title: Flutter Android/iOS shell and capability matrix
@@ -192,6 +210,18 @@ tasks:
   primary: game-engine-lead
   status: PLANNED
   deps: [P4-002, P4-003]
+- id: P4-006
+  phase: 4
+  title: Full conversation lifecycle and protected-read state machine
+  primary: social-lead
+  status: PLANNED
+  deps: [P4-003, P4-004]
+- id: P4-007
+  phase: 4
+  title: Challenge settlement, dispute and cancellation rules
+  primary: game-engine-lead
+  status: PLANNED
+  deps: [P4-005]
 - id: P5-001
   phase: 5
   title: AI Gateway and typed tool policy
@@ -228,12 +258,18 @@ tasks:
   primary: integrations-lead
   status: PLANNED
   deps: [P1-007]
+- id: P5-007
+  phase: 5
+  title: Learning evidence provenance and recommendation explainability
+  primary: learning-lead
+  status: PLANNED
+  deps: [P5-002]
 - id: P6-001
   phase: 6
   title: Cooperative game session protocol
   primary: game-engine-lead
   status: PLANNED
-  deps: [P4-005]
+  deps: [P4-005, P4-007]
 - id: P6-002
   phase: 6
   title: Case/template catalog and moderation
@@ -246,3 +282,9 @@ tasks:
   primary: content-marketplace-lead
   status: PLANNED
   deps: [P6-002]
+- id: P6-004
+  phase: 6
+  title: Marketplace ranking, abuse and recommendation policy
+  primary: content-marketplace-lead
+  status: PLANNED
+  deps: [P6-002, P6-003]
