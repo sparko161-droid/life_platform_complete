@@ -15,6 +15,7 @@
 ## Family / task / learning
 - `game/task-engine.md`
 - `game/task-builder-rules.md`
+- `game/task-builder-dsl.md`
 - `game/verification.md`
 - `game/exercise-engine.md`
 - `game/economy.md`
@@ -30,6 +31,8 @@
 
 ## UX / frontend contracts
 - `ux/ui-architecture.md`
+- `ux/ui-language.md`
+- `ux/screen-contract-template.md`
 - `ux/screen-map.md`
 - `ux/child-flows.md`
 - `ux/parent-flows.md`
@@ -37,6 +40,14 @@
 - `ux/design-system.md`
 - `ux/state-contracts.md`
 - `ux/screen-api-matrix.md`
+- `ux/screens/child-today.md`
+- `ux/screens/child-task-detail.md`
+- `ux/screens/camera-exercise.md`
+- `ux/screens/parent-dashboard.md`
+- `ux/screens/parent-task-builder.md`
+- `ux/screens/parent-rewards.md`
+- `ux/screens/social-chat.md`
+- `ux/screens/game-lobby.md`
 
 ## Planning
 - `planning/roadmap-overview.md`
