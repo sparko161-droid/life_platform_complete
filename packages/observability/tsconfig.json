@@ -1,0 +1,20 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src",
+    // @opentelemetry/sdk-logs@0.55.0's own .d.ts (a transitive dependency
+    // of @opentelemetry/sdk-node, not something this package imports
+    // directly) fails to typecheck under the repo-wide
+    // exactOptionalPropertyTypes: true -- its NoopLogRecordProcessor
+    // declares `severityText: string` where the interface it implements
+    // allows `string | undefined`. That's a bug in their .d.ts, not in
+    // this package's code. skipLibCheck is TypeScript's standard,
+    // documented mitigation for exactly this class of problem (published
+    // .d.ts files not fully compatible with a strict flag); scoped to
+    // this package only rather than promoted to tsconfig.base.json,
+    // since it's the only package pulling in the OTel SDK so far.
+    "skipLibCheck": true
+  },
+  "include": ["src"]
+}
