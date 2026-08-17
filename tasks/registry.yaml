@@ -1,15 +1,15 @@
-version: 1
+version: 2
 tasks:
 - id: P0-001
   phase: 0
-  title: Protect main branch and configure CI gates
-  primary: devops
+  title: Protect main and configure CI gates
+  primary: devops-lead
   status: READY
   deps: []
 - id: P0-002
   phase: 0
   title: Provision local dev stack and health checks
-  primary: devops
+  primary: devops-lead
   status: READY
   deps: []
 - id: P0-003
@@ -23,8 +23,7 @@ tasks:
   title: Implement agent worktree and handoff conventions
   primary: ai-cto
   status: READY
-  deps:
-  - P0-003
+  deps: [P0-003]
 - id: P0-005
   phase: 0
   title: Define OpenAPI and typed client generation path
@@ -36,19 +35,17 @@ tasks:
   title: Create synthetic family fixtures and seed data
   primary: qa-lead
   status: READY
-  deps:
-  - P0-005
+  deps: [P0-005]
 - id: P0-007
   phase: 0
   title: Baseline observability and error reporting
-  primary: devops
+  primary: devops-lead
   status: READY
-  deps:
-  - P0-002
+  deps: [P0-002]
 - id: P0-008
   phase: 0
   title: Establish security baseline and secrets policy
-  primary: security-lead
+  primary: security-child-safety
   status: READY
   deps: []
 - id: P0-009
@@ -56,49 +53,196 @@ tasks:
   title: Create Phase 1 contract pack
   primary: chief-architect
   status: READY
-  deps:
-  - P0-005
-  - P0-008
+  deps: [P0-005, P0-008]
+- id: P0-010
+  phase: 0
+  title: Versioned contract registry and handoff artifacts
+  primary: chief-architect
+  status: READY
+  deps: [P0-009]
+- id: P0-011
+  phase: 0
+  title: AI task orchestration and agent claim/handoff workflow
+  primary: ai-cto
+  status: READY
+  deps: [P0-003, P0-004]
+- id: P0-012
+  phase: 0
+  title: Automated docs/task traceability checks
+  primary: documentation-agent
+  status: READY
+  deps: [P0-010]
 - id: P1-001
   phase: 1
-  title: Family and role model
+  title: Family lifecycle and second-parent invitation
   primary: backend-lead
   status: PLANNED
-  deps:
-  - P0-009
+  deps: [P0-009]
 - id: P1-002
   phase: 1
-  title: Task template and assignment model
+  title: Task template, assignment and Rules DSL
   primary: backend-lead
   status: PLANNED
-  deps:
-  - P0-009
+  deps: [P0-009, P0-010]
 - id: P1-003
   phase: 1
   title: Parent task builder UX
   primary: frontend-lead
   status: PLANNED
-  deps:
-  - P0-009
+  deps: [P1-002]
 - id: P1-004
   phase: 1
   title: Child today/tasks UX
   primary: frontend-lead
   status: PLANNED
-  deps:
-  - P0-009
+  deps: [P1-002]
 - id: P1-005
   phase: 1
-  title: Media evidence storage
+  title: Media evidence storage and upload policy
   primary: backend-lead
   status: PLANNED
-  deps:
-  - P0-002
-  - P0-009
+  deps: [P0-002, P0-009]
 - id: P1-006
   phase: 1
-  title: Reward ledger and parent adjustments
-  primary: game-lead
+  title: Reward ledger and configurable N-day rewards
+  primary: game-engine-lead
   status: PLANNED
-  deps:
-  - P0-009
+  deps: [P0-009]
+- id: P1-007
+  phase: 1
+  title: End-to-end family vertical slice
+  primary: qa-lead
+  status: PLANNED
+  deps: [P1-001, P1-002, P1-003, P1-004, P1-005, P1-006]
+- id: P2-001
+  phase: 2
+  title: XP/coins/progression and streak engine
+  primary: game-engine-lead
+  status: PLANNED
+  deps: [P1-007]
+- id: P2-002
+  phase: 2
+  title: Quest/scenario engine
+  primary: game-engine-lead
+  status: PLANNED
+  deps: [P2-001]
+- id: P2-003
+  phase: 2
+  title: Child PWA game shell and daily mission board
+  primary: frontend-lead
+  status: PLANNED
+  deps: [P1-004, P2-001]
+- id: P2-004
+  phase: 2
+  title: Competition/personal-best mechanics
+  primary: game-engine-lead
+  status: PLANNED
+  deps: [P2-001]
+- id: P3-001
+  phase: 3
+  title: Flutter Android/iOS shell and capability matrix
+  primary: mobile-lead
+  status: PLANNED
+  deps: [P0-010]
+- id: P3-002
+  phase: 3
+  title: Pose provider and live skeleton overlay
+  primary: computer-vision-lead
+  status: PLANNED
+  deps: [P3-001]
+- id: P3-003
+  phase: 3
+  title: Deterministic squat verification and fixtures
+  primary: game-engine-lead
+  status: PLANNED
+  deps: [P3-002]
+- id: P3-004
+  phase: 3
+  title: Offline queue and device/push foundation
+  primary: mobile-lead
+  status: PLANNED
+  deps: [P3-001]
+- id: P4-001
+  phase: 4
+  title: Parent friendship and interests
+  primary: social-lead
+  status: PLANNED
+  deps: [P1-001]
+- id: P4-002
+  phase: 4
+  title: Child friendship consent graph
+  primary: social-lead
+  status: PLANNED
+  deps: [P1-001]
+- id: P4-003
+  phase: 4
+  title: Messenger text/voice/circle and spelling assistance
+  primary: social-lead
+  status: PLANNED
+  deps: [P4-001, P4-002]
+- id: P4-004
+  phase: 4
+  title: Moderation/report/block and parent visibility policy
+  primary: security-child-safety
+  status: PLANNED
+  deps: [P4-003]
+- id: P4-005
+  phase: 4
+  title: Family challenges and cooperative interactions
+  primary: game-engine-lead
+  status: PLANNED
+  deps: [P4-002, P4-003]
+- id: P5-001
+  phase: 5
+  title: AI Gateway and typed tool policy
+  primary: ai-ml-lead
+  status: PLANNED
+  deps: [P0-008]
+- id: P5-002
+  phase: 5
+  title: Knowledge Base and Development Profile
+  primary: learning-lead
+  status: PLANNED
+  deps: [P5-001]
+- id: P5-003
+  phase: 5
+  title: AI task-plan generation with parent approval
+  primary: ai-ml-lead
+  status: PLANNED
+  deps: [P1-002, P5-001, P5-002]
+- id: P5-004
+  phase: 5
+  title: Safe AI avatar lifecycle
+  primary: ai-ml-lead
+  status: PLANNED
+  deps: [P5-001]
+- id: P5-005
+  phase: 5
+  title: Alice task status/learning integration
+  primary: integrations-lead
+  status: PLANNED
+  deps: [P5-001, P1-007]
+- id: P5-006
+  phase: 5
+  title: Telegram/MAX Mini App adapters
+  primary: integrations-lead
+  status: PLANNED
+  deps: [P1-007]
+- id: P6-001
+  phase: 6
+  title: Cooperative game session protocol
+  primary: game-engine-lead
+  status: PLANNED
+  deps: [P4-005]
+- id: P6-002
+  phase: 6
+  title: Case/template catalog and moderation
+  primary: content-marketplace-lead
+  status: PLANNED
+  deps: [P1-002, P4-004]
+- id: P6-003
+  phase: 6
+  title: Family case application and analytics
+  primary: content-marketplace-lead
+  status: PLANNED
+  deps: [P6-002]

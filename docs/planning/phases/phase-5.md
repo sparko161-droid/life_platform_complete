@@ -1,24 +1,19 @@
-# Phase 5 — AI, Learning and Integrations
+# Phase 5 — AI, Learning, Avatar and Integrations
 
 ## Objective
-Use AI to reduce parent effort and expand learning while keeping humans in control.
+Reduce parent effort and add guided learning without transferring authority to AI.
 
-## Core domains
+## Streams
+F1 AI Gateway, F2 Knowledge Base/Development Profile, F3 parent assistant/task generation, F4 avatar, F5 learning sessions, F6 Alice, F7 Telegram, F8 MAX, F9 MCP.
 
-AI Gateway, Knowledge Base, task drafting, quest drafting, recommendations, learning sessions, avatar, Alice, Telegram, MAX, MCP.
+## Mechanics
+AI task/quest plans; age-based suggestions; source/evidence display; parent approval; child learning sessions; word/rule practice through voice; avatar creation; status/notifications through supported integrations.
 
-## Responsible
+## Alice
+Design around account linking and a server-authorized task status interface. The skill must not expose unrelated child data.
 
-AI/ML Lead: AI gateway. Learning Lead: knowledge/evidence. Integrations Lead: external adapters. Security Lead: tool scopes.
+## Integrations
+Adapters consume canonical domain APIs/events. They never implement task/reward logic independently.
 
-## Parallel streams
-
-F1 AI gateway, F2 KB, F3 parent assistant, F4 learning, F5 avatar, F6 Alice, F7 Telegram, F8 MAX, F9 MCP.
-
-## Safety rule
-
-AI proposes; parent approves durable child plans, permissions, money and safety decisions. AI tools cannot directly access the database or move money.
-
-## Exit criteria
-
-A parent can generate a task plan, inspect sources/logic, approve it and use at least one voice/integration scenario end-to-end.
+## Exit
+Parent can generate, inspect and approve a plan; child can complete one AI-assisted learning session; avatar is safe and reusable; at least one Alice/Telegram/MAX journey works end-to-end with scoped permissions.

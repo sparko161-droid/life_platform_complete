@@ -1,26 +1,21 @@
 # Dependency Graph
 
 ## Critical path
-
-A0/A1/A2 → B1/B2 → B3/B4 → C1/C2 → D1/D2/D3 → E1/E2/E3 → F1/F2/F3 → G1/G2.
+A0/A1/A2/A4 → B1/B2 → B3/B4 → C1/C2 → D1/D2/D3 → E1/E2/E3/E4 → F1/F2/F3/F4/F5 → G1/G2/G3 → 7.
 
 ## Parallel branches
-
-- Media can progress alongside Task Engine once ownership and storage contracts exist.
-- Parent UX and child UX can progress in parallel after API shapes are frozen.
-- PWA game UI can progress while economy backend is implemented against mocked contracts.
-- Social graph and messenger can start against finalized Identity/Family/Permission contracts.
-- AI Gateway and Knowledge Base can start before final integrations.
-- Catalog can start before games, using template/case contracts.
+- Media can progress once storage/evidence contracts exist.
+- Parent and child UX can progress in parallel against versioned APIs.
+- Economy can use mocked completion/game events.
+- Parent Social can start after Family/Permission contracts; it does not require Child Social.
+- AI Gateway and KB can start before integrations.
+- Marketplace content tooling can start before game runtime.
 
 ## Hard dependencies
+Identity → Family. Family/permissions → social. Task/verification → camera tasks. Realtime/media → messenger. Moderation → child communication release. AI Gateway → AI assistant/integrations. Development Profile → evidence-backed recommendations.
 
-Identity precedes family data. Family/permissions precede child social. Task/verification contracts precede camera tasks. Realtime foundation precedes messenger. Moderation precedes child messaging release. AI Gateway precedes AI assistant features.
+## Contract handoff
+Each phase publishes a versioned package containing domain/API/events/permissions/UI/test fixtures. Downstream streams consume that version until a coordinated migration is approved.
 
-## No hard dependency
-
-AI avatar is not required for the first AI task assistant. Marketplace does not block core family product. iOS release does not block web/backend development.
-
-## Sync checkpoints
-
-Each phase publishes a versioned contract set. Dependent streams consume that version until a coordinated contract update is approved.
+## Discovery propagation
+A review finding outside the accepted scope creates a Discovery. If it affects another stream, AI CTO creates a linked task and dependency; the source task is not silently expanded.

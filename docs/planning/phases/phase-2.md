@@ -1,24 +1,19 @@
 # Phase 2 — Game Loop and PWA
 
 ## Objective
-Turn the core task loop into a compelling daily game.
+Make the daily routine feel like a game rather than a checklist.
 
-## Core domains
+## Core
+XP, coins, levels, streaks, achievements, skills, quests, scenarios, child game shell, progress dashboard and configurable rewards.
 
-XP, levels, coins, streaks, achievements, skills, quests, scenarios, child game shell.
+## Streams
+C1 economy/progression, C2 quests/scenarios, C3 child PWA/game UI, C4 parent dashboard, C5 analytics/fairness.
+
+## Mechanics
+Personal goals, daily mission board, streak milestones, 7/10/N-day reward paths, coupons for screen/device/family activities, optional competition and personal-best goals.
 
 ## Responsible
+Game Design: economy/progression. Frontend: child experience. Backend: game services. Product/Child Experience: motivation balance. QA: progression/fairness.
 
-Game Design Lead: economy/progression. Frontend Lead: child experience. Backend Lead: game services. QA Lead: progression tests.
-
-## Parallel streams
-
-C1 Economy, C2 Progression, C3 Quest engine, C4 Child game UI, C5 Parent dashboard, C6 analytics.
-
-## Contracts
-
-GameEvent, XPTransaction, CoinTransaction, Streak, Achievement, Quest, RewardUnlock.
-
-## Exit criteria
-
-A child can complete a coherent 7-day loop, see progress, redeem at least one configured reward and parents can audit the full history.
+## Exit
+A child can complete a coherent 7-day journey, see progress and unlock a configured reward; parent can audit and change future rules without corrupting historical results.

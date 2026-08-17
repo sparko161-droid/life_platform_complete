@@ -1,4 +1,4 @@
-version: 1
+version: 2
 roles:
   - id: ai-cto
     reports_to: human-architect
@@ -33,6 +33,12 @@ roles:
     reports_to: product-manager
   - id: child-experience-lead
     reports_to: product-manager
+  - id: learning-lead
+    reports_to: product-manager
+  - id: social-lead
+    reports_to: ai-cto
+  - id: content-marketplace-lead
+    reports_to: product-manager
   - id: qa-lead
     reports_to: ai-cto
   - id: automated-test-agent
@@ -45,3 +51,12 @@ roles:
     reports_to: chief-architect
   - id: documentation-agent
     reports_to: chief-architect
+  - id: devops-lead
+    reports_to: ai-cto
+
+## Assignment rules
+- Every task has one primary executor and at least one independent reviewer.
+- Domain leads own contracts for their domains; they do not self-approve foundational changes.
+- AI CTO owns orchestration, not product decisions reserved for the Human Architect.
+- Discovery findings are routed to the domain owner and become separate tasks when scope expands.
+- Agents may use Codex, Claude Code or another approved coding runtime; role and gate are tool-agnostic.

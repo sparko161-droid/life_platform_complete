@@ -1,20 +1,22 @@
-# Phase 4 — Social Graph, Messenger and Safety
+# Phase 4 — Social, Messenger, Competition and Safety
 
 ## Objective
-Connect children and parents safely without turning the platform into unrestricted social media.
+Build safe social life for children and parents, including family-level relationships.
 
-## Core domains
+## Streams
+E1 Parent Social, E2 Child Social, E3 Messenger, E4 Voice/Circle Video, E5 Safety/Moderation, E6 Notifications, E7 Challenges/Competition.
 
-Parent Friendship, Child Friendship, Family Friendship, Groups, Conversations, Voice, Circle Video, moderation, reporting, permissions.
+## Mechanics
+Parent invitations and friendships; child friendships only through approved paths; family friendship; parent interests; shared cases/statistics; child achievement sharing; text/voice/circle messages; spelling feedback for text; message XP with anti-spam limits; challenges and cooperative goals.
 
-## Responsible
+## Parent chat
+Parent-to-parent chat is independent of child chat. Family/group chats require explicit membership.
 
-Social Lead: graph/messenger. Child Safety Lead: policy and moderation. Backend Lead: realtime. Mobile/Web Leads: surfaces. QA Lead: abuse cases.
+## Child chat visibility
+Backend policy supports FULL, METADATA_ONLY and DISABLED parent visibility. Default policy is privacy-first and must be reviewed before production release.
 
-## Parallel streams
+## Safety
+Moderation, report, block, consent, abuse handling and rate limits are release blockers for child communication.
 
-E1 Parent social, E2 Child social, E3 Messenger core, E4 Voice/video, E5 Moderation, E6 Notifications, E7 challenges.
-
-## Exit criteria
-
-Parent-approved friendships work, parent chat exists, child communication policy is enforced server-side and moderation/report/block flows are operational.
+## Exit
+Approved parent friendship, child friendship, family relationship, safe chat, notifications, moderation and at least one cooperative/competitive challenge work end-to-end.
