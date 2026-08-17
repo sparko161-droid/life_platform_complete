@@ -143,7 +143,21 @@ tasks:
     gate_owners:
       - qa-lead
       - security-child-safety
-    discovery_links: []
+    discovery_links:
+      - discovery_id: DISC-P0-009-1
+        source_task: P0-009
+        type: ARCHITECTURE_GAP
+        finding: entity-lifecycle.md, data-classification.md, docs/game/rewards.md and concurrency-and-conflicts.md landed after the 0.1.0 contract pack was frozen; TaskAssignment status enum, TaskTemplate isActive boolean, missing Reward catalog entity, missing data classification and missing optimistic-concurrency version fields were all found out of sync during the mandatory post-Phase-0 revalidation (docs/governance/project-evolution.md)
+        why_it_matters: downstream P1 tasks would have built against a contract that already contradicted newer authoritative architecture docs
+        affected_domains: []
+        architecture_impact: null
+        security_impact: null
+        ux_impact: null
+        recommended_solution: null
+        alternatives: []
+        priority: HIGH
+        blocking: false
+        proposed_task: none - fixed directly, see contracts/v0.2.0 in docs/planning/change-log.md
     blocked_reason: null
     human_decisions: []
     origin_discovery: null

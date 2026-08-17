@@ -1,16 +1,21 @@
 import { z } from "zod";
 import { ChildId, FamilyId, ParentId } from "./ids.js";
+import type { ClassificationMap } from "./classification.js";
 
 /**
  * Ownership: Family domain (docs/architecture/domain-map.md — "Identity/
  * Family precedes nearly all domains"). Security boundary: "Family is the
  * security boundary for child data" (docs/product/actors-and-permissions.md).
- * Contract version: 0.1.0 (P0-009). Events: none of its own yet in
+ * Contract version: 0.2.0 (P0-009 revalidation, docs/planning/change-log.md
+ * 0.5) — bumped from 0.1.0 to add optimistic-concurrency `version` and
+ * data-classification maps, per docs/architecture/concurrency-and-conflicts.md
+ * and docs/security/data-classification.md, neither of which existed when
+ * 0.1.0 was written. Events: none of its own yet in
  * docs/architecture/events.md's initial list — membership mutations are
  * audited (family-lifecycle.md) but not yet in the domain event catalog;
  * flagged as a gap for whoever implements P1-001.
  */
-export const CONTRACT_VERSION = "0.1.0";
+export const CONTRACT_VERSION = "0.2.0";
 
 // docs/product/family-lifecycle.md ("## States").
 export const FAMILY_STATUSES = ["PENDING_INVITE", "ACTIVE", "SUSPENDED", "ARCHIVED"] as const;
@@ -68,6 +73,19 @@ export const ParentMembershipSchema = z.object({
 });
 export type ParentMembership = z.infer<typeof ParentMembershipSchema>;
 
+/** docs/security/data-classification.md. Parent identity/membership state
+ * is scoped to the owning family, not publicly visible. */
+export const PARENT_MEMBERSHIP_CLASSIFICATION: ClassificationMap<keyof ParentMembership> = {
+  parentId: "FAMILY",
+  familyId: "FAMILY",
+  status: "FAMILY",
+  isFamilyOwner: "FAMILY",
+  capabilities: "FAMILY",
+  invitedAt: "FAMILY",
+  activatedAt: "FAMILY",
+  revokedAt: "FAMILY",
+};
+
 /**
  * "Keep child PII minimal" (docs/architecture/data-architecture.md).
  * birthYear (not a full birthdate) and no contact info here by design —
@@ -82,11 +100,39 @@ export const ChildProfileSchema = z.object({
 });
 export type ChildProfile = z.infer<typeof ChildProfileSchema>;
 
+/** Child-associated data defaults to CHILD_PRIVATE per
+ * docs/security/data-classification.md's example list. */
+export const CHILD_PROFILE_CLASSIFICATION: ClassificationMap<keyof ChildProfile> = {
+  childId: "CHILD_PRIVATE",
+  familyId: "FAMILY",
+  displayName: "CHILD_PRIVATE",
+  birthYear: "CHILD_PRIVATE",
+  avatarId: "CHILD_PRIVATE",
+};
+
+/**
+ * `version` is the optimistic-concurrency token for this aggregate root
+ * per docs/architecture/concurrency-and-conflicts.md ("Use optimistic
+ * version checks for mutable aggregates and return an explicit conflict
+ * when the submitted version is stale"). Family is the aggregate root for
+ * its ParentMembership/ChildProfile children — a single version covers
+ * the whole aggregate, not each child record separately.
+ */
 export const FamilySchema = z.object({
   familyId: FamilyId,
   status: z.enum(FAMILY_STATUSES),
+  version: z.number().int().positive(),
   createdAt: z.string().datetime(),
   parents: z.array(ParentMembershipSchema).min(1),
   children: z.array(ChildProfileSchema),
 });
 export type Family = z.infer<typeof FamilySchema>;
+
+export const FAMILY_CLASSIFICATION: ClassificationMap<
+  keyof Omit<Family, "parents" | "children">
+> = {
+  familyId: "FAMILY",
+  status: "FAMILY",
+  version: "FAMILY",
+  createdAt: "FAMILY",
+};

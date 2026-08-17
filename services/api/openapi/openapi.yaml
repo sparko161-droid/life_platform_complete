@@ -1,14 +1,14 @@
 openapi: 3.1.0
 info:
   title: Life Platform API
-  version: 0.1.0
+  version: 0.2.0
   description: >
     Canonical external REST contract for the Life Platform API, per
     docs/architecture/api-contracts.md. P0-005 established the reusable
     envelope/pagination/idempotency components and /health. P0-009 adds the
     Phase 1 contract pack: Family/ParentMembership/ChildProfile,
     TaskTemplate/TaskAssignment/TaskCompletion, VerificationResult,
-    MediaEvidence and RewardLedgerEntry, with a representative (not
+    MediaEvidence, RewardLedgerEntry and Reward, with a representative (not
     exhaustive) set of paths -- enough for Backend/Parent Web/Child Web/QA
     to start building against a frozen shape per
     tasks/packets/P0-009-phase1-contract-pack.md. Full CRUD surfaces land
@@ -443,7 +443,7 @@ components:
 
     Family:
       type: object
-      required: [familyId, status, createdAt, parents, children]
+      required: [familyId, status, version, createdAt, parents, children]
       properties:
         familyId:
           type: string
@@ -451,6 +451,14 @@ components:
         status:
           type: string
           enum: [PENDING_INVITE, ACTIVE, SUSPENDED, ARCHIVED]
+        version:
+          type: integer
+          minimum: 1
+          description: >-
+            Optimistic-concurrency token per
+            docs/architecture/concurrency-and-conflicts.md. Submit the
+            version you read; a stale version is rejected with an
+            explicit conflict, never silently overwritten.
         createdAt:
           type: string
           format: date-time
@@ -482,7 +490,7 @@ components:
     TaskTemplate:
       type: object
       required:
-        [taskTemplateId, familyId, createdByParentId, title, verificationStrategy, rewardXp, rewardCoins, isActive, createdAt]
+        [taskTemplateId, familyId, createdByParentId, title, verificationStrategy, rewardXp, rewardCoins, status, version, createdAt]
       properties:
         taskTemplateId:
           type: string
@@ -502,15 +510,24 @@ components:
         rewardCoins:
           type: integer
           minimum: 0
-        isActive:
-          type: boolean
+        status:
+          type: string
+          enum: [DRAFT, ACTIVE, ARCHIVED]
+          description: >-
+            Replaces the earlier `isActive` boolean (contract 0.2.0) --
+            docs/architecture/entity-lifecycle.md's default
+            `DRAFT → ACTIVE → ARCHIVED → DELETED` pattern needs more than
+            two states.
+        version:
+          type: integer
+          minimum: 1
         createdAt:
           type: string
           format: date-time
 
     TaskAssignment:
       type: object
-      required: [taskAssignmentId, taskTemplateId, familyId, assignedToChildId, status, assignedAt]
+      required: [taskAssignmentId, taskTemplateId, familyId, assignedToChildId, status, version, assignedAt]
       properties:
         taskAssignmentId:
           type: string
@@ -526,7 +543,14 @@ components:
           format: uuid
         status:
           type: string
-          enum: [ASSIGNED, IN_PROGRESS, SUBMITTED, APPROVED, REJECTED]
+          enum: [ASSIGNED, IN_PROGRESS, SUBMITTED, VERIFYING, APPROVED, REJECTED, COMPLETED, ARCHIVED]
+          description: >-
+            Canonical tail per docs/architecture/entity-lifecycle.md's
+            "## Task" section (contract 0.2.0 -- VERIFYING/COMPLETED/
+            ARCHIVED are new since 0.1.0).
+        version:
+          type: integer
+          minimum: 1
         assignedAt:
           type: string
           format: date-time
@@ -651,11 +675,60 @@ components:
         sourceTaskAssignmentId:
           type: string
           format: uuid
+        sourceRewardId:
+          type: string
+          format: uuid
+          description: >-
+            Added in contract 0.2.0: links a REWARD_REDEMPTION entry back
+            to the catalog Reward it redeemed (docs/game/rewards.md
+            "Coupon redemption is auditable").
         adjustedByParentId:
           type: string
         idempotencyKey:
           type: string
         postedAt:
+          type: string
+          format: date-time
+
+    RewardType:
+      type: string
+      enum: [XP, COINS, MONEY, SCREEN_TIME, DEVICE_TIME, COUPON, ACTIVITY, FAMILY, CUSTOM]
+
+    Reward:
+      type: object
+      required: [rewardId, familyId, createdByParentId, title, type, status, version, createdAt]
+      description: >-
+        Added in contract 0.2.0 (P0-009 revalidation) -- docs/game/rewards.md
+        landed after 0.1.0: "Reward is a typed entitlement, separate from
+        task completion and economy." Distinct from RewardLedgerEntry,
+        which only records a currency movement.
+      properties:
+        rewardId:
+          type: string
+          format: uuid
+        familyId:
+          type: string
+          format: uuid
+        createdByParentId:
+          type: string
+        title:
+          type: string
+        type:
+          $ref: "#/components/schemas/RewardType"
+        status:
+          type: string
+          enum: [LOCKED, AVAILABLE, REDEEMING, REDEEMED, EXPIRED, CANCELLED]
+          description: docs/architecture/entity-lifecycle.md "## Reward".
+        version:
+          type: integer
+          minimum: 1
+        budgetLimitPerPeriod:
+          type: integer
+          minimum: 1
+        isOneUse:
+          type: boolean
+          default: false
+        createdAt:
           type: string
           format: date-time
 

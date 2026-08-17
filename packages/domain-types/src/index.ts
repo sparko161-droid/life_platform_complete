@@ -7,6 +7,7 @@
 export { CONTRACT_VERSION } from "./family.js";
 
 export * from "./ids.js";
+export * from "./classification.js";
 export * from "./events.js";
 export * from "./family.js";
 export * from "./verification.js";

@@ -32,6 +32,7 @@ test("a well-formed family parses", () => {
   const family = FamilySchema.parse({
     familyId: FAMILY_ID,
     status: "ACTIVE",
+    version: 1,
     createdAt: "2026-01-01T00:00:00.000Z",
     parents: [validParent],
     children: [validChild],
@@ -39,11 +40,24 @@ test("a well-formed family parses", () => {
   assert.equal(family.status, "ACTIVE");
 });
 
+test("a family without a version (optimistic-concurrency token) is rejected", () => {
+  assert.throws(() =>
+    FamilySchema.parse({
+      familyId: FAMILY_ID,
+      status: "ACTIVE",
+      createdAt: "2026-01-01T00:00:00.000Z",
+      parents: [validParent],
+      children: [validChild],
+    }),
+  );
+});
+
 test("a family with zero parents is rejected (min(1))", () => {
   assert.throws(() =>
     FamilySchema.parse({
       familyId: FAMILY_ID,
       status: "ACTIVE",
+      version: 1,
       createdAt: "2026-01-01T00:00:00.000Z",
       parents: [],
       children: [],

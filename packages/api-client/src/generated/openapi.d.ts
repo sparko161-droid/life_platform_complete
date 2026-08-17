@@ -218,6 +218,8 @@ export interface components {
             familyId: string;
             /** @enum {string} */
             status: "PENDING_INVITE" | "ACTIVE" | "SUSPENDED" | "ARCHIVED";
+            /** @description Optimistic-concurrency token per docs/architecture/concurrency-and-conflicts.md. Submit the version you read; a stale version is rejected with an explicit conflict, never silently overwritten. */
+            version: number;
             /** Format: date-time */
             createdAt: string;
             parents: components["schemas"]["ParentMembership"][];
@@ -235,7 +237,12 @@ export interface components {
             verificationStrategy: components["schemas"]["VerificationStrategy"];
             rewardXp: number;
             rewardCoins: number;
-            isActive: boolean;
+            /**
+             * @description Replaces the earlier `isActive` boolean (contract 0.2.0) -- docs/architecture/entity-lifecycle.md's default `DRAFT → ACTIVE → ARCHIVED → DELETED` pattern needs more than two states.
+             * @enum {string}
+             */
+            status: "DRAFT" | "ACTIVE" | "ARCHIVED";
+            version: number;
             /** Format: date-time */
             createdAt: string;
         };
@@ -248,8 +255,12 @@ export interface components {
             familyId: string;
             /** Format: uuid */
             assignedToChildId: string;
-            /** @enum {string} */
-            status: "ASSIGNED" | "IN_PROGRESS" | "SUBMITTED" | "APPROVED" | "REJECTED";
+            /**
+             * @description Canonical tail per docs/architecture/entity-lifecycle.md's "## Task" section (contract 0.2.0 -- VERIFYING/COMPLETED/ ARCHIVED are new since 0.1.0).
+             * @enum {string}
+             */
+            status: "ASSIGNED" | "IN_PROGRESS" | "SUBMITTED" | "VERIFYING" | "APPROVED" | "REJECTED" | "COMPLETED" | "ARCHIVED";
+            version: number;
             /** Format: date-time */
             assignedAt: string;
             /** Format: date-time */
@@ -318,10 +329,38 @@ export interface components {
             reason: "TASK_COMPLETION" | "PARENT_ADJUSTMENT" | "REWARD_REDEMPTION" | "STREAK_BONUS";
             /** Format: uuid */
             sourceTaskAssignmentId?: string;
+            /**
+             * Format: uuid
+             * @description Added in contract 0.2.0: links a REWARD_REDEMPTION entry back to the catalog Reward it redeemed (docs/game/rewards.md "Coupon redemption is auditable").
+             */
+            sourceRewardId?: string;
             adjustedByParentId?: string;
             idempotencyKey: string;
             /** Format: date-time */
             postedAt: string;
+        };
+        /** @enum {string} */
+        RewardType: "XP" | "COINS" | "MONEY" | "SCREEN_TIME" | "DEVICE_TIME" | "COUPON" | "ACTIVITY" | "FAMILY" | "CUSTOM";
+        /** @description Added in contract 0.2.0 (P0-009 revalidation) -- docs/game/rewards.md landed after 0.1.0: "Reward is a typed entitlement, separate from task completion and economy." Distinct from RewardLedgerEntry, which only records a currency movement. */
+        Reward: {
+            /** Format: uuid */
+            rewardId: string;
+            /** Format: uuid */
+            familyId: string;
+            createdByParentId: string;
+            title: string;
+            type: components["schemas"]["RewardType"];
+            /**
+             * @description docs/architecture/entity-lifecycle.md "## Reward".
+             * @enum {string}
+             */
+            status: "LOCKED" | "AVAILABLE" | "REDEEMING" | "REDEEMED" | "EXPIRED" | "CANCELLED";
+            version: number;
+            budgetLimitPerPeriod?: number;
+            /** @default false */
+            isOneUse: boolean;
+            /** Format: date-time */
+            createdAt: string;
         };
     };
     responses: {

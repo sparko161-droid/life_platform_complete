@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { ChildId, MediaEvidenceId, TaskAssignmentId } from "./ids.js";
+import type { ClassificationMap } from "./classification.js";
 
 /**
  * Ownership: Verification Engine domain. `docs/MASTER_SPEC.md` §8:
@@ -44,3 +45,17 @@ export const VerificationResultSchema = z.object({
   notes: z.string().max(500).optional(),
 });
 export type VerificationResult = z.infer<typeof VerificationResultSchema>;
+
+/** docs/security/data-classification.md: verification outcomes are child
+ * progress records, scoped to the family (SENSITIVE would overclassify —
+ * this isn't a safety/moderation record, just a normal task result). */
+export const VERIFICATION_RESULT_CLASSIFICATION: ClassificationMap<keyof VerificationResult> = {
+  taskAssignmentId: "CHILD_PRIVATE",
+  childId: "CHILD_PRIVATE",
+  strategy: "CHILD_PRIVATE",
+  outcome: "CHILD_PRIVATE",
+  mediaEvidenceId: "CHILD_PRIVATE",
+  verifiedAt: "CHILD_PRIVATE",
+  reviewedByParentId: "CHILD_PRIVATE",
+  notes: "CHILD_PRIVATE",
+};

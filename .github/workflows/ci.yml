@@ -45,6 +45,12 @@ jobs:
       - name: Build
         run: pnpm build
 
+      # docs/architecture/api-contracts.md ("Generation pipeline"):
+      # fails if services/api/openapi/openapi.yaml changed without
+      # regenerating and committing packages/api-client/src/generated.
+      - name: OpenAPI client is up to date
+        run: pnpm --filter @life/api-client run generate:check
+
   secret-scan:
     name: gitleaks
     runs-on: ubuntu-latest

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { ChildId, FamilyId, MediaEvidenceId } from "./ids.js";
+import type { ClassificationMap } from "./classification.js";
 
 /**
  * Ownership: Media domain. Authorization: private by default —
@@ -33,3 +34,17 @@ export const MediaEvidenceSchema = z.object({
   retentionExpiresAt: z.string().datetime().optional(),
 });
 export type MediaEvidence = z.infer<typeof MediaEvidenceSchema>;
+
+/** docs/security/data-classification.md: "child photos, voice and video
+ * are CHILD_PRIVATE" is given as a worked example there verbatim. */
+export const MEDIA_EVIDENCE_CLASSIFICATION: ClassificationMap<keyof MediaEvidence> = {
+  mediaEvidenceId: "CHILD_PRIVATE",
+  familyId: "FAMILY",
+  childId: "CHILD_PRIVATE",
+  kind: "CHILD_PRIVATE",
+  storageKey: "CHILD_PRIVATE",
+  contentType: "CHILD_PRIVATE",
+  sizeBytes: "CHILD_PRIVATE",
+  uploadedAt: "CHILD_PRIVATE",
+  retentionExpiresAt: "CHILD_PRIVATE",
+};
