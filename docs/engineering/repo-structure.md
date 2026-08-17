@@ -30,6 +30,8 @@ packages/
 infrastructure/
   compose/
   terraform/
+tools/
+  task-registry/
 docs/
 .ai/
 .github/
@@ -42,3 +44,4 @@ docs/
 - Service extraction requires ADR.
 - Tests live close to code unless they are cross-system fixtures.
 - Generated files are reproducible and not hand-edited.
+- `tools/` holds internal dev/CI tooling for the AI team (e.g. the task registry CLI) — not product code, not shipped to users, not a `package` in the domain sense.

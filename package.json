@@ -14,7 +14,8 @@
     "dev:infra:health": "node scripts/health-check.mjs",
     "dev:seed": "pnpm --filter @life/fixtures run build && pnpm --filter @life/fixtures run seed",
     "format": "pnpm exec prettier . --write",
-    "check": "pnpm lint && pnpm typecheck && pnpm test"
+    "check": "pnpm lint && pnpm typecheck && pnpm test",
+    "task-registry": "pnpm --filter @life/tools-task-registry run dev"
   },
   "devDependencies": {
     "prettier": "^3.6.2",

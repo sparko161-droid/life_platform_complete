@@ -1,0 +1,299 @@
+#!/usr/bin/env node
+import { Command } from "commander";
+import { resolve } from "node:path";
+import {
+  findTask,
+  loadRegistry,
+  replaceTask,
+  saveRegistry,
+  validateStructure,
+} from "./registry.js";
+import { allowedNextStates, isValidTransition, type Task, type TaskState } from "./schema.js";
+import { renderHandoff } from "./handoff.js";
+
+// pnpm --filter runs scripts with cwd set to the package directory, not the
+// repo root the CLI is meant to operate from. pnpm sets INIT_CWD to the
+// directory the command was originally invoked from, so prefer that.
+const invocationCwd = process.env.INIT_CWD ?? process.cwd();
+const DEFAULT_REGISTRY_PATH = resolve(invocationCwd, "tasks/registry.yaml");
+
+function registryPath(opts: { registry?: string }): string {
+  return opts.registry ? resolve(invocationCwd, opts.registry) : DEFAULT_REGISTRY_PATH;
+}
+
+function transition(task: Task, to: TaskState): Task {
+  if (!isValidTransition(task.status as TaskState, to)) {
+    const allowed = allowedNextStates(task.status as TaskState);
+    throw new Error(
+      `Invalid transition ${task.status} -> ${to} for ${task.id}. Allowed: ${
+        allowed.length ? allowed.join(", ") : "(terminal state)"
+      }`,
+    );
+  }
+  return { ...task, status: to };
+}
+
+const program = new Command();
+program
+  .name("task-registry")
+  .description("Source-controlled task registry lifecycle CLI (tasks/registry.yaml)")
+  .option("-r, --registry <path>", "path to registry.yaml (default tasks/registry.yaml)");
+
+program
+  .command("list")
+  .description("list tasks, optionally filtered")
+  .option("--status <status>")
+  .option("--phase <phase>")
+  .option("--primary <agent>")
+  .action((cmdOpts, cmd) => {
+    const path = registryPath(cmd.optsWithGlobals());
+    const registry = loadRegistry(path);
+    const rows = registry.tasks.filter((t) => {
+      if (cmdOpts.status && t.status !== cmdOpts.status) return false;
+      if (cmdOpts.phase && String(t.phase) !== String(cmdOpts.phase)) return false;
+      if (cmdOpts.primary && t.primary !== cmdOpts.primary) return false;
+      return true;
+    });
+    for (const t of rows) {
+      console.log(
+        `${t.id}\t${t.status}\t${t.primary}\t${t.reviewer ?? "-"}\tdeps=[${t.deps.join(",")}]\t${t.title}`,
+      );
+    }
+    console.log(`\n${rows.length} task(s)`);
+  });
+
+program
+  .command("validate")
+  .description("validate registry structure: schema, unknown deps, cycles")
+  .action((_opts, cmd) => {
+    const path = registryPath(cmd.optsWithGlobals());
+    const registry = loadRegistry(path); // throws on schema violations
+    const problems = validateStructure(registry);
+    if (problems.length > 0) {
+      console.error("Registry validation FAILED:");
+      for (const p of problems) console.error(`  - ${p}`);
+      process.exitCode = 1;
+      return;
+    }
+    console.log(`Registry OK: ${registry.tasks.length} tasks, schema + graph valid.`);
+  });
+
+program
+  .command("claim <id>")
+  .description("claim a READY/BACKLOG task as its single primary executor")
+  .requiredOption("--agent <role>", "agent/role claiming the task")
+  .action((id: string, cmdOpts, cmd) => {
+    const path = registryPath(cmd.optsWithGlobals());
+    const registry = loadRegistry(path);
+    const task = findTask(registry, id);
+
+    for (const dep of task.deps) {
+      const depTask = findTask(registry, dep);
+      if (depTask.status !== "DONE") {
+        throw new Error(
+          `${id} cannot be claimed: dependency ${dep} is ${depTask.status}, not DONE.`,
+        );
+      }
+    }
+
+    if (task.status === "IN_PROGRESS") {
+      throw new Error(
+        `${id} is already IN_PROGRESS under primary "${task.primary}". ` +
+          `Single-primary-executor rule: reassign or wait for handoff/close first.`,
+      );
+    }
+
+    const claimed = transition({ ...task, primary: cmdOpts.agent }, "IN_PROGRESS");
+    saveRegistry(path, replaceTask(registry, claimed));
+    console.log(`${id} claimed by ${cmdOpts.agent}. status=IN_PROGRESS`);
+  });
+
+program
+  .command("handoff <id>")
+  .description("move a claimed task to REVIEW and print the fixed handoff report")
+  .requiredOption("--reviewer <role>")
+  .option("--gate-owners <roles>", "comma-separated gate owners")
+  .option("--branch <branch>")
+  .option("--files <items>", "comma-separated changed files")
+  .option("--contracts <items>", "comma-separated changed contracts")
+  .option("--tests <items>", "comma-separated tests run")
+  .option("--risks <items>", "comma-separated known risks")
+  .option("--decisions <items>", "comma-separated decisions made")
+  .option("--next <items>", "comma-separated follow-up task ids/notes")
+  .action((id: string, cmdOpts, cmd) => {
+    const path = registryPath(cmd.optsWithGlobals());
+    const registry = loadRegistry(path);
+    const task = findTask(registry, id);
+    const split = (v?: string) => (v ? v.split(",").map((s: string) => s.trim()).filter(Boolean) : []);
+
+    const updated = transition(
+      {
+        ...task,
+        reviewer: cmdOpts.reviewer,
+        gate_owners: split(cmdOpts.gateOwners),
+      },
+      "REVIEW",
+    );
+    saveRegistry(path, replaceTask(registry, updated));
+
+    const report = renderHandoff({
+      task: updated,
+      branch: cmdOpts.branch ?? null,
+      files: split(cmdOpts.files),
+      contracts: split(cmdOpts.contracts),
+      tests: split(cmdOpts.tests),
+      risks: split(cmdOpts.risks),
+      decisions: split(cmdOpts.decisions),
+      nextTasks: split(cmdOpts.next),
+    });
+    console.log(report);
+  });
+
+program
+  .command("block <id>")
+  .description("mark a task blocked")
+  .requiredOption("--type <type>", "architecture|product|security|dependency")
+  .requiredOption("--reason <reason>")
+  .action((id: string, cmdOpts, cmd) => {
+    const path = registryPath(cmd.optsWithGlobals());
+    const registry = loadRegistry(path);
+    const task = findTask(registry, id);
+    const stateByType: Record<string, TaskState> = {
+      architecture: "ARCHITECTURE_BLOCKED",
+      product: "PRODUCT_BLOCKED",
+      security: "SECURITY_BLOCKED",
+      dependency: "DEPENDENCY_BLOCKED",
+    };
+    const target = stateByType[cmdOpts.type];
+    if (!target) throw new Error(`Unknown block type: ${cmdOpts.type}`);
+    const updated = transition({ ...task, blocked_reason: cmdOpts.reason }, target);
+    saveRegistry(path, replaceTask(registry, updated));
+    console.log(`${id} blocked: ${target} (${cmdOpts.reason})`);
+  });
+
+program
+  .command("unblock <id>")
+  .description("resume a blocked task")
+  .requiredOption("--status <status>", "target state, e.g. IN_PROGRESS or READY")
+  .action((id: string, cmdOpts, cmd) => {
+    const path = registryPath(cmd.optsWithGlobals());
+    const registry = loadRegistry(path);
+    const task = findTask(registry, id);
+    const updated = transition({ ...task, blocked_reason: null }, cmdOpts.status as TaskState);
+    saveRegistry(path, replaceTask(registry, updated));
+    console.log(`${id} unblocked -> ${cmdOpts.status}`);
+  });
+
+program
+  .command("reassign <id>")
+  .description("change the primary executor without changing status")
+  .requiredOption("--agent <role>")
+  .action((id: string, cmdOpts, cmd) => {
+    const path = registryPath(cmd.optsWithGlobals());
+    const registry = loadRegistry(path);
+    const task = findTask(registry, id);
+    saveRegistry(path, replaceTask(registry, { ...task, primary: cmdOpts.agent }));
+    console.log(`${id} reassigned: primary=${cmdOpts.agent}`);
+  });
+
+program
+  .command("add-discovery <id>")
+  .description("attach a discovery to a task under review")
+  .requiredOption("--type <type>")
+  .requiredOption("--finding <text>")
+  .requiredOption("--why <text>")
+  .requiredOption("--priority <priority>", "LOW|MEDIUM|HIGH|CRITICAL")
+  .option("--blocking", "mark the discovery as blocking", false)
+  .option("--proposed-task <id>")
+  .action((id: string, cmdOpts, cmd) => {
+    const path = registryPath(cmd.optsWithGlobals());
+    const registry = loadRegistry(path);
+    const task = findTask(registry, id);
+    const discoveryId = `DISC-${task.id}-${task.discovery_links.length + 1}`;
+    const discovery = {
+      discovery_id: discoveryId,
+      source_task: task.id,
+      type: cmdOpts.type,
+      finding: cmdOpts.finding,
+      why_it_matters: cmdOpts.why,
+      affected_domains: [],
+      architecture_impact: null,
+      security_impact: null,
+      ux_impact: null,
+      recommended_solution: null,
+      alternatives: [],
+      priority: cmdOpts.priority,
+      blocking: Boolean(cmdOpts.blocking),
+      proposed_task: cmdOpts.proposedTask ?? null,
+    };
+    const updated = {
+      ...task,
+      discovery_links: [...task.discovery_links, discovery],
+    };
+    saveRegistry(path, replaceTask(registry, updated));
+    console.log(`Discovery ${discoveryId} added to ${id}.`);
+  });
+
+program
+  .command("create-child-task")
+  .description("create a new task from a triaged discovery, preserving traceability")
+  .requiredOption("--from-discovery <discoveryId>")
+  .requiredOption("--id <newId>")
+  .requiredOption("--title <title>")
+  .requiredOption("--primary <role>")
+  .requiredOption("--phase <phase>")
+  .option("--deps <items>", "comma-separated dependency ids", "")
+  .action((cmdOpts, cmd) => {
+    const path = registryPath(cmd.optsWithGlobals());
+    const registry = loadRegistry(path);
+
+    if (registry.tasks.some((t) => t.id === cmdOpts.id)) {
+      throw new Error(`Task ${cmdOpts.id} already exists.`);
+    }
+
+    const source = registry.tasks.find((t) =>
+      t.discovery_links.some((d) => d.discovery_id === cmdOpts.fromDiscovery),
+    );
+    if (!source) {
+      throw new Error(`No task holds discovery ${cmdOpts.fromDiscovery}.`);
+    }
+
+    const newTask: Task = {
+      id: cmdOpts.id,
+      phase: Number(cmdOpts.phase),
+      title: cmdOpts.title,
+      primary: cmdOpts.primary,
+      status: "BACKLOG",
+      deps: cmdOpts.deps ? cmdOpts.deps.split(",").map((s: string) => s.trim()).filter(Boolean) : [],
+      reviewer: null,
+      gate_owners: [],
+      discovery_links: [],
+      blocked_reason: null,
+      human_decisions: [],
+      origin_discovery: cmdOpts.fromDiscovery,
+      discovered_from: source.id,
+    };
+
+    saveRegistry(path, { ...registry, tasks: [...registry.tasks, newTask] });
+    console.log(
+      `${newTask.id} created from ${cmdOpts.fromDiscovery} (discovered_from=${source.id}).`,
+    );
+  });
+
+program
+  .command("close <id>")
+  .description("close a task (default: -> DONE)")
+  .option("--status <status>", "DONE or NEW_TASK", "DONE")
+  .action((id: string, cmdOpts, cmd) => {
+    const path = registryPath(cmd.optsWithGlobals());
+    const registry = loadRegistry(path);
+    const task = findTask(registry, id);
+    const updated = transition(task, cmdOpts.status as TaskState);
+    saveRegistry(path, replaceTask(registry, updated));
+    console.log(`${id} closed -> ${cmdOpts.status}`);
+  });
+
+program.parseAsync(process.argv).catch((err) => {
+  console.error(err instanceof Error ? err.message : err);
+  process.exitCode = 1;
+});

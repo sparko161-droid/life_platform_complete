@@ -1,0 +1,28 @@
+{
+  "name": "@life/tools-task-registry",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Source-controlled task registry lifecycle CLI for the AI team (claim/handoff/block/reassign/discovery/close).",
+  "type": "module",
+  "bin": {
+    "task-registry": "./dist/cli.js"
+  },
+  "scripts": {
+    "dev": "node --import tsx ./src/cli.ts",
+    "build": "tsc -p tsconfig.json",
+    "lint": "echo TODO",
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test ./test/*.test.ts"
+  },
+  "dependencies": {
+    "commander": "^12.1.0",
+    "js-yaml": "^4.1.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^22.10.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.9.2"
+  }
+}

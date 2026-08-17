@@ -1,350 +1,849 @@
-version: 7
+version: 8
 tasks:
-- id: P0-001
-  phase: 0
-  title: Protect main and configure CI gates
-  primary: devops-lead
-  status: READY
-  deps: []
-- id: P0-002
-  phase: 0
-  title: Provision local dev stack and health checks
-  primary: devops-lead
-  status: READY
-  deps: []
-- id: P0-003
-  phase: 0
-  title: Implement task registry lifecycle and dependency fields
-  primary: ai-cto
-  status: READY
-  deps: []
-- id: P0-004
-  phase: 0
-  title: Implement agent worktree and handoff conventions
-  primary: ai-cto
-  status: READY
-  deps: [P0-003]
-- id: P0-005
-  phase: 0
-  title: Define OpenAPI and typed client generation path
-  primary: backend-lead
-  status: READY
-  deps: []
-- id: P0-006
-  phase: 0
-  title: Create synthetic family fixtures and seed data
-  primary: qa-lead
-  status: READY
-  deps: [P0-005]
-- id: P0-007
-  phase: 0
-  title: Baseline observability and error reporting
-  primary: devops-lead
-  status: READY
-  deps: [P0-002]
-- id: P0-008
-  phase: 0
-  title: Establish security baseline and secrets policy
-  primary: security-child-safety
-  status: READY
-  deps: []
-- id: P0-009
-  phase: 0
-  title: Create Phase 1 contract pack
-  primary: chief-architect
-  status: READY
-  deps: [P0-005, P0-008]
-- id: P0-010
-  phase: 0
-  title: Versioned contract registry and handoff artifacts
-  primary: chief-architect
-  status: READY
-  deps: [P0-009]
-- id: P0-011
-  phase: 0
-  title: AI task orchestration and agent claim/handoff workflow
-  primary: ai-cto
-  status: READY
-  deps: [P0-003, P0-004]
-- id: P0-012
-  phase: 0
-  title: Automated docs/task traceability checks
-  primary: documentation-agent
-  status: READY
-  deps: [P0-010]
-- id: P1-001
-  phase: 1
-  title: Family lifecycle and second-parent invitation
-  primary: backend-lead
-  status: PLANNED
-  deps: [P0-009]
-- id: P1-002
-  phase: 1
-  title: Task template, assignment and Rules DSL
-  primary: backend-lead
-  status: PLANNED
-  deps: [P0-009, P0-010]
-- id: P1-003
-  phase: 1
-  title: Parent task builder UX
-  primary: frontend-lead
-  status: PLANNED
-  deps: [P1-002, P1-009]
-- id: P1-004
-  phase: 1
-  title: Child today/tasks UX
-  primary: frontend-lead
-  status: PLANNED
-  deps: [P1-002, P1-009]
-- id: P1-005
-  phase: 1
-  title: Media evidence storage and upload policy
-  primary: backend-lead
-  status: PLANNED
-  deps: [P0-002, P0-009]
-- id: P1-006
-  phase: 1
-  title: Reward ledger and configurable N-day rewards
-  primary: game-engine-lead
-  status: PLANNED
-  deps: [P0-009]
-- id: P1-007
-  phase: 1
-  title: End-to-end family vertical slice
-  primary: qa-lead
-  status: PLANNED
-  deps: [P1-001, P1-002, P1-003, P1-004, P1-005, P1-006, P1-009, P1-010, P1-014, P1-015]
-- id: P1-008
-  phase: 1
-  title: Completion/verification/reward idempotency rules and fixtures
-  primary: backend-lead
-  status: PLANNED
-  deps: [P1-002, P1-006]
-- id: P1-009
-  phase: 1
-  title: UI architecture, screen map and state/API contracts
-  primary: uiux-lead
-  status: READY
-  deps: [P0-005, P0-009]
-- id: P1-010
-  phase: 1
-  title: Parent/child core navigation and API wiring
-  primary: frontend-lead
-  status: PLANNED
-  deps: [P1-002, P1-009]
-- id: P1-011
-  phase: 1
-  title: Core screen E2E journeys and interaction traceability
-  primary: journey-agent
-  status: PLANNED
-  deps: [P1-010, P1-013, P1-016]
-- id: P1-012
-  phase: 1
-  title: Russian-only UI localization lint and forbidden-term checks
-  primary: uiux-lead
-  status: PLANNED
-  deps: [P1-009]
-- id: P1-013
-  phase: 1
-  title: Finalize core screen contracts and action/API traceability
-  primary: uiux-lead
-  status: READY
-  deps: [P1-009, P0-005]
-- id: P1-014
-  phase: 1
-  title: Implement first task-to-reward vertical slice contract and event path
-  primary: chief-architect
-  status: READY
-  deps: [P0-009, P0-010]
-- id: P1-015
-  phase: 1
-  title: Implement vertical slice state, idempotency and conflict fixtures
-  primary: backend-lead
-  status: PLANNED
-  deps: [P1-008, P1-014]
-- id: P1-016
-  phase: 1
-  title: Implement vertical slice API/client wiring and recovery states
-  primary: frontend-lead
-  status: PLANNED
-  deps: [P1-013, P1-014]
-- id: P1-017
-  phase: 1
-  title: Execute vertical slice QA/security/journey gates
-  primary: qa-lead
-  status: PLANNED
-  deps: [P1-015, P1-016]
-- id: P1-018
-  phase: 1
-  title: Verify vertical slice against source-of-truth and lifecycle rules
-  primary: chief-architect
-  status: PLANNED
-  deps: [P1-015, P1-016]
-- id: P2-001
-  phase: 2
-  title: XP/coins/progression and streak engine
-  primary: game-engine-lead
-  status: PLANNED
-  deps: [P1-007, P1-008]
-- id: P2-002
-  phase: 2
-  title: Quest/scenario engine
-  primary: game-engine-lead
-  status: PLANNED
-  deps: [P2-001]
-- id: P2-003
-  phase: 2
-  title: Child PWA game shell and daily mission board
-  primary: frontend-lead
-  status: PLANNED
-  deps: [P1-004, P1-009, P2-001]
-- id: P2-004
-  phase: 2
-  title: Competition/personal-best mechanics
-  primary: game-engine-lead
-  status: PLANNED
-  deps: [P2-001]
-- id: P2-005
-  phase: 2
-  title: Reward redemption, expiry and conflict rules
-  primary: game-engine-lead
-  status: PLANNED
-  deps: [P1-006, P2-001]
-- id: P2-006
-  phase: 2
-  title: Age-aware daily-load policy and anti-grind limits
-  primary: child-experience-lead
-  status: PLANNED
-  deps: [P1-002, P2-001]
-- id: P3-001
-  phase: 3
-  title: Flutter Android/iOS shell and capability matrix
-  primary: mobile-lead
-  status: PLANNED
-  deps: [P0-010]
-- id: P3-002
-  phase: 3
-  title: Pose provider and live skeleton overlay
-  primary: computer-vision-lead
-  status: PLANNED
-  deps: [P3-001]
-- id: P3-003
-  phase: 3
-  title: Deterministic squat verification and fixtures
-  primary: game-engine-lead
-  status: PLANNED
-  deps: [P3-002]
-- id: P3-004
-  phase: 3
-  title: Offline queue and device/push foundation
-  primary: mobile-lead
-  status: PLANNED
-  deps: [P3-001]
-- id: P4-001
-  phase: 4
-  title: Parent friendship and interests
-  primary: social-lead
-  status: PLANNED
-  deps: [P1-001]
-- id: P4-002
-  phase: 4
-  title: Child friendship consent graph
-  primary: social-lead
-  status: PLANNED
-  deps: [P1-001]
-- id: P4-003
-  phase: 4
-  title: Messenger text/voice/circle and spelling assistance
-  primary: social-lead
-  status: PLANNED
-  deps: [P4-001, P4-002]
-- id: P4-004
-  phase: 4
-  title: Moderation/report/block and parent visibility policy
-  primary: security-child-safety
-  status: PLANNED
-  deps: [P4-003]
-- id: P4-005
-  phase: 4
-  title: Family challenges and cooperative interactions
-  primary: game-engine-lead
-  status: PLANNED
-  deps: [P4-002, P4-003]
-- id: P4-006
-  phase: 4
-  title: Full conversation lifecycle and protected-read state machine
-  primary: social-lead
-  status: PLANNED
-  deps: [P4-003, P4-004]
-- id: P4-007
-  phase: 4
-  title: Challenge settlement, dispute and cancellation rules
-  primary: game-engine-lead
-  status: PLANNED
-  deps: [P4-005]
-- id: P5-001
-  phase: 5
-  title: AI Gateway and typed tool policy
-  primary: ai-ml-lead
-  status: PLANNED
-  deps: [P0-008]
-- id: P5-002
-  phase: 5
-  title: Knowledge Base and Development Profile
-  primary: learning-lead
-  status: PLANNED
-  deps: [P5-001]
-- id: P5-003
-  phase: 5
-  title: AI task-plan generation with parent approval
-  primary: ai-ml-lead
-  status: PLANNED
-  deps: [P1-002, P5-001, P5-002]
-- id: P5-004
-  phase: 5
-  title: Safe AI avatar lifecycle
-  primary: ai-ml-lead
-  status: PLANNED
-  deps: [P5-001]
-- id: P5-005
-  phase: 5
-  title: Alice task status/learning integration
-  primary: integrations-lead
-  status: PLANNED
-  deps: [P5-001, P1-007]
-- id: P5-006
-  phase: 5
-  title: Telegram/MAX Mini App adapters
-  primary: integrations-lead
-  status: PLANNED
-  deps: [P1-007]
-- id: P5-007
-  phase: 5
-  title: Learning evidence provenance and recommendation explainability
-  primary: learning-lead
-  status: PLANNED
-  deps: [P5-002]
-- id: P6-001
-  phase: 6
-  title: Cooperative game session protocol
-  primary: game-engine-lead
-  status: PLANNED
-  deps: [P4-005, P4-007]
-- id: P6-002
-  phase: 6
-  title: Case/template catalog and moderation
-  primary: content-marketplace-lead
-  status: PLANNED
-  deps: [P1-002, P4-004]
-- id: P6-003
-  phase: 6
-  title: Family case application and analytics
-  primary: content-marketplace-lead
-  status: PLANNED
-  deps: [P6-002]
-- id: P6-004
-  phase: 6
-  title: Marketplace ranking, abuse and recommendation policy
-  primary: content-marketplace-lead
-  status: PLANNED
-  deps: [P6-002, P6-003]
+  - id: P0-001
+    phase: 0
+    title: Protect main and configure CI gates
+    primary: devops-lead
+    status: READY
+    deps: []
+    reviewer: null
+    gate_owners: []
+    discovery_links: []
+    blocked_reason: null
+    human_decisions: []
+    origin_discovery: null
+    discovered_from: null
+  - id: P0-002
+    phase: 0
+    title: Provision local dev stack and health checks
+    primary: devops-lead
+    status: READY
+    deps: []
+    reviewer: null
+    gate_owners: []
+    discovery_links: []
+    blocked_reason: null
+    human_decisions: []
+    origin_discovery: null
+    discovered_from: null
+  - id: P0-003
+    phase: 0
+    title: Implement task registry lifecycle and dependency fields
+    primary: ai-cto
+    status: READY
+    deps: []
+    reviewer: null
+    gate_owners: []
+    discovery_links: []
+    blocked_reason: null
+    human_decisions: []
+    origin_discovery: null
+    discovered_from: null
+  - id: P0-004
+    phase: 0
+    title: Implement agent worktree and handoff conventions
+    primary: ai-cto
+    status: READY
+    deps:
+      - P0-003
+    reviewer: null
+    gate_owners: []
+    discovery_links: []
+    blocked_reason: null
+    human_decisions: []
+    origin_discovery: null
+    discovered_from: null
+  - id: P0-005
+    phase: 0
+    title: Define OpenAPI and typed client generation path
+    primary: backend-lead
+    status: READY
+    deps: []
+    reviewer: null
+    gate_owners: []
+    discovery_links: []
+    blocked_reason: null
+    human_decisions: []
+    origin_discovery: null
+    discovered_from: null
+  - id: P0-006
+    phase: 0
+    title: Create synthetic family fixtures and seed data
+    primary: qa-lead
+    status: READY
+    deps:
+      - P0-005
+    reviewer: null
+    gate_owners: []
+    discovery_links: []
+    blocked_reason: null
+    human_decisions: []
+    origin_discovery: null
+    discovered_from: null
+  - id: P0-007
+    phase: 0
+    title: Baseline observability and error reporting
+    primary: devops-lead
+    status: READY
+    deps:
+      - P0-002
+    reviewer: null
+    gate_owners: []
+    discovery_links: []
+    blocked_reason: null
+    human_decisions: []
+    origin_discovery: null
+    discovered_from: null
+  - id: P0-008
+    phase: 0
+    title: Establish security baseline and secrets policy
+    primary: security-child-safety
+    status: READY
+    deps: []
+    reviewer: null
+    gate_owners: []
+    discovery_links: []
+    blocked_reason: null
+    human_decisions: []
+    origin_discovery: null
+    discovered_from: null
+  - id: P0-009
+    phase: 0
+    title: Create Phase 1 contract pack
+    primary: chief-architect
+    status: READY
+    deps:
+      - P0-005
+      - P0-008
+    reviewer: null
+    gate_owners: []
+    discovery_links: []
+    blocked_reason: null
+    human_decisions: []
+    origin_discovery: null
+    discovered_from: null
+  - id: P0-010
+    phase: 0
+    title: Versioned contract registry and handoff artifacts
+    primary: chief-architect
+    status: READY
+    deps:
+      - P0-009
+    reviewer: null
+    gate_owners: []
+    discovery_links: []
+    blocked_reason: null
+    human_decisions: []
+    origin_discovery: null
+    discovered_from: null
+  - id: P0-011
+    phase: 0
+    title: AI task orchestration and agent claim/handoff workflow
+    primary: ai-cto
+    status: READY
+    deps:
+      - P0-003
+      - P0-004
+    reviewer: null
+    gate_owners: []
+    discovery_links: []
+    blocked_reason: null
+    human_decisions: []
+    origin_discovery: null
+    discovered_from: null
+  - id: P0-012
+    phase: 0
+    title: Automated docs/task traceability checks
+    primary: documentation-agent
+    status: READY
+    deps:
+      - P0-010
+    reviewer: null
+    gate_owners: []
+    discovery_links: []
+    blocked_reason: null
+    human_decisions: []
+    origin_discovery: null
+    discovered_from: null
+  - id: P1-001
+    phase: 1
+    title: Family lifecycle and second-parent invitation
+    primary: backend-lead
+    status: PLANNED
+    deps:
+      - P0-009
+    reviewer: null
+    gate_owners: []
+    discovery_links: []
+    blocked_reason: null
+    human_decisions: []
+    origin_discovery: null
+    discovered_from: null
+  - id: P1-002
+    phase: 1
+    title: Task template, assignment and Rules DSL
+    primary: backend-lead
+    status: PLANNED
+    deps:
+      - P0-009
+      - P0-010
+    reviewer: null
+    gate_owners: []
+    discovery_links: []
+    blocked_reason: null
+    human_decisions: []
+    origin_discovery: null
+    discovered_from: null
+  - id: P1-003
+    phase: 1
+    title: Parent task builder UX
+    primary: frontend-lead
+    status: PLANNED
+    deps:
+      - P1-002
+      - P1-009
+    reviewer: null
+    gate_owners: []
+    discovery_links: []
+    blocked_reason: null
+    human_decisions: []
+    origin_discovery: null
+    discovered_from: null
+  - id: P1-004
+    phase: 1
+    title: Child today/tasks UX
+    primary: frontend-lead
+    status: PLANNED
+    deps:
+      - P1-002
+      - P1-009
+    reviewer: null
+    gate_owners: []
+    discovery_links: []
+    blocked_reason: null
+    human_decisions: []
+    origin_discovery: null
+    discovered_from: null
+  - id: P1-005
+    phase: 1
+    title: Media evidence storage and upload policy
+    primary: backend-lead
+    status: PLANNED
+    deps:
+      - P0-002
+      - P0-009
+    reviewer: null
+    gate_owners: []
+    discovery_links: []
+    blocked_reason: null
+    human_decisions: []
+    origin_discovery: null
+    discovered_from: null
+  - id: P1-006
+    phase: 1
+    title: Reward ledger and configurable N-day rewards
+    primary: game-engine-lead
+    status: PLANNED
+    deps:
+      - P0-009
+    reviewer: null
+    gate_owners: []
+    discovery_links: []
+    blocked_reason: null
+    human_decisions: []
+    origin_discovery: null
+    discovered_from: null
+  - id: P1-007
+    phase: 1
+    title: End-to-end family vertical slice
+    primary: qa-lead
+    status: PLANNED
+    deps:
+      - P1-001
+      - P1-002
+      - P1-003
+      - P1-004
+      - P1-005
+      - P1-006
+      - P1-009
+      - P1-010
+      - P1-014
+      - P1-015
+    reviewer: null
+    gate_owners: []
+    discovery_links: []
+    blocked_reason: null
+    human_decisions: []
+    origin_discovery: null
+    discovered_from: null
+  - id: P1-008
+    phase: 1
+    title: Completion/verification/reward idempotency rules and fixtures
+    primary: backend-lead
+    status: PLANNED
+    deps:
+      - P1-002
+      - P1-006
+    reviewer: null
+    gate_owners: []
+    discovery_links: []
+    blocked_reason: null
+    human_decisions: []
+    origin_discovery: null
+    discovered_from: null
+  - id: P1-009
+    phase: 1
+    title: UI architecture, screen map and state/API contracts
+    primary: uiux-lead
+    status: READY
+    deps:
+      - P0-005
+      - P0-009
+    reviewer: null
+    gate_owners: []
+    discovery_links: []
+    blocked_reason: null
+    human_decisions: []
+    origin_discovery: null
+    discovered_from: null
+  - id: P1-010
+    phase: 1
+    title: Parent/child core navigation and API wiring
+    primary: frontend-lead
+    status: PLANNED
+    deps:
+      - P1-002
+      - P1-009
+    reviewer: null
+    gate_owners: []
+    discovery_links: []
+    blocked_reason: null
+    human_decisions: []
+    origin_discovery: null
+    discovered_from: null
+  - id: P1-011
+    phase: 1
+    title: Core screen E2E journeys and interaction traceability
+    primary: journey-agent
+    status: PLANNED
+    deps:
+      - P1-010
+      - P1-013
+      - P1-016
+    reviewer: null
+    gate_owners: []
+    discovery_links: []
+    blocked_reason: null
+    human_decisions: []
+    origin_discovery: null
+    discovered_from: null
+  - id: P1-012
+    phase: 1
+    title: Russian-only UI localization lint and forbidden-term checks
+    primary: uiux-lead
+    status: PLANNED
+    deps:
+      - P1-009
+    reviewer: null
+    gate_owners: []
+    discovery_links: []
+    blocked_reason: null
+    human_decisions: []
+    origin_discovery: null
+    discovered_from: null
+  - id: P1-013
+    phase: 1
+    title: Finalize core screen contracts and action/API traceability
+    primary: uiux-lead
+    status: READY
+    deps:
+      - P1-009
+      - P0-005
+    reviewer: null
+    gate_owners: []
+    discovery_links: []
+    blocked_reason: null
+    human_decisions: []
+    origin_discovery: null
+    discovered_from: null
+  - id: P1-014
+    phase: 1
+    title: Implement first task-to-reward vertical slice contract and event path
+    primary: chief-architect
+    status: READY
+    deps:
+      - P0-009
+      - P0-010
+    reviewer: null
+    gate_owners: []
+    discovery_links: []
+    blocked_reason: null
+    human_decisions: []
+    origin_discovery: null
+    discovered_from: null
+  - id: P1-015
+    phase: 1
+    title: Implement vertical slice state, idempotency and conflict fixtures
+    primary: backend-lead
+    status: PLANNED
+    deps:
+      - P1-008
+      - P1-014
+    reviewer: null
+    gate_owners: []
+    discovery_links: []
+    blocked_reason: null
+    human_decisions: []
+    origin_discovery: null
+    discovered_from: null
+  - id: P1-016
+    phase: 1
+    title: Implement vertical slice API/client wiring and recovery states
+    primary: frontend-lead
+    status: PLANNED
+    deps:
+      - P1-013
+      - P1-014
+    reviewer: null
+    gate_owners: []
+    discovery_links: []
+    blocked_reason: null
+    human_decisions: []
+    origin_discovery: null
+    discovered_from: null
+  - id: P1-017
+    phase: 1
+    title: Execute vertical slice QA/security/journey gates
+    primary: qa-lead
+    status: PLANNED
+    deps:
+      - P1-015
+      - P1-016
+    reviewer: null
+    gate_owners: []
+    discovery_links: []
+    blocked_reason: null
+    human_decisions: []
+    origin_discovery: null
+    discovered_from: null
+  - id: P1-018
+    phase: 1
+    title: Verify vertical slice against source-of-truth and lifecycle rules
+    primary: chief-architect
+    status: PLANNED
+    deps:
+      - P1-015
+      - P1-016
+    reviewer: null
+    gate_owners: []
+    discovery_links: []
+    blocked_reason: null
+    human_decisions: []
+    origin_discovery: null
+    discovered_from: null
+  - id: P2-001
+    phase: 2
+    title: XP/coins/progression and streak engine
+    primary: game-engine-lead
+    status: PLANNED
+    deps:
+      - P1-007
+      - P1-008
+    reviewer: null
+    gate_owners: []
+    discovery_links: []
+    blocked_reason: null
+    human_decisions: []
+    origin_discovery: null
+    discovered_from: null
+  - id: P2-002
+    phase: 2
+    title: Quest/scenario engine
+    primary: game-engine-lead
+    status: PLANNED
+    deps:
+      - P2-001
+    reviewer: null
+    gate_owners: []
+    discovery_links: []
+    blocked_reason: null
+    human_decisions: []
+    origin_discovery: null
+    discovered_from: null
+  - id: P2-003
+    phase: 2
+    title: Child PWA game shell and daily mission board
+    primary: frontend-lead
+    status: PLANNED
+    deps:
+      - P1-004
+      - P1-009
+      - P2-001
+    reviewer: null
+    gate_owners: []
+    discovery_links: []
+    blocked_reason: null
+    human_decisions: []
+    origin_discovery: null
+    discovered_from: null
+  - id: P2-004
+    phase: 2
+    title: Competition/personal-best mechanics
+    primary: game-engine-lead
+    status: PLANNED
+    deps:
+      - P2-001
+    reviewer: null
+    gate_owners: []
+    discovery_links: []
+    blocked_reason: null
+    human_decisions: []
+    origin_discovery: null
+    discovered_from: null
+  - id: P2-005
+    phase: 2
+    title: Reward redemption, expiry and conflict rules
+    primary: game-engine-lead
+    status: PLANNED
+    deps:
+      - P1-006
+      - P2-001
+    reviewer: null
+    gate_owners: []
+    discovery_links: []
+    blocked_reason: null
+    human_decisions: []
+    origin_discovery: null
+    discovered_from: null
+  - id: P2-006
+    phase: 2
+    title: Age-aware daily-load policy and anti-grind limits
+    primary: child-experience-lead
+    status: PLANNED
+    deps:
+      - P1-002
+      - P2-001
+    reviewer: null
+    gate_owners: []
+    discovery_links: []
+    blocked_reason: null
+    human_decisions: []
+    origin_discovery: null
+    discovered_from: null
+  - id: P3-001
+    phase: 3
+    title: Flutter Android/iOS shell and capability matrix
+    primary: mobile-lead
+    status: PLANNED
+    deps:
+      - P0-010
+    reviewer: null
+    gate_owners: []
+    discovery_links: []
+    blocked_reason: null
+    human_decisions: []
+    origin_discovery: null
+    discovered_from: null
+  - id: P3-002
+    phase: 3
+    title: Pose provider and live skeleton overlay
+    primary: computer-vision-lead
+    status: PLANNED
+    deps:
+      - P3-001
+    reviewer: null
+    gate_owners: []
+    discovery_links: []
+    blocked_reason: null
+    human_decisions: []
+    origin_discovery: null
+    discovered_from: null
+  - id: P3-003
+    phase: 3
+    title: Deterministic squat verification and fixtures
+    primary: game-engine-lead
+    status: PLANNED
+    deps:
+      - P3-002
+    reviewer: null
+    gate_owners: []
+    discovery_links: []
+    blocked_reason: null
+    human_decisions: []
+    origin_discovery: null
+    discovered_from: null
+  - id: P3-004
+    phase: 3
+    title: Offline queue and device/push foundation
+    primary: mobile-lead
+    status: PLANNED
+    deps:
+      - P3-001
+    reviewer: null
+    gate_owners: []
+    discovery_links: []
+    blocked_reason: null
+    human_decisions: []
+    origin_discovery: null
+    discovered_from: null
+  - id: P4-001
+    phase: 4
+    title: Parent friendship and interests
+    primary: social-lead
+    status: PLANNED
+    deps:
+      - P1-001
+    reviewer: null
+    gate_owners: []
+    discovery_links: []
+    blocked_reason: null
+    human_decisions: []
+    origin_discovery: null
+    discovered_from: null
+  - id: P4-002
+    phase: 4
+    title: Child friendship consent graph
+    primary: social-lead
+    status: PLANNED
+    deps:
+      - P1-001
+    reviewer: null
+    gate_owners: []
+    discovery_links: []
+    blocked_reason: null
+    human_decisions: []
+    origin_discovery: null
+    discovered_from: null
+  - id: P4-003
+    phase: 4
+    title: Messenger text/voice/circle and spelling assistance
+    primary: social-lead
+    status: PLANNED
+    deps:
+      - P4-001
+      - P4-002
+    reviewer: null
+    gate_owners: []
+    discovery_links: []
+    blocked_reason: null
+    human_decisions: []
+    origin_discovery: null
+    discovered_from: null
+  - id: P4-004
+    phase: 4
+    title: Moderation/report/block and parent visibility policy
+    primary: security-child-safety
+    status: PLANNED
+    deps:
+      - P4-003
+    reviewer: null
+    gate_owners: []
+    discovery_links: []
+    blocked_reason: null
+    human_decisions: []
+    origin_discovery: null
+    discovered_from: null
+  - id: P4-005
+    phase: 4
+    title: Family challenges and cooperative interactions
+    primary: game-engine-lead
+    status: PLANNED
+    deps:
+      - P4-002
+      - P4-003
+    reviewer: null
+    gate_owners: []
+    discovery_links: []
+    blocked_reason: null
+    human_decisions: []
+    origin_discovery: null
+    discovered_from: null
+  - id: P4-006
+    phase: 4
+    title: Full conversation lifecycle and protected-read state machine
+    primary: social-lead
+    status: PLANNED
+    deps:
+      - P4-003
+      - P4-004
+    reviewer: null
+    gate_owners: []
+    discovery_links: []
+    blocked_reason: null
+    human_decisions: []
+    origin_discovery: null
+    discovered_from: null
+  - id: P4-007
+    phase: 4
+    title: Challenge settlement, dispute and cancellation rules
+    primary: game-engine-lead
+    status: PLANNED
+    deps:
+      - P4-005
+    reviewer: null
+    gate_owners: []
+    discovery_links: []
+    blocked_reason: null
+    human_decisions: []
+    origin_discovery: null
+    discovered_from: null
+  - id: P5-001
+    phase: 5
+    title: AI Gateway and typed tool policy
+    primary: ai-ml-lead
+    status: PLANNED
+    deps:
+      - P0-008
+    reviewer: null
+    gate_owners: []
+    discovery_links: []
+    blocked_reason: null
+    human_decisions: []
+    origin_discovery: null
+    discovered_from: null
+  - id: P5-002
+    phase: 5
+    title: Knowledge Base and Development Profile
+    primary: learning-lead
+    status: PLANNED
+    deps:
+      - P5-001
+    reviewer: null
+    gate_owners: []
+    discovery_links: []
+    blocked_reason: null
+    human_decisions: []
+    origin_discovery: null
+    discovered_from: null
+  - id: P5-003
+    phase: 5
+    title: AI task-plan generation with parent approval
+    primary: ai-ml-lead
+    status: PLANNED
+    deps:
+      - P1-002
+      - P5-001
+      - P5-002
+    reviewer: null
+    gate_owners: []
+    discovery_links: []
+    blocked_reason: null
+    human_decisions: []
+    origin_discovery: null
+    discovered_from: null
+  - id: P5-004
+    phase: 5
+    title: Safe AI avatar lifecycle
+    primary: ai-ml-lead
+    status: PLANNED
+    deps:
+      - P5-001
+    reviewer: null
+    gate_owners: []
+    discovery_links: []
+    blocked_reason: null
+    human_decisions: []
+    origin_discovery: null
+    discovered_from: null
+  - id: P5-005
+    phase: 5
+    title: Alice task status/learning integration
+    primary: integrations-lead
+    status: PLANNED
+    deps:
+      - P5-001
+      - P1-007
+    reviewer: null
+    gate_owners: []
+    discovery_links: []
+    blocked_reason: null
+    human_decisions: []
+    origin_discovery: null
+    discovered_from: null
+  - id: P5-006
+    phase: 5
+    title: Telegram/MAX Mini App adapters
+    primary: integrations-lead
+    status: PLANNED
+    deps:
+      - P1-007
+    reviewer: null
+    gate_owners: []
+    discovery_links: []
+    blocked_reason: null
+    human_decisions: []
+    origin_discovery: null
+    discovered_from: null
+  - id: P5-007
+    phase: 5
+    title: Learning evidence provenance and recommendation explainability
+    primary: learning-lead
+    status: PLANNED
+    deps:
+      - P5-002
+    reviewer: null
+    gate_owners: []
+    discovery_links: []
+    blocked_reason: null
+    human_decisions: []
+    origin_discovery: null
+    discovered_from: null
+  - id: P6-001
+    phase: 6
+    title: Cooperative game session protocol
+    primary: game-engine-lead
+    status: PLANNED
+    deps:
+      - P4-005
+      - P4-007
+    reviewer: null
+    gate_owners: []
+    discovery_links: []
+    blocked_reason: null
+    human_decisions: []
+    origin_discovery: null
+    discovered_from: null
+  - id: P6-002
+    phase: 6
+    title: Case/template catalog and moderation
+    primary: content-marketplace-lead
+    status: PLANNED
+    deps:
+      - P1-002
+      - P4-004
+    reviewer: null
+    gate_owners: []
+    discovery_links: []
+    blocked_reason: null
+    human_decisions: []
+    origin_discovery: null
+    discovered_from: null
+  - id: P6-003
+    phase: 6
+    title: Family case application and analytics
+    primary: content-marketplace-lead
+    status: PLANNED
+    deps:
+      - P6-002
+    reviewer: null
+    gate_owners: []
+    discovery_links: []
+    blocked_reason: null
+    human_decisions: []
+    origin_discovery: null
+    discovered_from: null
+  - id: P6-004
+    phase: 6
+    title: Marketplace ranking, abuse and recommendation policy
+    primary: content-marketplace-lead
+    status: PLANNED
+    deps:
+      - P6-002
+      - P6-003
+    reviewer: null
+    gate_owners: []
+    discovery_links: []
+    blocked_reason: null
+    human_decisions: []
+    origin_discovery: null
+    discovered_from: null
