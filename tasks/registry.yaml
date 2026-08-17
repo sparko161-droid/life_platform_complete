@@ -1,4 +1,4 @@
-version: 4
+version: 5
 tasks:
 - id: P0-001
   phase: 0
@@ -89,13 +89,13 @@ tasks:
   title: Parent task builder UX
   primary: frontend-lead
   status: PLANNED
-  deps: [P1-002]
+  deps: [P1-002, P1-009]
 - id: P1-004
   phase: 1
   title: Child today/tasks UX
   primary: frontend-lead
   status: PLANNED
-  deps: [P1-002]
+  deps: [P1-002, P1-009]
 - id: P1-005
   phase: 1
   title: Media evidence storage and upload policy
@@ -113,7 +113,7 @@ tasks:
   title: End-to-end family vertical slice
   primary: qa-lead
   status: PLANNED
-  deps: [P1-001, P1-002, P1-003, P1-004, P1-005, P1-006, P1-009]
+  deps: [P1-001, P1-002, P1-003, P1-004, P1-005, P1-006, P1-009, P1-010]
 - id: P1-008
   phase: 1
   title: Completion/verification/reward idempotency rules and fixtures
@@ -138,6 +138,12 @@ tasks:
   primary: journey-agent
   status: PLANNED
   deps: [P1-010]
+- id: P1-012
+  phase: 1
+  title: Russian-only UI localization lint and forbidden-term checks
+  primary: uiux-lead
+  status: PLANNED
+  deps: [P1-009]
 - id: P2-001
   phase: 2
   title: XP/coins/progression and streak engine
