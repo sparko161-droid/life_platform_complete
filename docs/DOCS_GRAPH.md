@@ -40,14 +40,8 @@
 - `ux/design-system.md`
 - `ux/state-contracts.md`
 - `ux/screen-api-matrix.md`
-- `ux/screens/child-today.md`
-- `ux/screens/child-task-detail.md`
-- `ux/screens/camera-exercise.md`
-- `ux/screens/parent-dashboard.md`
-- `ux/screens/parent-task-builder.md`
-- `ux/screens/parent-rewards.md`
-- `ux/screens/social-chat.md`
-- `ux/screens/game-lobby.md`
+- `ux/journey-catalog.md`
+- `ux/screens/*.md`
 
 ## Planning
 - `planning/roadmap-overview.md`
