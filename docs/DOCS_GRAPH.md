@@ -41,6 +41,11 @@
 - `ux/state-contracts.md`
 - `ux/screen-api-matrix.md`
 - `ux/journey-catalog.md`
+- `ux/core-path-contracts.md`
+- `ux/navigation-rules.md`
+- `ux/action-api-catalog.md`
+- `ux/error-recovery.md`
+- `ux/ux-quality-gates.md`
 - `ux/screens/*.md`
 
 ## Planning
