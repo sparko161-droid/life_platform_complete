@@ -83,6 +83,14 @@
 - `architecture/deployment.md`
 - `architecture/security-boundaries.md`
 - `architecture/device-capabilities.md`
+- `architecture/entity-lifecycle.md`
+- `architecture/source-of-truth.md`
+- `architecture/cross-domain-contracts.md`
+- `architecture/time-and-calendar.md`
+- `architecture/commands-and-idempotency.md`
+- `architecture/concurrency-and-conflicts.md`
+- `architecture/child-experience-model.md`
+- `architecture/offline-and-sync.md`
 
 ## Social / safety
 - `social/graph.md`
@@ -94,6 +102,8 @@
 - `social/notifications.md`
 - `security/child-safety.md`
 - `security/permissions.md`
+- `security/effective-policy.md`
+- `security/data-classification.md`
 - `security/privacy.md`
 - `security/threat-model.md`
 - `security/legal-ru.md`
