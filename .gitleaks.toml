@@ -1,0 +1,15 @@
+title = "life-platform gitleaks config"
+
+# Use gitleaks' default detection rules; only add repo-specific allowlisting.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Known non-secret dev-only placeholders"
+paths = [
+  # docker-compose.dev.yml ships fixed local-only credentials
+  # (postgres/redis/minio) by design — see docs/engineering/local-environment.md.
+  # They never touch a real environment and are not secrets.
+  '''docker-compose\.dev\.yml''',
+  '''\.env\.example$''',
+]
