@@ -7,7 +7,14 @@ services:
       POSTGRES_USER: life
       POSTGRES_PASSWORD: life_dev
     ports:
-      - "5432:5432"
+      # Host port is overridable: 5432 collides on any machine that already
+      # runs another local Postgres (found for real while verifying this
+      # stack — a different, unrelated project on this dev machine had
+      # 5432 bound). Container-internal port stays 5432 either way, so
+      # `docker compose exec postgres ...` tooling (health checks, psql)
+      # is unaffected; only host-side tools/connection strings need
+      # $POSTGRES_HOST_PORT.
+      - "${POSTGRES_HOST_PORT:-5433}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./infrastructure/compose/postgres-init.sql:/docker-entrypoint-initdb.d/init.sql:ro

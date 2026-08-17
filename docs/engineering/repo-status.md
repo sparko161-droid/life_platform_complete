@@ -23,4 +23,4 @@
 - Production infrastructure.
 
 ## Known validation limit
-This packaging environment does not contain Docker, Flutter or Xcode, so runtime build verification must happen in the developer workspace/CI. Configuration is intentionally prepared for that next step.
+This packaging environment does not contain Flutter or Xcode, so mobile build verification must happen in the developer workspace/CI. Docker *is* available in this environment as of P0-002: `docker-compose.dev.yml` has been run and health-checked for real (`pnpm dev:infra:health`), not just reviewed as configuration. Flutter/Xcode verification remains the next step.
