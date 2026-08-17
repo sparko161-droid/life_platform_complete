@@ -1,42 +1,25 @@
 # Game Economy
 
 **Status:** Foundation
-**Owner:** Game Economy Lead
+**Owner:** AI CTO
+**Depends on:** MASTER_SPEC
+**Related:** MASTER_SPEC
+
 
 ## Currencies
+XP: non-spendable progression.
+Coins: game currency.
+Money: parent-controlled real-world reward ledger.
+Coupons: redeemable entitlement such as screen time or family activity.
 
-XP — permanent progression.
-Coins — spendable game currency.
-Money — real family reward ledger.
-
-## Rewards
-
-MONEY
-SCREEN_TIME
-TABLET
-CONSOLE
-TV
-ACTIVITY
-FAMILY
-COUPON
-CUSTOM
-
-## Money rules
-
-Real-money rewards are parent-controlled. Child cannot mutate the ledger.
+## Principles
+No required payment for basic habits. Money is optional. Parents define budgets and limits.
 
 ## Ledger
+Money uses append-only ledger entries. Corrections are compensating entries, never destructive edits.
 
-Every grant/reversal/correction is an append-only transaction.
-
-## Anti-inflation
-
-Economy balance must be tunable by configuration rather than hard-coded in client apps.
+## Reward types
+MONEY, SCREEN_TIME, TABLET, CONSOLE, TV, ACTIVITY, FAMILY, COUPON, CUSTOM.
 
 ## Streaks
-
-7, 10, 14, 30 days are examples only. Parent can define arbitrary thresholds where policy permits.
-
-## Fairness
-
-Do not make money the only path to progress. Core progression must remain available through XP, achievements and game content.
+Parent can configure any duration; rules define eligibility and reward. Avoid punitive streak mechanics for age-inappropriate contexts.

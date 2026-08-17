@@ -1,0 +1,13 @@
+{
+  "name": "@life/services-realtime",
+  "private": true,
+  "version": "0.0.0",
+  "scripts": {
+    "lint": "echo TODO",
+    "typecheck": "tsc --noEmit",
+    "test": "echo \"No tests yet\""
+  },
+  "devDependencies": {
+    "typescript": "^5.9.2"
+  }
+}

@@ -1,32 +1,27 @@
-# AI Escalation Rules
+# AI Escalation
 
 **Status:** Foundation
-**Owner:** Human Architect
+**Owner:** AI CTO
+**Depends on:** MASTER_SPEC
+**Related:** MASTER_SPEC
 
-## Ask the human when
 
-- requirements conflict;
-- architecture is undefined;
-- more than one valid architecture has materially different consequences;
-- privacy/security boundary changes;
-- public API changes;
-- data ownership changes;
-- feature may violate product principles;
-- irreversible operational/cost decision appears;
-- legal interpretation is required.
+## Must escalate to Human Architect
+- New domain boundary.
+- Core stack change.
+- Data model that locks future behavior.
+- Parent/child privacy policy change.
+- Real-money behavior change.
+- Child communication default change.
+- Public social/discovery change.
+- New external data processor/provider.
+- Security exception.
 
-## Do not ask the human when
-
-- naming is obvious;
-- local refactor is safe;
-- existing pattern already decides the question;
-- test implementation is straightforward;
-- formatting/tooling is routine.
+## Should not escalate
+- Variable naming.
+- Routine test fixes.
+- Reusing existing patterns.
+- Non-breaking refactor inside approved boundary.
 
 ## Escalation format
-
-Question → known facts → missing decision → options A/B/C → recommendation → consequences → proposed default.
-
-## Desired human experience
-
-Human should receive decisions, not noise.
+Question → current evidence → options → recommended option → impact if postponed → affected docs.

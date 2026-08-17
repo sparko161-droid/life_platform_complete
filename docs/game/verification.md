@@ -1,41 +1,22 @@
 # Verification Engine
 
 **Status:** Foundation
-**Owner:** Verification Architect
+**Owner:** AI CTO
+**Depends on:** MASTER_SPEC
+**Related:** MASTER_SPEC
 
-## Contract
 
-```text
-VerificationStrategy.verify(input) -> VerificationResult
-```
+## Strategies
+MANUAL_SELF, PARENT_APPROVAL, PHOTO_PROOF, VIDEO_PROOF, CAMERA_EXERCISE, TIMER, COUNTER, AUDIO_PROOF, ALICE_SESSION, COMPOSITE.
 
-## Result fields
+## Result
+A verification result records strategy, status, confidence where applicable, evidence references, verifier, timestamps and reason for rejection.
 
-status
-source
-confidence
-value
-metadata
-verified_at
-review_required
+## Manual-first
+Every automated strategy has a fallback path where policy allows. Low confidence should route to human approval, not fabricate success.
 
-## Manual
+## Camera privacy
+Process frames locally by default. Send only derived result data unless the user explicitly submits a video/photo task.
 
-MANUAL_SELF records self-completion.
-PARENT_APPROVAL records parent decision.
-
-## Media
-
-PHOTO_PROOF / VIDEO_PROOF store media metadata and reference object storage.
-
-## Camera
-
-CAMERA_EXERCISE calls PoseProvider + ExerciseEngine. The engine returns count/quality/confidence.
-
-## Fallback
-
-If automatic verification confidence is insufficient, route to parent approval instead of silently granting reward.
-
-## Security
-
-Verification endpoints are idempotent and authorization scoped to family/child.
+## Reward rule
+Rewards are issued only after completion state is authoritative and idempotent.

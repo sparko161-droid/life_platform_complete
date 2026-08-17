@@ -1,28 +1,32 @@
-# AI Development Workflow
+# AI Team Workflow
 
 **Status:** Foundation
 **Owner:** AI CTO
+**Depends on:** MASTER_SPEC
+**Related:** MASTER_SPEC
 
-## Task lifecycle
 
-BACKLOG → ANALYSIS → ARCHITECTURE_CHECK → QUESTIONS → READY → IN_PROGRESS → SELF_REVIEW → QA → ARCH_REVIEW → SECURITY → AI_CTO → HUMAN_ACCEPTANCE → DONE.
-
-## Rule
-
-No coding before Architecture Check for new/changed domains.
+## Lifecycle
+1. Intake
+2. Context resolution
+3. Architecture Gate
+4. Task planning
+5. Parallel implementation
+6. Self-review
+7. Peer review
+8. QA
+9. Architecture review
+10. Security/safety review
+11. AI CTO synthesis
+12. Human decision where required
+13. Merge
+14. Knowledge update
 
 ## Parallel work
+Each agent owns a worktree. Shared contracts are published before dependent implementation branches begin.
 
-Independent agents may work in parallel after shared contract approval.
+## Handoff
+Use a fixed handoff format: goal, files, contracts, tests, risks, decisions, next tasks.
 
-## Shared contract
-
-The task must define affected domain, API/events, data changes, UI contract and tests before parallel implementation where interfaces cross teams.
-
-## Handoffs
-
-Agent A hands off a branch/PR, tests and implementation notes. Agent B reviews based on artifacts, not conversation memory.
-
-## Human escalation
-
-Escalate only decisions that change product behavior, security boundary, public API, data ownership, core architecture or irreversible cost.
+## Conflict
+Architecture conflicts stop implementation. Product ambiguity goes to Product/Architect. Safety ambiguity goes to Safety + Human Architect.

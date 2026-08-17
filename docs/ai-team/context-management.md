@@ -2,36 +2,23 @@
 
 **Status:** Foundation
 **Owner:** AI CTO
+**Depends on:** MASTER_SPEC
+**Related:** MASTER_SPEC
 
-## Goal
 
-Prevent context loss by keeping knowledge granular and linked.
+## Context loading
+Agent loads the smallest relevant graph slice: Master Spec → domain map → domain docs → ADRs → task → code.
 
-## Required context layers
+## Source priority
+1. Human-approved ADR
+2. Domain specification
+3. API/event contracts
+4. Tests
+5. Implementation
+6. Historical discussion
 
-1. Master Specification
-2. Relevant domain docs
-3. ADRs
-4. API/event contracts
-5. task-specific acceptance criteria
-6. tests/fixtures
+## Graph maintenance
+Every new domain adds an index node. Every ADR declares affected domains. Avoid copying long rules into multiple files.
 
-## Agent rule
-
-Never load the entire repository by default. Start from task → graph → relevant docs → code.
-
-## Document limit
-
-Hard target <200 lines per doc. Split when the document becomes dense or changes independently.
-
-## Source of truth
-
-Architecture decision: ADR.
-Business rule: product/domain spec.
-API shape: OpenAPI.
-Runtime behavior: tests + code.
-Operational rule: infrastructure/runbook.
-
-## Stale docs
-
-AI agents must flag suspected stale documentation rather than silently rewriting architectural history.
+## Knowledge loss prevention
+When a decision changes, update the owning short doc and create an ADR if foundational. Do not rely on chat history as the only source.

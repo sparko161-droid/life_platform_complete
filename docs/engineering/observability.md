@@ -1,40 +1,22 @@
 # Observability
 
 **Status:** Foundation
-**Owner:** SRE / AI CTO
+**Owner:** AI CTO
+**Depends on:** MASTER_SPEC
+**Related:** MASTER_SPEC
+
 
 ## Signals
-
-- logs
-- metrics
-- traces
-- frontend errors
-- mobile crashes
-- queue depth
-- websocket connection health
-- notification delivery
+Logs, metrics, traces, errors, audit events.
 
 ## Correlation
+Every request receives a correlation ID. Async jobs preserve causation/correlation metadata.
 
-Every request and async job gets a correlation id.
-Domain events preserve causation/correlation where available.
-
-## Privacy
-
-Logs must never contain raw child message content, raw media, secrets or unnecessary personal data.
+## Metrics
+API P50/P95/P99, error rate, queue lag, WebSocket sessions, push success, media failures, AI latency/cost, camera session stability.
 
 ## Alerts
+Alert on user-impacting symptoms, not noisy internal events.
 
-Alert on:
-
-- elevated API error rate
-- high P95 latency
-- queue backlog
-- failed jobs
-- storage failures
-- authentication anomalies
-- moderation pipeline failures
-
-## Tools
-
-Sentry + OpenTelemetry are the default direction. Metrics/dashboard implementation can evolve without changing domain code.
+## Privacy
+Default telemetry excludes child message content, raw media and sensitive profile fields.

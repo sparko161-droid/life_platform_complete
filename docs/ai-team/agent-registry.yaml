@@ -1,0 +1,47 @@
+version: 1
+roles:
+  - id: ai-cto
+    reports_to: human-architect
+    can_merge: false
+    primary_gate: synthesis
+  - id: chief-architect
+    reports_to: ai-cto
+    can_approve_architecture: true
+  - id: product-manager
+    reports_to: ai-cto
+  - id: roadmap-advisor
+    reports_to: ai-cto
+  - id: domain-architect
+    reports_to: chief-architect
+  - id: architecture-reviewer
+    reports_to: chief-architect
+  - id: backend-lead
+    reports_to: ai-cto
+  - id: frontend-lead
+    reports_to: ai-cto
+  - id: mobile-lead
+    reports_to: ai-cto
+  - id: game-engine-lead
+    reports_to: ai-cto
+  - id: ai-ml-lead
+    reports_to: ai-cto
+  - id: computer-vision-lead
+    reports_to: ai-cto
+  - id: integrations-lead
+    reports_to: ai-cto
+  - id: uiux-lead
+    reports_to: product-manager
+  - id: child-experience-lead
+    reports_to: product-manager
+  - id: qa-lead
+    reports_to: ai-cto
+  - id: automated-test-agent
+    reports_to: qa-lead
+  - id: journey-agent
+    reports_to: qa-lead
+  - id: security-child-safety
+    reports_to: ai-cto
+  - id: code-quality-agent
+    reports_to: chief-architect
+  - id: documentation-agent
+    reports_to: chief-architect

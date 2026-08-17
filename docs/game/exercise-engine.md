@@ -1,36 +1,25 @@
 # Exercise Engine
 
 **Status:** Foundation
-**Owner:** CV / Game Architect
+**Owner:** AI CTO
+**Depends on:** MASTER_SPEC
+**Related:** MASTER_SPEC
 
-## Goal
-
-Count simple physical actions in real time without sending raw video to the backend by default.
 
 ## Pipeline
+Camera → PoseProvider → landmarks → PoseOverlay → deterministic ExerciseStateMachine → result.
 
-Camera → PoseProvider → landmarks → state machine → repetition/hold result → UI overlay → task result.
-
-## Provider abstraction
-
-`PoseProvider` is a replaceable interface.
-
-Initial candidates: MediaPipe Pose Landmarker and MoveNet.
+## PoseProvider
+Abstraction supports MediaPipe and MoveNet implementations. Provider can be swapped without changing exercise rules.
 
 ## Deterministic logic
+Use joint angles, distances, relative heights, velocity and state transitions. Avoid LLM decisions for repetition counting.
 
-Exercise-specific rules use angles, distances, visibility, velocity, state transitions and hysteresis.
+## Live UI
+Show skeleton points, relevant joints, visibility state, repetition counter, progress and corrective guidance.
 
-Examples: squat, push-up, jumping jack, lunge, plank, balance.
+## Readiness
+Before counting: body visibility, framing and required landmarks must meet thresholds.
 
-## UI
-
-Show skeleton/landmarks, visible-body status, rep counter, progress and corrective hints.
-
-## Privacy
-
-Process frames locally where practical. Persist only derived results unless the user explicitly creates a media proof.
-
-## Testing
-
-ExerciseEngine must accept prerecorded landmark sequences so tests do not depend on a live camera.
+## Exercises
+Start with squat, push-up, jumping jack, lunge, plank, balance, arm raise. Add each through data-driven definitions and fixtures.

@@ -1,40 +1,22 @@
-# CI/CD Rules
+# CI/CD
 
 **Status:** Foundation
-**Owner:** DevOps / AI CTO
+**Owner:** AI CTO
+**Depends on:** MASTER_SPEC
+**Related:** MASTER_SPEC
 
-## Pull request gates
 
-- format/lint
-- typecheck
-- unit tests
-- integration tests
-- build
-- E2E for affected surfaces
-- security checks
-- architecture policy checks
-- changed-file documentation check where required
+## PR pipeline
+Install → lint → typecheck → unit → integration → build → security scan → E2E where configured.
 
-## Branches
+## Merge gates
+Protected main branch. Required status checks. At least one independent reviewer for substantive changes.
 
-`main` protected.
-Feature branches use `agent/<role>/<ticket>`.
-Human hotfixes use `hotfix/<ticket>`.
+## Deploy pipeline
+Merge to main → build artifact → deploy staging → smoke tests → human/AI release gate → production.
 
-## Merge
+## Mobile
+Android artifact and iOS TestFlight artifact are built from tagged/approved commits. Signing credentials are isolated from ordinary agents.
 
-No direct push to `main`.
-PR requires independent reviewer gates.
-
-## Preview environments
-
-Web apps should support automatic preview deployments for PRs where feasible.
-Backend PRs use shared dev/stage or isolated ephemeral resources depending on impact.
-
-## Release
-
-Tag → build artifacts → stage → smoke test → approval → production.
-
-## Rollback
-
-Every production release must have a documented rollback path.
+## Supply chain
+Pin lockfiles. Scan dependencies. Generate SBOM when tooling is available.

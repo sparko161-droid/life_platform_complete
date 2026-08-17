@@ -1,34 +1,28 @@
-# AI Quality Gates
+# AI Gates
 
 **Status:** Foundation
 **Owner:** AI CTO
+**Depends on:** MASTER_SPEC
+**Related:** MASTER_SPEC
+
 
 ## Architecture Gate
-
-Checks existing architecture, duplicates, dependencies, domain ownership, ADRs and contracts.
+Checks existing domain, reuse, dependencies, API/events, permissions, migration impact and ADR needs.
 
 ## Implementation Gate
-
-Checks acceptance criteria, migrations, API contract and local tests.
+Checks acceptance criteria and contract adherence.
 
 ## Quality Gate
-
-Checks duplication, complexity, naming, dead code, coupling and maintainability.
+Checks duplicates, dead code, complexity, naming and dependency direction.
 
 ## QA Gate
-
-Runs unit/integration/E2E plus affected user journeys.
+Runs tests and critical journeys, including regression analysis.
 
 ## Security Gate
-
-Checks authz, child privacy, secrets, injection, media access, rate limits and logging.
+Checks authz, input validation, secrets, PII, child safety and abuse paths.
 
 ## UX Gate
+Checks client path, responsive behavior, accessibility and child appropriateness.
 
-Checks child/parent journey, accessibility, responsive behavior and copy.
-
-## Final rule
-
-Author cannot be the sole approver of their own feature.
-
-At least one independent implementation/quality reviewer and one relevant specialist gate are required.
+## AI CTO Gate
+Synthesizes gate results and escalates unresolved decisions.

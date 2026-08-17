@@ -1,37 +1,31 @@
 # API Contracts
 
 **Status:** Foundation
-**Owner:** Backend Lead
+**Owner:** AI CTO
+**Depends on:** MASTER_SPEC
+**Related:** MASTER_SPEC
 
-## Rules
 
-REST API is the baseline external contract.
-OpenAPI is the machine-readable contract.
-Client SDK/types are generated or derived from the contract where practical.
+## Contract source
+OpenAPI is the canonical external API contract for REST.
 
 ## Versioning
+Start with `/api/v1`. Breaking changes require a new version or migration strategy.
 
-Public API uses `/api/v1/...`.
-Breaking changes require a new version or explicit migration strategy.
+## Response rules
+Use stable envelopes for errors. Never expose database errors or provider-specific details.
 
-## Response principles
+## Authorization
+Resource access is checked server-side even when a client hides the feature.
 
-- stable error codes;
-- request correlation id;
-- pagination for collections;
-- idempotency for retryable commands;
-- explicit authorization errors;
-- no accidental leakage of child/private fields.
+## Idempotency
+Use idempotency keys for reward redemption, money ledger writes, completion submissions and integration callbacks.
 
-## Domain command examples
+## Pagination
+Cursor pagination for social feeds, messages, catalogs and activity history.
 
-`POST /api/v1/task-completions`
-`POST /api/v1/task-assignments/{id}/approve`
-`POST /api/v1/rewards/{id}/redeem`
-`POST /api/v1/friendships`
-`POST /api/v1/messages`
-`POST /api/v1/game-sessions`
+## Webhooks
+All inbound webhooks are authenticated, replay-protected where supported, rate-limited and idempotent.
 
-## Internal rule
-
-Controllers validate transport data and call application services. Controllers do not implement domain rules.
+## Typed clients
+Generate or validate typed clients from OpenAPI where practical. Avoid hand-maintained duplicate request/response types.

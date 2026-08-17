@@ -1,39 +1,31 @@
 # Deployment Architecture
 
 **Status:** Foundation
-**Owner:** DevOps / AI CTO
+**Owner:** AI CTO
+**Depends on:** MASTER_SPEC
+**Related:** MASTER_SPEC
+
 
 ## Environments
+Local → Dev → Staging → Production.
 
-LOCAL → DEV → STAGE → PROD.
+## Local
+Docker Compose: PostgreSQL, Redis, MinIO. Application processes may run on host for fast iteration.
 
-## Local principle
+## Dev
+Shared isolated environment for integration and AI-agent QA.
 
-Developers should start a stable platform stack once and iterate code quickly. Feature work must not require rebuilding database/cache/storage containers each time.
+## Staging
+Production-like config, synthetic/test accounts and representative data shape; no real child media.
 
-## Local services
-
-PostgreSQL
-Redis
-S3-compatible storage
-API
-Worker
-Realtime
-Mail/test notification sink
-Optional observability stack
-
-## Deployment rule
-
-Every environment is described as code/config. Manual production configuration is forbidden unless documented as an emergency procedure.
-
-## CI pipeline
-
-lint → typecheck → unit → integration → build → E2E → security → artifact → stage deploy.
-
-Production deploy requires approval and successful stage verification.
+## Production
+Separate credentials, private networks, monitored databases, backups, WAF/rate limits as justified, and controlled deploys.
 
 ## iOS
+Flutter build requires macOS/Xcode. Use a dedicated Mac or macOS CI runner; deliver test builds through TestFlight.
 
-iOS builds use macOS/Xcode runners or a managed macOS build host. Windows remains a primary development machine if desired; TestFlight is the distribution channel for physical iOS testing.
+## Android
+CI builds APK/AAB; internal testing channel before store release.
 
-Official Flutter iOS setup requires Xcode for running/building/deploying to iOS. See: https://docs.flutter.dev/platform-integration/ios/setup
+## Rollback
+Application deploys must support rollback. Database changes use backward-compatible steps when possible.

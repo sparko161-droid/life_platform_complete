@@ -1,52 +1,29 @@
-# AI Task Template
+# AI Task Contract
 
-**Status:** Template
+**Status:** Foundation
+**Owner:** AI CTO
+**Depends on:** MASTER_SPEC
+**Related:** MASTER_SPEC
 
-## Goal
 
-What user/business outcome is required?
+## Required fields
+- Task ID
+- Goal
+- User value
+- Domain owner
+- Acceptance criteria
+- Out of scope
+- Dependencies
+- Architecture references
+- API/events affected
+- Data migration impact
+- Security/privacy impact
+- Test plan
+- Rollback plan
+- Human decisions required
 
-## Scope
+## State machine
+BACKLOG → ANALYSIS → ARCHITECTURE_CHECK → READY → IN_PROGRESS → REVIEW → QA → SECURITY → ACCEPTANCE → DONE.
 
-What is included?
-
-## Non-scope
-
-What must not change?
-
-## Domain
-
-Which domain owns the change?
-
-## Existing architecture
-
-Relevant docs/ADRs:
-
-## Contracts
-
-API:
-Events:
-Data:
-UI:
-
-## Acceptance criteria
-
-- [ ]
-- [ ]
-- [ ]
-
-## Verification
-
-Expected tests and evidence.
-
-## Risks
-
-Known architecture/security/performance risks.
-
-## Questions for human
-
-Only unresolved material decisions.
-
-## Handoff
-
-Changed files, migration, tests, known limitations.
+## Blocked states
+ARCHITECTURE_BLOCKED, PRODUCT_BLOCKED, SECURITY_BLOCKED, DEPENDENCY_BLOCKED.

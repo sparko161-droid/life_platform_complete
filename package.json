@@ -1,0 +1,21 @@
+{
+  "name": "life-platform",
+  "private": true,
+  "packageManager": "pnpm@10.14.0",
+  "scripts": {
+    "lint": "pnpm -r lint",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test",
+    "test:e2e": "pnpm -r test:e2e",
+    "build": "pnpm -r build",
+    "dev:infra": "docker compose -f docker-compose.dev.yml up -d",
+    "dev:infra:down": "docker compose -f docker-compose.dev.yml down",
+    "dev:infra:logs": "docker compose -f docker-compose.dev.yml logs -f",
+    "format": "pnpm exec prettier . --write",
+    "check": "pnpm lint && pnpm typecheck && pnpm test"
+  },
+  "devDependencies": {
+    "prettier": "^3.6.2",
+    "typescript": "^5.9.2"
+  }
+}

@@ -1,39 +1,29 @@
 # Testing Strategy
 
 **Status:** Foundation
-**Owner:** QA Lead
+**Owner:** AI CTO
+**Depends on:** MASTER_SPEC
+**Related:** MASTER_SPEC
+
 
 ## Test pyramid
+Unit tests for deterministic rules; integration tests for DB/queue boundaries; E2E for critical user journeys; visual checks for key UI surfaces; device tests for camera/native functions.
 
-1. Unit — domain rules and pure functions.
-2. Integration — DB, queues, auth, storage adapters.
-3. API contract — OpenAPI and permission behavior.
-4. E2E — real user journeys.
-5. Device tests — Android/iOS critical paths.
+## Critical journeys
+- Parent registration → child creation.
+- Second parent invitation.
+- Task creation → assignment → child completion → parent approval → reward.
+- Photo/video evidence upload.
+- Camera exercise → live count → completion.
+- Friend consent → chat → moderation.
+- Reward redemption.
+- Delete/export child data.
 
-## Camera test strategy
+## Camera fixtures
+Keep curated pose/video fixtures for squat, push-up, jumping jack, plank and failure conditions. Test count stability and false positives.
 
-Store deterministic fixture inputs for squat, push-up, jump, plank, invalid visibility, side view, low light and partial body.
-ExerciseEngine must be testable from landmark sequences without a camera.
-
-## Required user journeys
-
-- parent registration
-- child creation
-- second parent invitation
-- task creation
-- child completion
-- parent approval
-- photo/video proof
-- camera exercise
-- reward redemption
-- friendship
-- child chat
-- parent chat
-- parental chat visibility setting
-- mini app auth
-- Alice account linking
+## Contract tests
+API, webhook and integration adapters must have contract tests.
 
 ## Definition
-
-A feature is not complete because a happy-path E2E passes. Edge cases, permission boundaries and failure recovery are part of acceptance.
+No PR is complete with a failing required test or an undocumented waiver.

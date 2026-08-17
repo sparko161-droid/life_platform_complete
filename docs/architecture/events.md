@@ -1,53 +1,22 @@
-# Event Architecture
+# Domain Events
 
 **Status:** Foundation
-**Owner:** Backend Lead
+**Owner:** AI CTO
+**Depends on:** MASTER_SPEC
+**Related:** MASTER_SPEC
 
-## Why
 
-Events decouple task completion from rewards, notifications, analytics, achievements and future mechanics.
-
-## Event shape
-
-```text
-id
-name
-version
-occurred_at
-actor_id
-family_id
-child_id
-correlation_id
-causation_id
-payload
-```
-
-## Rules
-
-1. Events are immutable facts.
-2. Event names are stable.
-3. Payload changes require versioning.
-4. Consumers must be idempotent.
-5. Domain events must not contain unnecessary child data.
+## Event envelope
+`eventId`, `eventType`, `occurredAt`, `actorId`, `familyId`, `childId?`, `aggregateId`, `version`, `payload`.
 
 ## Initial events
+TASK_ASSIGNED, TASK_STARTED, TASK_COMPLETED, TASK_APPROVED, TASK_REJECTED, VERIFICATION_COMPLETED, XP_GRANTED, COINS_GRANTED, MONEY_LEDGER_POSTED, REWARD_UNLOCKED, REWARD_REDEEMED, STREAK_UPDATED, ACHIEVEMENT_UNLOCKED, FRIENDSHIP_CHANGED, MESSAGE_SENT, GAME_STARTED, GAME_FINISHED, NOTIFICATION_REQUESTED.
 
-- task.assigned
-- task.started
-- task.completed
-- task.approved
-- task.rejected
-- reward.granted
-- reward.redeemed
-- streak.updated
-- achievement.unlocked
-- friendship.created
-- message.sent
-- game.session.started
-- game.session.finished
-- learning.session.completed
+## Delivery
+At-least-once delivery is assumed. Consumers must be idempotent.
 
-## Implementation
+## Outbox
+Transactional changes that publish events use an outbox pattern before scale-out.
 
-Initial async transport: BullMQ/Redis.
-Domain events should be published through an internal abstraction so transport can change later.
+## PII rule
+Events should contain identifiers and minimal payload; sensitive content should be fetched through authorized services when necessary.

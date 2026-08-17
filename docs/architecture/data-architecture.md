@@ -1,38 +1,31 @@
 # Data Architecture
 
 **Status:** Foundation
-**Owner:** Backend Lead
+**Owner:** AI CTO
+**Depends on:** MASTER_SPEC
+**Related:** MASTER_SPEC
 
-## System of record
 
-PostgreSQL.
+## Stores
+PostgreSQL: transactional source of truth.
+Redis: cache, locks, short-lived state and queue transport.
+Object storage: images, audio, video and generated media.
+Analytics store: introduced only when query load justifies it.
 
-## Supporting stores
+## Data categories
+Identity data, child data, family data, task data, social data, communications, media, game state, economy ledger, telemetry, moderation records.
 
-Redis: cache, locks, rate limits, queue transport, ephemeral realtime state.
-Object Storage: photos, videos, audio, generated media.
+## IDs
+Use UUID/UUIDv7 where supported. Public IDs must not reveal sequence information.
 
-## Financial model
+## Money
+Never store mutable balance as sole truth. Use append-only ledger entries plus derived balance.
 
-Money and coins use append-only ledgers plus derived balance/cache. Never rely on a single mutable balance column as the sole source of truth.
+## Media
+Store metadata and storage keys in PostgreSQL; objects live in S3-compatible storage. Use signed/authorized access.
 
-## Media model
-
-DB stores metadata and ownership. Object storage stores binary objects.
-
-## Privacy
-
-Child media and messages are private by default. Retention must be policy-driven.
-
-## Versioning
-
-Content templates, tasks, quests and knowledge items are versioned.
-Historical assignments keep references to the version that was active at creation.
-
-## Audit
-
-Critical changes create audit entries: actor, object, action, time, before/after or event reference, reason when applicable.
+## PII
+Keep child PII minimal. Separate high-sensitivity fields and protect access by policy.
 
 ## Migrations
-
-Every schema change is a versioned migration committed to Git and run in CI against a clean database.
+Forward migrations are versioned. Destructive changes require a staged migration and explicit ADR.
