@@ -1,0 +1,32 @@
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: life
+      POSTGRES_USER: life
+      POSTGRES_PASSWORD: life
+    ports:
+      - "5432:5432"
+    volumes:
+      - life_postgres:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: lifeadmin
+      MINIO_ROOT_PASSWORD: lifeadmin
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - life_minio:/data
+
+volumes:
+  life_postgres:
+  life_minio:
