@@ -58,8 +58,16 @@ QA → SECURITY → ACCEPTANCE → DONE`, the `REWORK` loop, the
 in a later phase whose dependencies aren't satisfied yet (not part of
 `task-lifecycle.md`; disclosed here as this tool's extension).
 
-## Worktree helper
+## Worktree helper (P0-004)
 
-Agent worktree creation/removal (`docs/implementations/phase-0-agent-worktrees.md`)
-is a separate subcommand added by P0-004, not part of this package's initial
-scope.
+Implements `docs/implementations/phase-0-agent-worktrees.md`'s
+`agent/<role>/<task-id>-<slug>` convention:
+
+- `worktree create <id> --role <role> [--slug s] [--from branch]` — creates
+  the branch and a worktree at a sibling directory
+  `../<repo-name>-wt/<id>`, resolved against the *main* repository root
+  (`git rev-parse --git-common-dir`) so it's stable no matter which
+  worktree the command is run from.
+- `worktree remove <id> [--branch b] [--force]` — refuses to remove unless
+  `--branch`'s branch is merged into `main`, per "Worktree is removed only
+  after merge and artifact retention"; `--force` overrides.

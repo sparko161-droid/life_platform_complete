@@ -10,6 +10,7 @@ import {
 } from "./registry.js";
 import { allowedNextStates, isValidTransition, type Task, type TaskState } from "./schema.js";
 import { renderHandoff } from "./handoff.js";
+import { createWorktree, removeWorktree } from "./worktree.js";
 
 // pnpm --filter runs scripts with cwd set to the package directory, not the
 // repo root the CLI is meant to operate from. pnpm sets INIT_CWD to the
@@ -291,6 +292,41 @@ program
     const updated = transition(task, cmdOpts.status as TaskState);
     saveRegistry(path, replaceTask(registry, updated));
     console.log(`${id} closed -> ${cmdOpts.status}`);
+  });
+
+const worktree = program.command("worktree").description("git worktree per task, per AGENTS.md branch naming");
+
+worktree
+  .command("create <id>")
+  .description("create a worktree + branch agent/<role>/<id>-<slug> for a task")
+  .requiredOption("--role <role>")
+  .option("--slug <slug>", "override the derived slug")
+  .option("--from <branch>", "base branch/ref", "main")
+  .action(async (id: string, cmdOpts, cmd) => {
+    const path = registryPath(cmd.optsWithGlobals());
+    const registry = loadRegistry(path);
+    const task = findTask(registry, id);
+    const result = await createWorktree(task, {
+      role: cmdOpts.role,
+      slug: cmdOpts.slug,
+      from: cmdOpts.from,
+    });
+    console.log(`Created worktree for ${id}:`);
+    console.log(`  branch: ${result.branch}`);
+    console.log(`  path:   ${result.path}`);
+  });
+
+worktree
+  .command("remove <id>")
+  .description("remove a task's worktree (refuses if its branch isn't merged into main, unless --force)")
+  .option("--branch <branch>", "branch to check for merge status before removing")
+  .option("--force", "remove even if unmerged", false)
+  .action(async (id: string, cmdOpts, cmd) => {
+    const path = registryPath(cmd.optsWithGlobals());
+    const registry = loadRegistry(path);
+    const task = findTask(registry, id);
+    await removeWorktree(task, { branch: cmdOpts.branch, force: Boolean(cmdOpts.force) });
+    console.log(`Removed worktree for ${id}.`);
   });
 
 program.parseAsync(process.argv).catch((err) => {
