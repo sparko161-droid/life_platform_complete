@@ -1,3 +1,14 @@
+# Pinned so `docker compose -f docker-compose.dev.yml exec ...` (health
+# checks, migrations, backup/restore) targets the same stack regardless of
+# which directory the command runs from. Without this, Compose derives the
+# project name from the current directory basename -- a real problem in
+# this repo's one-worktree-per-task-agent model: `pnpm dev:infra` from
+# worktree A and `pnpm db:backup` from worktree B would silently address
+# two different (albeit identically-configured) Compose projects. Found
+# this for real while testing scripts/db-backup.mjs from a different
+# worktree than the one that started the stack.
+name: life-platform
+
 services:
   postgres:
     image: postgres:17-alpine

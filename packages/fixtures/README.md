@@ -15,18 +15,21 @@ family/child accounts only. Seed scripts must be deterministic.").
   Replace these imports once that lands.
 - `src/generators.ts` — `generateSyntheticFamilies(seed, count)`. Same seed
   always produces the same output (tested).
-- `scripts/seed.mjs` — connects to the local Postgres from P0-002, creates
-  `_phase0_fixtures_smoke` (not a real domain table — those don't exist
-  until Phase 1 migrations), inserts a summary row, reads the last 5 back.
+- `scripts/seed.mjs` — connects to the local Postgres from P0-002, inserts
+  a summary row into `_phase0_fixtures_smoke` (not a real domain table —
+  those don't exist until Phase 1 migrations), reads the last 5 back.
   This proves the "generate → connect → write → read" pipeline end to end
   today; it should be replaced with real domain inserts once Family/Task
-  tables exist.
+  tables exist. The table itself is owned by
+  `services/api/migrations/` (see `docs/architecture/data-architecture.md`
+  "Migrations") — this script errors with a clear message if you haven't
+  run the migration yet.
 
 ## Usage
 
 ```bash
 pnpm dev:infra          # bring up Postgres/Redis/MinIO (P0-002)
-pnpm dev:seed           # build + run the seed script against it
+pnpm dev:seed           # migrate:up, then build + run the seed script
 ```
 
 Connection defaults to

@@ -5,9 +5,14 @@
   "scripts": {
     "lint": "echo TODO",
     "typecheck": "tsc --noEmit",
-    "test": "echo \"No tests yet\""
+    "test": "echo \"No tests yet\"",
+    "migrate:up": "node-pg-migrate up",
+    "migrate:down": "node-pg-migrate down",
+    "migrate:create": "node-pg-migrate create --"
   },
   "devDependencies": {
+    "node-pg-migrate": "^7.9.1",
+    "pg": "^8.13.1",
     "typescript": "^5.9.2"
   }
 }

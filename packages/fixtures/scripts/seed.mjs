@@ -11,6 +11,14 @@
 // credentials (see docs/security/secrets-policy.md once P0-008 lands --
 // these are intentionally public local defaults, never real secrets).
 // Override with DATABASE_URL for a non-default local port.
+//
+// The smoke table itself is owned by services/api's migrations
+// (services/api/migrations/..._phase0-fixtures-smoke.js), not created
+// here -- run `pnpm --filter @life/services-api run migrate:up` first.
+// This script used to `CREATE TABLE IF NOT EXISTS` itself; that made it
+// the only real "schema owner" in a repo that also has a real migration
+// tool, which is exactly the ad-hoc-schema drift migration tooling
+// exists to prevent.
 
 import { Client } from "pg";
 import { generateSyntheticFamilies } from "../dist/generators.js";
@@ -42,16 +50,17 @@ try {
   process.exit(1);
 }
 
-await client.query(`
-  CREATE TABLE IF NOT EXISTS _phase0_fixtures_smoke (
-    id SERIAL PRIMARY KEY,
-    seed INTEGER NOT NULL,
-    family_count INTEGER NOT NULL,
-    child_count INTEGER NOT NULL,
-    task_count INTEGER NOT NULL,
-    seeded_at TIMESTAMPTZ NOT NULL DEFAULT now()
-  )
-`);
+const tableCheck = await client.query(
+  "SELECT to_regclass('public._phase0_fixtures_smoke') AS exists",
+);
+if (!tableCheck.rows[0].exists) {
+  console.error(
+    "_phase0_fixtures_smoke doesn't exist. Run the migration first:\n" +
+      "  pnpm --filter @life/services-api run migrate:up",
+  );
+  await client.end();
+  process.exit(1);
+}
 
 const insertResult = await client.query(
   `INSERT INTO _phase0_fixtures_smoke (seed, family_count, child_count, task_count)

@@ -55,3 +55,7 @@ desktop.ini
 
 # Claude Code local overrides (personal, not team-shared)
 .claude/settings.local.json
+
+# Local DB dump/backup files (never real data, but real backups can be
+# large and are always machine-local -- see scripts/db-backup.mjs)
+backups/

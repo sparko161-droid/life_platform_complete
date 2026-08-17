@@ -29,3 +29,12 @@ Keep child PII minimal. Separate high-sensitivity fields and protect access by p
 
 ## Migrations
 Forward migrations are versioned. Destructive changes require a staged migration and explicit ADR.
+
+Tooling: `node-pg-migrate` (`services/api/migrations/`, plain SQL-shaped
+JS migrations, no ORM lock-in since no query-building ORM has been
+chosen yet for Phase 1). `pnpm db:migrate:up` / `pnpm db:migrate:down`
+from the repo root; connection via `DATABASE_URL` (see `.env.example`).
+Create a new migration with
+`pnpm --filter @life/services-api run migrate:create -- <name>`. Verified
+against the real local Postgres: up, down, and up again all produce the
+expected schema.

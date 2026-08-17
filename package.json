@@ -12,7 +12,11 @@
     "dev:infra:down": "docker compose -f docker-compose.dev.yml down",
     "dev:infra:logs": "docker compose -f docker-compose.dev.yml logs -f",
     "dev:infra:health": "node scripts/health-check.mjs",
-    "dev:seed": "pnpm --filter @life/fixtures run build && pnpm --filter @life/fixtures run seed",
+    "db:migrate:up": "pnpm --filter @life/services-api run migrate:up",
+    "db:migrate:down": "pnpm --filter @life/services-api run migrate:down",
+    "db:backup": "node scripts/db-backup.mjs",
+    "db:restore": "node scripts/db-restore.mjs",
+    "dev:seed": "pnpm db:migrate:up && pnpm --filter @life/fixtures run build && pnpm --filter @life/fixtures run seed",
     "format": "pnpm exec prettier . --write",
     "check": "pnpm lint && pnpm typecheck && pnpm test",
     "task-registry": "pnpm --filter @life/tools-task-registry run dev"
