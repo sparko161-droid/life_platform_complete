@@ -1,14 +1,10 @@
-# Human Decisions Queue
+# Human Decisions
 
-## D-001 — API ORM/data-access strategy
-Options: Prisma / Drizzle / TypeORM / SQL-first repositories.
-Recommendation: choose based on generated SQL control, migration quality and AI-agent ergonomics; prototype before final ADR.
+1. Git hosting provider and organization.
+2. External task tracker choice, if any.
+3. Initial production hosting/provider.
+4. Secrets manager.
+5. Whether a dedicated Mac is purchased or CI macOS is used first.
+6. Initial AI provider mix.
 
-## D-002 — Git hosting
-Recommendation: GitHub/GitLab based on preferred CI and access control.
-
-## D-003 — Task/AI team tracker
-Recommendation: initially keep source-of-truth task state in Git + YAML/Markdown, then connect a UI/issue tracker after workflow stabilizes.
-
-## D-004 — iOS build node
-Recommendation: Mac mini/macOS CI runner or trusted hosted macOS CI with dedicated signing.
+Decision records must link back to affected roadmap tasks.

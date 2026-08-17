@@ -1,0 +1,15 @@
+discovery_id: DISC-0000
+type: MISSING_REQUIREMENT
+source_task: P0-000
+title: Template
+finding: ""
+why_it_matters: ""
+affected_domains: []
+architecture_impact: LOW
+security_impact: LOW
+ux_impact: LOW
+recommended_solution: ""
+alternatives: []
+priority: P2
+blocking: false
+new_task: null

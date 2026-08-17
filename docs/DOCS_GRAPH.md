@@ -1,83 +1,81 @@
 # Documentation Graph
 
-**Rule:** Master Specification is the index and foundation. Domain documents stay short, authoritative and linked. Target <200 lines per document; split before the limit.
+`MASTER_SPEC.md` is the top-level index. Detail is intentionally split into short files.
 
-```text
-MASTER_SPEC
-├── product/
-│   ├── vision.md
-│   ├── principles.md
-│   ├── actors-and-permissions.md
-│   └── roadmap.md
-├── architecture/
-│   ├── system-context.md
-│   ├── domain-map.md
-│   ├── data-architecture.md
-│   ├── api-contracts.md
-│   ├── events.md
-│   ├── realtime.md
-│   ├── deployment.md
-│   └── security-boundaries.md
-├── engineering/
-│   ├── stack.md
-│   ├── repo-structure.md
-│   ├── coding-standards.md
-│   ├── testing.md
-│   ├── ci-cd.md
-│   ├── observability.md
-│   ├── performance.md
-│   ├── release-management.md
-│   ├── dev-workspace.md
-│   ├── git-workflow.md
-│   ├── local-environment.md
-│   ├── backup-dr.md
-│   └── cost-controls.md
-├── ai-team/
-│   ├── organization.md
-│   ├── roles.md
-│   ├── workflow.md
-│   ├── gates.md
-│   ├── escalation.md
-│   ├── context-management.md
-│   ├── cto-dashboard.md
-│   └── task-template.md
-├── game/
-│   ├── task-engine.md
-│   ├── verification.md
-│   ├── exercise-engine.md
-│   ├── economy.md
-│   └── games.md
-├── social/
-│   ├── graph.md
-│   ├── messaging.md
-│   └── notifications.md
-├── security/
-│   ├── privacy.md
-│   ├── permissions.md
-│   ├── child-safety.md
-│   ├── threat-model.md
-│   └── legal-ru.md
-├── ai/
-│   ├── architecture.md
-│   ├── knowledge-base.md
-│   ├── ai-safety.md
-│   └── evaluation.md
-├── integrations/
-│   ├── telegram.md
-│   ├── max.md
-│   ├── alice.md
-│   └── mcp.md
-└── adr/
-    ├── 0001-modular-monolith.md
-    ├── 0002-cross-platform-mobile.md
-    ├── 0003-on-device-pose.md
-    └── 0004-short-docs-graph.md
-```
+## Product
 
-## Graph rules
-1. Every domain has one index/owner document.
-2. Normative statements have one source of truth.
-3. ADR explains why; domain docs explain what/how.
-4. Tests link to domain behavior but are not a replacement for contracts.
-5. If a node grows, split it and update links.
-6. Every AI task loads the minimum relevant graph slice before coding.
+- `product/vision.md`
+- `product/principles.md`
+- `product/actors-and-permissions.md`
+- `product/roadmap.md`
+
+## Planning
+
+- `planning/roadmap-overview.md`
+- `planning/dependency-graph.md`
+- `planning/workstreams.md`
+- `planning/implementation-map.md`
+- `planning/responsibility-matrix.md`
+- `planning/phases/*.md`
+
+## AI team
+
+- `ai-team/organization.md`
+- `ai-team/roles.md`
+- `ai-team/agent-registry.yaml`
+- `ai-team/workflow.md`
+- `ai-team/task-lifecycle.md`
+- `ai-team/discovery-rework.md`
+- `ai-team/review-outcomes.md`
+- `ai-team/gates.md`
+- `ai-team/escalation.md`
+- `ai-team/context-management.md`
+
+## Architecture
+
+- `architecture/system-context.md`
+- `architecture/domain-map.md`
+- `architecture/data-architecture.md`
+- `architecture/api-contracts.md`
+- `architecture/events.md`
+- `architecture/realtime.md`
+- `architecture/deployment.md`
+- `architecture/security-boundaries.md`
+
+## Game / task
+
+- `game/task-engine.md`
+- `game/verification.md`
+- `game/exercise-engine.md`
+- `game/games.md`
+- `game/economy.md`
+
+## Social / safety
+
+- `social/graph.md`
+- `social/messaging.md`
+- `social/notifications.md`
+- `security/child-safety.md`
+- `security/permissions.md`
+- `security/privacy.md`
+- `security/threat-model.md`
+- `security/legal-ru.md`
+
+## AI / integrations
+
+- `ai/architecture.md`
+- `ai/knowledge-base.md`
+- `ai/ai-safety.md`
+- `ai/evaluation.md`
+- `integrations/alice.md`
+- `integrations/telegram.md`
+- `integrations/max.md`
+- `integrations/mcp.md`
+
+## Cases
+
+`docs/cases/` contains user-journey specifications. Cases are linked to domains and acceptance tests.
+
+## ADR
+
+Foundational decisions live under `docs/adr/`.

@@ -1,0 +1,104 @@
+version: 1
+tasks:
+- id: P0-001
+  phase: 0
+  title: Protect main branch and configure CI gates
+  primary: devops
+  status: READY
+  deps: []
+- id: P0-002
+  phase: 0
+  title: Provision local dev stack and health checks
+  primary: devops
+  status: READY
+  deps: []
+- id: P0-003
+  phase: 0
+  title: Implement task registry lifecycle and dependency fields
+  primary: ai-cto
+  status: READY
+  deps: []
+- id: P0-004
+  phase: 0
+  title: Implement agent worktree and handoff conventions
+  primary: ai-cto
+  status: READY
+  deps:
+  - P0-003
+- id: P0-005
+  phase: 0
+  title: Define OpenAPI and typed client generation path
+  primary: backend-lead
+  status: READY
+  deps: []
+- id: P0-006
+  phase: 0
+  title: Create synthetic family fixtures and seed data
+  primary: qa-lead
+  status: READY
+  deps:
+  - P0-005
+- id: P0-007
+  phase: 0
+  title: Baseline observability and error reporting
+  primary: devops
+  status: READY
+  deps:
+  - P0-002
+- id: P0-008
+  phase: 0
+  title: Establish security baseline and secrets policy
+  primary: security-lead
+  status: READY
+  deps: []
+- id: P0-009
+  phase: 0
+  title: Create Phase 1 contract pack
+  primary: chief-architect
+  status: READY
+  deps:
+  - P0-005
+  - P0-008
+- id: P1-001
+  phase: 1
+  title: Family and role model
+  primary: backend-lead
+  status: PLANNED
+  deps:
+  - P0-009
+- id: P1-002
+  phase: 1
+  title: Task template and assignment model
+  primary: backend-lead
+  status: PLANNED
+  deps:
+  - P0-009
+- id: P1-003
+  phase: 1
+  title: Parent task builder UX
+  primary: frontend-lead
+  status: PLANNED
+  deps:
+  - P0-009
+- id: P1-004
+  phase: 1
+  title: Child today/tasks UX
+  primary: frontend-lead
+  status: PLANNED
+  deps:
+  - P0-009
+- id: P1-005
+  phase: 1
+  title: Media evidence storage
+  primary: backend-lead
+  status: PLANNED
+  deps:
+  - P0-002
+  - P0-009
+- id: P1-006
+  phase: 1
+  title: Reward ledger and parent adjustments
+  primary: game-lead
+  status: PLANNED
+  deps:
+  - P0-009

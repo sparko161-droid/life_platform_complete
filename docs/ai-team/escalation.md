@@ -1,27 +1,37 @@
-# AI Escalation
+# Escalation Policy
 
 **Status:** Foundation
 **Owner:** AI CTO
-**Depends on:** MASTER_SPEC
-**Related:** MASTER_SPEC
 
+## Escalate to AI CTO
 
-## Must escalate to Human Architect
-- New domain boundary.
-- Core stack change.
-- Data model that locks future behavior.
-- Parent/child privacy policy change.
-- Real-money behavior change.
-- Child communication default change.
-- Public social/discovery change.
-- New external data processor/provider.
-- Security exception.
+- domain conflict
+- duplicate architectural pattern
+- cross-team dependency
+- repeated review failure
+- new task affecting roadmap
 
-## Should not escalate
-- Variable naming.
-- Routine test fixes.
-- Reusing existing patterns.
-- Non-breaking refactor inside approved boundary.
+## Escalate to Human Architect
 
-## Escalation format
-Question → current evidence → options → recommended option → impact if postponed → affected docs.
+- product ambiguity with durable consequences
+- privacy/safety decision
+- money/economy rule
+- child communication policy
+- architectural change to a foundational domain
+- stack/provider choice
+- release scope change
+
+## Escalation payload
+
+1. question
+2. context
+3. current evidence
+4. options
+5. recommendation
+6. consequences
+7. affected roadmap items
+8. required decision date/priority
+
+## No low-value interruptions
+
+Agents solve implementation details themselves. Human escalation is reserved for decisions that change product, architecture, safety, cost or roadmap.
