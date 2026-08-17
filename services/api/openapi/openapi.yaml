@@ -1,0 +1,141 @@
+openapi: 3.1.0
+info:
+  title: Life Platform API
+  version: 0.1.0
+  description: >
+    Canonical external REST contract for the Life Platform API, per
+    docs/architecture/api-contracts.md. This is a v1 skeleton (P0-005): the
+    reusable envelope/pagination/idempotency components and a single real
+    path to prove the generation pipeline end to end. Domain paths land with
+    their owning task (see P0-009's contract pack for Phase 1 schemas).
+
+servers:
+  - url: /api/v1
+    description: Versioned API root. Breaking changes get a new version per
+      docs/architecture/api-contracts.md ("Versioning").
+
+paths:
+  /health:
+    get:
+      operationId: getHealth
+      summary: Liveness/readiness probe.
+      tags: [system]
+      responses:
+        "200":
+          description: Service is healthy.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+        "5XX":
+          $ref: "#/components/responses/Error"
+
+components:
+  parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      description: >
+        Required for reward redemption, money ledger writes, completion
+        submissions and integration callbacks, per
+        docs/architecture/api-contracts.md ("Idempotency"). Client-generated,
+        unique per logical operation; replaying the same key returns the
+        original result instead of repeating the side effect.
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 255
+    Cursor:
+      name: cursor
+      in: query
+      required: false
+      description: >
+        Opaque pagination cursor. Cursor pagination is used for social
+        feeds, messages, catalogs and activity history per
+        docs/architecture/api-contracts.md ("Pagination"); offset pagination
+        is not used for these.
+      schema:
+        type: string
+    PageLimit:
+      name: limit
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+
+  schemas:
+    HealthStatus:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [ok]
+
+    # Stable error envelope. Never expose database errors or
+    # provider-specific details, per docs/architecture/api-contracts.md
+    # ("Response rules").
+    ErrorEnvelope:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+              description: Stable machine-readable error code, e.g. "NOT_FOUND".
+            message:
+              type: string
+              description: Human-readable, safe to display; never a raw
+                driver/provider error string.
+            details:
+              type: object
+              additionalProperties: true
+              description: Optional structured context. Never PII, never a
+                stack trace, never a provider payload.
+            correlation_id:
+              type: string
+              description: Matches the request's correlation id, per
+                docs/engineering/observability.md ("Correlation").
+
+    # Reusable cursor-paginated list wrapper. Concrete list responses
+    # compose this with an `items` schema of their own type.
+    CursorPage:
+      type: object
+      required: [items, page_info]
+      properties:
+        items:
+          type: array
+          items: {}
+        page_info:
+          type: object
+          required: [has_next_page]
+          properties:
+            has_next_page:
+              type: boolean
+            next_cursor:
+              type: string
+              nullable: true
+
+  responses:
+    Error:
+      description: Stable error envelope; never a raw database/provider error.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorEnvelope"
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+security:
+  - BearerAuth: []

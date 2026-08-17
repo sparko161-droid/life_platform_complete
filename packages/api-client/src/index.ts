@@ -1,5 +1,4 @@
-// Phase 0 placeholder entrypoint.
-// Real implementation lands with this package's Phase 1+ task
-// (see tasks/registry.yaml). This file exists only so tsc has
-// something to typecheck/build against on a clean checkout.
-export {};
+// Typed client surface, generated from services/api/openapi/openapi.yaml
+// per docs/architecture/api-contracts.md ("Typed clients"). Do not hand-edit
+// src/generated/** — run `pnpm generate` after changing the OpenAPI spec.
+export type { paths as ApiPaths, components as ApiComponents } from "./generated/openapi.js";

@@ -2,12 +2,17 @@
   "name": "@life/api-client",
   "private": true,
   "version": "0.0.0",
+  "type": "module",
   "scripts": {
     "lint": "echo TODO",
     "typecheck": "tsc --noEmit",
-    "test": "echo \"No tests yet\""
+    "test": "echo \"No tests yet\"",
+    "build": "tsc -p tsconfig.json",
+    "generate": "openapi-typescript ../../services/api/openapi/openapi.yaml -o src/generated/openapi.d.ts",
+    "generate:check": "node scripts/check-generate-no-diff.mjs"
   },
   "devDependencies": {
+    "openapi-typescript": "^7.4.4",
     "typescript": "^5.9.2"
   }
 }
