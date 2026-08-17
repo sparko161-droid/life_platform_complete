@@ -1,0 +1,48 @@
+name: Mobile iOS build
+
+# Phase-0-checklist "macOS build node plan created for iOS". The build
+# node is GitHub's hosted `macos-latest` runner -- no dedicated/cloud Mac
+# purchase needed for CI-only, unsigned verification builds. This
+# produces an unsigned, simulator/device-generic build for internal
+# verification only, never a TestFlight/App Store artifact -- code
+# signing needs an Apple Developer Program account and certificates,
+# which is a human decision/action (budget + Apple ID), not resolved
+# here. Once that account exists, add a signed release job with
+# fastlane/match or Xcode Cloud instead of extending this one.
+on:
+  workflow_dispatch:
+
+jobs:
+  build-ios:
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      # apps/mobile/ios/ doesn't exist in this checkout yet -- see the
+      # matching note in mobile-android.yml. Self-heals for now; replace
+      # with a plain `flutter pub get` once ios/ is committed for real.
+      - name: Ensure iOS platform folder exists
+        run: |
+          if [ ! -d ios ]; then
+            flutter create --platforms=ios --project-name life_mobile --org com.life.family .
+          fi
+
+      - run: flutter pub get
+
+      - run: flutter analyze
+
+      - name: Build unsigned iOS app
+        run: flutter build ios --debug --no-codesign
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: life-mobile-ios-unsigned
+          path: apps/mobile/build/ios/iphoneos/Runner.app
+          retention-days: 14

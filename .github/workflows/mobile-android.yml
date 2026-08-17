@@ -1,0 +1,53 @@
+name: Mobile Android build
+
+# Phase-0-checklist "Android internal build path created". This is an
+# unsigned debug APK for internal verification (CI artifact), not a Play
+# Store release -- signing keys/Play Console access are a human decision
+# (docs/security/secrets-policy.md doesn't cover mobile signing yet;
+# treat that as its own follow-up once the accounts exist).
+#
+# NOT run automatically on every push (apps/mobile has no product code
+# yet, per docs/engineering/repo-status.md); trigger manually or once
+# real mobile work lands, then switch `on:` to path-filtered push/PR.
+on:
+  workflow_dispatch:
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      # apps/mobile/android/ doesn't exist in this checkout yet -- no one
+      # has run `flutter create --platforms=android,ios .` locally and
+      # committed the generated platform folders (see
+      # docs/engineering/mobile-build-path.md). Self-heal here so this
+      # workflow is exercisable today; replace with a plain `flutter pub
+      # get` once android/ is committed for real, since regenerating it
+      # on every run would silently discard any platform-specific
+      # customization someone adds later.
+      - name: Ensure Android platform folder exists
+        run: |
+          if [ ! -d android ]; then
+            flutter create --platforms=android --project-name life_mobile --org com.life.family .
+          fi
+
+      - run: flutter pub get
+
+      - run: flutter analyze
+
+      - name: Build debug APK
+        run: flutter build apk --debug
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: life-mobile-android-debug
+          path: apps/mobile/build/app/outputs/flutter-apk/app-debug.apk
+          retention-days: 14

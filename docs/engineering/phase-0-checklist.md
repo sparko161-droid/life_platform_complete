@@ -15,6 +15,6 @@
 - [x] OpenAPI generation path established. `services/api/openapi/openapi.yaml` + `packages/api-client`, P0-005.
 - [x] Observability baseline established. `packages/observability`, P0-007.
 - [x] Backup/restore procedure tested in non-production. `pnpm db:backup`/`db:restore`, real drop-and-restore cycle verified against the live stack — see `docs/engineering/backup-dr.md`.
-- [ ] macOS build node plan created for iOS.
-- [ ] Android internal build path created.
+- [x] macOS build node plan created for iOS. GitHub-hosted `macos-latest` Actions runner (no dedicated Mac needed for CI-only unsigned builds); `.github/workflows/mobile-ios.yml`. See `docs/engineering/mobile-build-path.md` for the honest caveat: written and YAML-validated, not run end to end — no Flutter/Xcode toolchain available in this environment, and `apps/mobile` has no `ios/` platform folder committed yet.
+- [x] Android internal build path created. `.github/workflows/mobile-android.yml`, unsigned debug APK as a CI artifact. Same caveat as above — not run end to end here.
 - [ ] Telegram/MAX/Alice integration sandboxes separated from production.
