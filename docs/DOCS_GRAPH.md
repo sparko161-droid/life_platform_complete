@@ -2,6 +2,9 @@
 
 `MASTER_SPEC.md` is the index. Detail stays in short authoritative files.
 
+## Governance
+- `governance/project-evolution.md`
+
 ## Product
 - `product/vision.md`
 - `product/principles.md`

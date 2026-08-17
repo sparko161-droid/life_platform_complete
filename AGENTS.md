@@ -8,11 +8,16 @@ Human Architect is final authority for product, architecture, privacy, security 
 AI CTO orchestrates agents and may approve routine implementation within approved architecture.
 
 ## Before coding
-1. Read MASTER_SPEC and the relevant graph nodes.
+1. Read MASTER_SPEC, the relevant graph nodes and `docs/governance/project-evolution.md`.
 2. Locate the owning domain and existing implementation.
 3. Search for duplicates before creating new abstractions.
 4. Run the Architecture Gate.
 5. Raise only unresolved product/architecture/security questions to the Human Architect, with options and a recommendation.
+
+## Phase discipline
+Follow the current phase, its entry/exit criteria and frozen contracts. Do not start the next phase because a local feature happens to work.
+At mandatory revalidation points, inspect real implementation and update only the authoritative docs that evidence requires.
+Do not expand documentation for its own sake.
 
 ## UI language rule
 All visible product text must be Russian and localized. Do not expose English technical terms, API/entity names, route names, event names, error codes, stack traces or implementation vocabulary to end users. Follow `docs/ux/ui-language.md`.
@@ -26,6 +31,7 @@ All visible product text must be Russian and localized. Do not expose English te
 - Create a new service/module without checking existing boundaries.
 - Merge directly into main.
 - Put technical implementation terminology in user-facing text.
+- Reopen an already authoritative decision without new evidence.
 
 ## Required for changes
 Code, tests, documentation update, observability where relevant, security review where relevant, and a clear PR description.
@@ -37,7 +43,7 @@ Every important screen needs a screen contract: route, entry/exit, data queries,
 Use `agent/<role>/<task-id>-<slug>` or `feature/<task-id>-<slug>`. One worktree per active agent.
 
 ## Handoff
-Every agent reports: changed files, contracts changed, tests run, known risks, follow-up tasks, and whether any ADR is required.
+Every agent reports: changed files, contracts changed, tests run, known risks, follow-up tasks, discoveries/new tasks, and whether any ADR is required.
 
 ## Quality rule
 A feature author cannot be the only reviewer. Architecture, QA, and security gates are independent where applicable.
