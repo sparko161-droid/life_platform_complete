@@ -10,6 +10,7 @@ import { z } from "zod";
  * how tasks/registry.yaml already used it before this tool existed). It is
  * disclosed here rather than silently invented.
  */
+/** @public Exported for consumers that need the full state list (dashboards, validators). */
 export const TASK_STATES = [
   "PLANNED",
   "BACKLOG",
@@ -80,6 +81,7 @@ export function allowedNextStates(from: TaskState): TaskState[] {
   return TRANSITIONS[from] ?? [];
 }
 
+/** @public Used by handoff documents and future discovery-triage tooling. */
 export const discoverySchema = z.object({
   discovery_id: z.string(),
   source_task: z.string(),
@@ -107,14 +109,17 @@ export const discoverySchema = z.object({
   blocking: z.boolean().default(false),
   proposed_task: z.string().nullable().default(null),
 });
+/** @public */
 export type Discovery = z.infer<typeof discoverySchema>;
 
+/** @public */
 export const humanDecisionSchema = z.object({
   decision_id: z.string(),
   question: z.string(),
   decision: z.string().nullable().default(null),
   decided_at: z.string().nullable().default(null),
 });
+/** @public */
 export type HumanDecision = z.infer<typeof humanDecisionSchema>;
 
 /**
@@ -127,6 +132,7 @@ export type HumanDecision = z.infer<typeof humanDecisionSchema>;
  * Defaulted (not required) so loading the existing 58+ tasks that predate
  * this field never fails -- `readyAdmissionProblems` below is what actually
  * enforces completeness, and only for tasks already at READY.
+ * @public
  */
 export const taskExecutionSchema = z
   .object({
@@ -143,6 +149,7 @@ export const taskExecutionSchema = z
     test_strategy: "",
     source_reference: "",
   });
+/** @public */
 export type TaskExecution = z.infer<typeof taskExecutionSchema>;
 
 export const taskSchema = z.object({
@@ -157,7 +164,26 @@ export const taskSchema = z.object({
   title: z.string().min(1),
   primary: z.string().min(1),
   status: z.enum(TASK_STATES),
+  /**
+   * Unclassified dependencies. Legacy field, kept so registries written
+   * before BLK-P1-003 still load; `readyAdmissionProblems` rejects any
+   * task that still has entries here at READY, which is what actually
+   * forces the migration instead of letting both models coexist forever.
+   */
   deps: z.array(z.string()).default([]),
+  /**
+   * docs/governance/task-admission.md: "the upstream contract is
+   * sufficiently frozen and validated for parallel consumers". These gate
+   * *starting* the task -- see claimableTasks().
+   */
+  deps_contract: z.array(z.string()).default([]),
+  /**
+   * docs/governance/task-admission.md: "upstream runtime implementation
+   * must be DONE before integration or release". These do NOT gate
+   * starting the task; they gate offering it for integration -- see
+   * integrationProblems().
+   */
+  deps_implementation: z.array(z.string()).default([]),
   reviewer: z.string().nullable().default(null),
   gate_owners: z.array(z.string()).default([]),
   discovery_links: z.array(discoverySchema).default([]),
@@ -168,6 +194,40 @@ export const taskSchema = z.object({
   execution: taskExecutionSchema,
 });
 export type Task = z.infer<typeof taskSchema>;
+
+/**
+ * Every dependency edge a task declares, regardless of class. Existence
+ * and cycle checks care about the edge, not about which gate it controls,
+ * so they go through this rather than reading one of the three fields and
+ * silently ignoring the others.
+ */
+export function allDependencies(task: Task): string[] {
+  return [...task.deps, ...task.deps_contract, ...task.deps_implementation];
+}
+
+/**
+ * docs/governance/task-admission.md's integration rule: "A task may work
+ * against a frozen contract. It may not merge/integrate against an
+ * unfinished implementation dependency."
+ *
+ * Which is why this is a *separate* check from readyAdmissionProblems and
+ * from claimability: an implementation dependency that is not DONE is not
+ * a reason to refuse to start work, only a reason to refuse to integrate
+ * it. Enforced at the IN_PROGRESS -> REVIEW transition (`task-registry
+ * handoff`), because that is the point where work is offered for merge --
+ * the first moment the rule can bite without also blocking the parallel
+ * contract-driven work the rule exists to allow.
+ */
+export function integrationProblems(task: Task, statusOf: (id: string) => TaskState | undefined): string[] {
+  const problems: string[] = [];
+  for (const dep of task.deps_implementation) {
+    const status = statusOf(dep);
+    if (status !== "DONE") {
+      problems.push(`implementation dependency ${dep} is ${status ?? "unknown"}, not DONE`);
+    }
+  }
+  return problems;
+}
 
 /**
  * docs/governance/task-admission.md's "Mandatory metadata before READY" and
@@ -190,6 +250,11 @@ export function readyAdmissionProblems(task: Task): string[] {
   if (task.discovery_links.some((d) => d.blocking)) problems.push("blocking discovery remains unresolved");
   if (task.human_decisions.some((d) => d.decision === null)) problems.push("unresolved human decision remains");
   if (task.reviewer === task.primary) problems.push("reviewer must be independent from primary executor");
+  if (task.deps.length > 0) {
+    problems.push(
+      `dependencies are not classified: ${task.deps.join(", ")} must move to deps_contract or deps_implementation`,
+    );
+  }
   return problems;
 }
 

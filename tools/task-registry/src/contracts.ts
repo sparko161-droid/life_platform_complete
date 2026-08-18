@@ -26,6 +26,7 @@ const contractRegistrySchema = z.object({
 });
 
 export type ContractRegistry = z.infer<typeof contractRegistrySchema>;
+/** @public */
 export type ContractGroup = z.infer<typeof contractGroupSchema>;
 
 export function loadContractRegistry(filePath: string): ContractRegistry {

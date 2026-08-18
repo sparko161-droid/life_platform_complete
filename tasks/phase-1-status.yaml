@@ -24,58 +24,58 @@ waves:
   - id: W0
     name: Governance, contracts and admission control
     priority: P0
-    status: IN_PROGRESS
+    status: DONE
     owner: ai-cto
     architecture_control: architecture-control-lead
-    contract_gate: IN_PROGRESS
+    contract_gate: PASS
     implementation_gate: NOT_REQUIRED
-    qa_gate: NOT_READY
-    security_gate: NOT_READY
+    qa_gate: PASS
+    security_gate: PASS
     adversarial_gate: NOT_REQUIRED
     scale_gate: NOT_REQUIRED
-    documentation_gate: IN_PROGRESS
-    exit: BLOCKED
+    documentation_gate: PASS
+    exit: PASS
   - id: W1
     name: Identity, Family and persistence foundation
     priority: P1
-    status: BLOCKED
+    status: DONE
     owner: backend-lead
     architecture_control: architecture-control-lead
-    contract_gate: NOT_READY
-    implementation_gate: NOT_READY
-    qa_gate: NOT_READY
-    security_gate: NOT_READY
-    adversarial_gate: NOT_READY
-    scale_gate: NOT_READY
-    documentation_gate: NOT_READY
-    exit: BLOCKED
+    contract_gate: PASS
+    implementation_gate: PASS
+    qa_gate: PASS
+    security_gate: PASS
+    adversarial_gate: NOT_REQUIRED
+    scale_gate: NOT_REQUIRED
+    documentation_gate: PASS
+    exit: PASS
   - id: W2
     name: Task and Rules runtime
     priority: P1
-    status: BLOCKED
+    status: DONE
     owner: backend-lead
     architecture_control: architecture-control-lead
-    contract_gate: NOT_READY
-    implementation_gate: NOT_READY
-    qa_gate: NOT_READY
-    security_gate: NOT_READY
-    adversarial_gate: NOT_READY
-    scale_gate: NOT_READY
-    documentation_gate: NOT_READY
-    exit: BLOCKED
+    contract_gate: PASS
+    implementation_gate: PASS
+    qa_gate: PASS
+    security_gate: PASS
+    adversarial_gate: NOT_REQUIRED
+    scale_gate: NOT_REQUIRED
+    documentation_gate: PASS
+    exit: PASS
   - id: W3
     name: Evidence, Verification and Idempotency
     priority: P1
     status: BLOCKED
     owner: backend-lead
     architecture_control: architecture-control-lead
-    contract_gate: NOT_READY
-    implementation_gate: NOT_READY
-    qa_gate: NOT_READY
+    contract_gate: PASS
+    implementation_gate: PASS
+    qa_gate: PASS
     security_gate: NOT_READY
     adversarial_gate: NOT_READY
-    scale_gate: NOT_READY
-    documentation_gate: NOT_READY
+    scale_gate: NOT_REQUIRED
+    documentation_gate: PASS
     exit: BLOCKED
   - id: W4
     name: Reward and Event Foundation
@@ -83,13 +83,13 @@ waves:
     status: BLOCKED
     owner: game-engine-lead
     architecture_control: architecture-control-lead
-    contract_gate: NOT_READY
-    implementation_gate: NOT_READY
-    qa_gate: NOT_READY
+    contract_gate: PASS
+    implementation_gate: PASS
+    qa_gate: PASS
     security_gate: NOT_READY
     adversarial_gate: NOT_READY
-    scale_gate: NOT_READY
-    documentation_gate: NOT_READY
+    scale_gate: NOT_REQUIRED
+    documentation_gate: PASS
     exit: BLOCKED
   - id: W5
     name: Evolution, Versioning and Scale Guardrails

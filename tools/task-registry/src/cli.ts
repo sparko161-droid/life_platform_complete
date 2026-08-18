@@ -9,12 +9,21 @@ import {
   outstandingDecisions,
   replaceTask,
   saveRegistry,
+  startBlockingDependencies,
   validateStructure,
 } from "./registry.js";
-import { allowedNextStates, isValidTransition, type Task, type TaskState } from "./schema.js";
+import {
+  allowedNextStates,
+  integrationProblems,
+  readyAdmissionProblems,
+  isValidTransition,
+  type Task,
+  type TaskState,
+} from "./schema.js";
 import { renderHandoff } from "./handoff.js";
 import { createWorktree, removeWorktree, repoRoot } from "./worktree.js";
 import { loadContractRegistry, validateContractRegistry } from "./contracts.js";
+import { validateControlPlane } from "./control.js";
 import { withRegistryLock } from "./lock.js";
 
 // pnpm --filter runs scripts with cwd set to the package directory, not the
@@ -32,6 +41,16 @@ function handoffArchivePath(registryPath: string, id: string): string {
 
 function registryPath(opts: { registry?: string }): string {
   return opts.registry ? resolve(invocationCwd, opts.registry) : DEFAULT_REGISTRY_PATH;
+}
+
+// Dependencies are printed by class, not as one flat list, because the two
+// classes gate different things (start vs integrate) -- collapsing them
+// back into `deps=[...]` in the human-facing output would hide exactly the
+// distinction BLK-P1-003 introduced.
+function describeDeps(task: Task): string {
+  const parts = [`contract=[${task.deps_contract.join(",")}]`, `impl=[${task.deps_implementation.join(",")}]`];
+  if (task.deps.length > 0) parts.push(`unclassified=[${task.deps.join(",")}]`);
+  return parts.join(" ");
 }
 
 function transition(task: Task, to: TaskState): Task {
@@ -69,7 +88,7 @@ program
     });
     for (const t of rows) {
       console.log(
-        `${t.id}\t${t.status}\t${t.primary}\t${t.reviewer ?? "-"}\tdeps=[${t.deps.join(",")}]\t${t.title}`,
+        `${t.id}\t${t.status}\t${t.primary}\t${t.reviewer ?? "-"}\t${describeDeps(t)}\t${t.title}`,
       );
     }
     console.log(`\n${rows.length} task(s)`);
@@ -77,7 +96,7 @@ program
 
 program
   .command("next")
-  .description("list tasks an agent could claim right now (READY with every dep DONE), sorted by phase then id")
+  .description("list tasks an agent could claim right now (READY with every contract dep DONE), sorted by phase then id")
   .option("--role <role>", "only tasks whose primary matches this role")
   .option("--limit <n>", "cap the number of results", "20")
   .action((cmdOpts, cmd) => {
@@ -88,11 +107,11 @@ program
     const limited = claimable.slice(0, Number(cmdOpts.limit));
 
     if (limited.length === 0) {
-      console.log("Nothing claimable right now (no READY task has every dependency DONE" + (cmdOpts.role ? ` for role ${cmdOpts.role}` : "") + ").");
+      console.log("Nothing claimable right now (no READY task has every contract dependency DONE" + (cmdOpts.role ? ` for role ${cmdOpts.role}` : "") + ").");
       return;
     }
     for (const t of limited) {
-      console.log(`${t.id}\tphase=${t.phase}\t${t.primary}\tdeps=[${t.deps.join(",")}]\t${t.title}`);
+      console.log(`${t.id}\tphase=${t.phase}\t${t.primary}\t${describeDeps(t)}\t${t.title}`);
     }
     console.log(`\n${limited.length} of ${claimable.length} claimable task(s) shown.`);
   });
@@ -137,6 +156,31 @@ program
   });
 
 program
+  .command("admit <id>")
+  .description("admit a task to READY, enforcing docs/governance/task-admission.md")
+  .action(async (id: string, _cmdOpts, cmd) => {
+    const path = registryPath(cmd.optsWithGlobals());
+    await withRegistryLock(path, () => {
+      const registry = loadRegistry(path);
+      const task = findTask(registry, id);
+
+      // The admission rules are checked *before* the transition, so a task
+      // can never sit at READY in a state readyAdmissionProblems() would
+      // reject -- which is what `validate` and the dashboard both assume.
+      const problems = readyAdmissionProblems(task);
+      if (problems.length > 0) {
+        throw new Error(
+          `${id} cannot be admitted to READY:\n  - ${problems.join("\n  - ")}`,
+        );
+      }
+
+      const admitted = transition(task, "READY");
+      saveRegistry(path, replaceTask(registry, admitted));
+      console.log(`${id} admitted: ${task.status} -> READY`);
+    });
+  });
+
+program
   .command("claim <id>")
   .description("claim a READY/BACKLOG task as its single primary executor")
   .requiredOption("--agent <role>", "agent/role claiming the task")
@@ -146,11 +190,16 @@ program
       const registry = loadRegistry(path);
       const task = findTask(registry, id);
 
-      for (const dep of task.deps) {
+      // Only start-blocking dependencies (contract + still-unclassified)
+      // are checked here. An open implementation dependency is allowed to
+      // start -- docs/governance/task-admission.md permits building
+      // against a frozen contract in parallel -- and is caught at handoff
+      // instead.
+      for (const dep of startBlockingDependencies(task)) {
         const depTask = findTask(registry, dep);
         if (depTask.status !== "DONE") {
           throw new Error(
-            `${id} cannot be claimed: dependency ${dep} is ${depTask.status}, not DONE.`,
+            `${id} cannot be claimed: contract dependency ${dep} is ${depTask.status}, not DONE.`,
           );
         }
       }
@@ -172,26 +221,39 @@ program
   .command("handoff <id>")
   .description("move a claimed task to REVIEW and print the fixed handoff report")
   .requiredOption("--reviewer <role>")
-  .option("--gate-owners <roles>", "comma-separated gate owners")
+  .option("--gate-owner <role>", "gate owner (repeatable)", (v: string, a: string[]) => [...a, v], [] as string[])
   .option("--branch <branch>")
-  .option("--files <items>", "comma-separated changed files")
-  .option("--contracts <items>", "comma-separated changed contracts")
-  .option("--tests <items>", "comma-separated tests run")
-  .option("--risks <items>", "comma-separated known risks")
-  .option("--decisions <items>", "comma-separated decisions made")
-  .option("--next <items>", "comma-separated follow-up task ids/notes")
+  .option("--file <path>", "changed file (repeatable)", (v: string, a: string[]) => [...a, v], [] as string[])
+  .option("--contract <item>", "changed contract (repeatable)", (v: string, a: string[]) => [...a, v], [] as string[])
+  .option("--test <item>", "test run (repeatable)", (v: string, a: string[]) => [...a, v], [] as string[])
+  .option("--risk <item>", "known risk (repeatable)", (v: string, a: string[]) => [...a, v], [] as string[])
+  .option("--decision <item>", "decision made (repeatable)", (v: string, a: string[]) => [...a, v], [] as string[])
+  .option("--next <item>", "follow-up task id or note (repeatable)", (v: string, a: string[]) => [...a, v], [] as string[])
   .action(async (id: string, cmdOpts, cmd) => {
     const path = registryPath(cmd.optsWithGlobals());
     await withRegistryLock(path, () => {
       const registry = loadRegistry(path);
       const task = findTask(registry, id);
-      const split = (v?: string) => (v ? v.split(",").map((s: string) => s.trim()).filter(Boolean) : []);
+      const collect = (v?: string[]) => v ?? [];
+
+      // docs/governance/task-admission.md: a task may be built against a
+      // frozen contract, but may not be integrated while an
+      // implementation dependency is unfinished. REVIEW is where the work
+      // is offered for merge, so that is where the rule is enforced.
+      const statusById = new Map(registry.tasks.map((t) => [t.id, t.status as TaskState]));
+      const integration = integrationProblems(task, (depId) => statusById.get(depId));
+      if (integration.length > 0) {
+        throw new Error(
+          `${id} cannot be handed off for integration:\n  - ${integration.join("\n  - ")}\n` +
+            `Keep it IN_PROGRESS, or reclassify the dependency if it is really only a contract dependency.`,
+        );
+      }
 
       const updated = transition(
         {
           ...task,
           reviewer: cmdOpts.reviewer,
-          gate_owners: split(cmdOpts.gateOwners),
+          gate_owners: collect(cmdOpts.gateOwner),
         },
         "REVIEW",
       );
@@ -200,12 +262,12 @@ program
       const report = renderHandoff({
         task: updated,
         branch: cmdOpts.branch ?? null,
-        files: split(cmdOpts.files),
-        contracts: split(cmdOpts.contracts),
-        tests: split(cmdOpts.tests),
-        risks: split(cmdOpts.risks),
-        decisions: split(cmdOpts.decisions),
-        nextTasks: split(cmdOpts.next),
+        files: collect(cmdOpts.file),
+        contracts: collect(cmdOpts.contract),
+        tests: collect(cmdOpts.test),
+        risks: collect(cmdOpts.risk),
+        decisions: collect(cmdOpts.decision),
+        nextTasks: collect(cmdOpts.next),
       });
       const archivePath = handoffArchivePath(path, id);
       mkdirSync(dirname(archivePath), { recursive: true });
@@ -340,7 +402,15 @@ program
         title: cmdOpts.title,
         primary: cmdOpts.primary,
         status: "BACKLOG",
-        deps: cmdOpts.deps ? cmdOpts.deps.split(",").map((s: string) => s.trim()).filter(Boolean) : [],
+        deps: [],
+        // A new task's dependencies default to the strictest class:
+        // implementation. Classifying one down to `deps_contract` is a
+        // deliberate act (the upstream contract really is frozen), not
+        // something a CLI default should decide.
+        deps_contract: [],
+        deps_implementation: cmdOpts.deps
+          ? cmdOpts.deps.split(",").map((s: string) => s.trim()).filter(Boolean)
+          : [],
         reviewer: null,
         gate_owners: [],
         discovery_links: [],
@@ -360,6 +430,32 @@ program
       saveRegistry(path, { ...registry, tasks: [...registry.tasks, newTask] });
       console.log(
         `${newTask.id} created from ${cmdOpts.fromDiscovery} (discovered_from=${source.id}).`,
+      );
+    });
+  });
+
+program
+  .command("gate <id>")
+  .description("record one gate result, moving the task one step along REVIEW -> QA -> SECURITY -> ACCEPTANCE")
+  .requiredOption("--to <status>", "QA, SECURITY, ACCEPTANCE or REWORK")
+  .requiredOption("--by <role>", "who passed the gate")
+  .option("--note <note>", "what was checked")
+  .action(async (id: string, cmdOpts, cmd) => {
+    const path = registryPath(cmd.optsWithGlobals());
+    await withRegistryLock(path, () => {
+      const registry = loadRegistry(path);
+      const task = findTask(registry, id);
+
+      // One step at a time, through the same TRANSITIONS table everything
+      // else uses. The gates existed in docs/ai-team/task-lifecycle.md and
+      // in the state machine, but no verb walked them, so a task could
+      // only ever reach DONE by editing the registry by hand -- which is
+      // exactly the kind of unrecorded state change the lifecycle exists
+      // to prevent.
+      const updated = transition(task, cmdOpts.to as TaskState);
+      saveRegistry(path, replaceTask(registry, updated));
+      console.log(
+        `${id}: ${task.status} -> ${cmdOpts.to} (gate passed by ${cmdOpts.by}${cmdOpts.note ? `: ${cmdOpts.note}` : ""})`,
       );
     });
   });
@@ -445,6 +541,36 @@ contracts
     console.log(
       `Contract registry OK: ${contractRegistry.groups.length} group(s), pack version ${contractRegistry.contract_pack_version}.`,
     );
+  });
+
+const control = program
+  .command("control")
+  .description("Wave Gate / Architecture Control review artifacts (P1-020)");
+
+control
+  .command("validate")
+  .description("check tasks/reviews/*.yaml against wave status, task status and open blockers")
+  .option("--reviews <dir>", "directory holding review artifacts", "tasks/reviews")
+  .option("--phase-status <path>", "phase/wave status file", "tasks/phase-1-status.yaml")
+  .option("--blockers <path>", "blockers file", "tasks/phase-1-blockers.yaml")
+  .action(async (cmdOpts, cmd) => {
+    const root = await repoRoot();
+    const taskRegistry = loadRegistry(registryPath(cmd.optsWithGlobals()));
+
+    const problems = validateControlPlane({
+      reviewsDir: resolve(root, cmdOpts.reviews),
+      phaseStatusPath: resolve(root, cmdOpts.phaseStatus),
+      blockersPath: resolve(root, cmdOpts.blockers),
+      taskRegistry,
+    });
+
+    if (problems.length > 0) {
+      console.error("Control-plane validation FAILED:");
+      for (const p of problems) console.error(`  - ${p}`);
+      process.exitCode = 1;
+      return;
+    }
+    console.log("Control plane OK: review artifacts agree with wave status, task status and open blockers.");
   });
 
 program.parseAsync(process.argv).catch((err) => {

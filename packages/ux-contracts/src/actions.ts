@@ -2,9 +2,17 @@
  * UI action -> canonical operation catalog (P1-009, extended by P1-014),
  * scoped to the nine screens in screens.ts. Source:
  * docs/ux/action-api-catalog.md's full 13-row table, narrowed to the rows
- * this task's screen set actually needs -- the full table also covers
- * family/child creation and friend-request flows that have no screen
- * contract at this tier yet.
+ * the Phase 1 journey needs. P1-013 added the family/child rows, which
+ * were previously unrepresentable because `screen` was typed as
+ * `ScreenId` and those screens have no frozen contract yet; the remaining
+ * rows (friend.request, conversation.message.send, moderation.report,
+ * game.session.join) are Phase 2+ social/game scope and stay out.
+ *
+ * The Phase 1 exit journey in docs/planning/phase-1-execution-plan.md --
+ * "Parent A + Parent B -> Child -> Task Template -> Assignment -> Child
+ * Today -> Attempt -> Proof -> Parent Approval -> Exactly-once Reward
+ * Ledger -> Audit" -- is covered end to end by the entries below, and a
+ * test asserts that rather than trusting this comment.
  *
  * `operationId` is the dot-notation engineering identifier from
  * docs/ux/action-api-catalog.md -- stable, never shown as user-facing
@@ -16,14 +24,20 @@
  * task.publish is still P1-002's to build.
  */
 
-import type { ScreenId } from "./screens.js";
+import type { CanonicalScreenId } from "./screen-id-registry.js";
 
 export type OperationStatus = "SPECIFIED" | "IMPLEMENTED";
 
 export interface ActionContract {
   /** Engineering identifier, never shown as user-facing text (docs/ux/action-api-catalog.md). */
   action: string;
-  screen: ScreenId;
+  /**
+   * Canonical, so an action can be attached to a screen that is named but
+   * not yet contract-frozen (P-FAMILY-SETUP and friends). Before P1-013
+   * this was narrowed to `ScreenId`, which is why the family/child rows of
+   * docs/ux/action-api-catalog.md had no representation here at all.
+   */
+  screen: CanonicalScreenId;
   operationId: string;
   /** services/api/openapi/openapi.yaml's real operationId, once operationStatus is IMPLEMENTED. */
   openapiOperationId: string | null;
@@ -36,6 +50,36 @@ export interface ActionContract {
 }
 
 export const ACTIONS: ActionContract[] = [
+  {
+    action: "family.create",
+    screen: "P-FAMILY-SETUP",
+    operationId: "family.create",
+    openapiOperationId: null,
+    resultSummary: "family created",
+    next: "P-FAMILY-SETUP (state: family ready)",
+    operationStatus: "SPECIFIED",
+    ownerTask: "P1-001",
+  },
+  {
+    action: "child.create",
+    screen: "P-CHILD-PROFILE",
+    operationId: "child.create",
+    openapiOperationId: null,
+    resultSummary: "child created",
+    next: "P-CHILD-PROFILE",
+    operationStatus: "SPECIFIED",
+    ownerTask: "P1-001",
+  },
+  {
+    action: "family.parent.invite",
+    screen: "P-FAMILY-SETUP",
+    operationId: "family.parent.invite",
+    openapiOperationId: null,
+    resultSummary: "invitation created",
+    next: "P-FAMILY-SETUP (state: invitation sent)",
+    operationStatus: "SPECIFIED",
+    ownerTask: "P1-001",
+  },
   {
     action: "task.publish",
     screen: "P-TASK-BUILDER",

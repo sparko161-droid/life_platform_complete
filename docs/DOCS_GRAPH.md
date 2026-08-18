@@ -48,6 +48,7 @@
 - `ux/ui-language.md`
 - `ux/screen-contract-template.md`
 - `ux/screen-map.md`
+- `ux/screen-id-scheme.md`
 - `ux/child-flows.md`
 - `ux/parent-flows.md`
 - `ux/frontend-backend-contract.md`

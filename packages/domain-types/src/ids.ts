@@ -17,6 +17,7 @@ export const TaskCompletionId = brandedUuid("TaskCompletionId");
 export const MediaEvidenceId = brandedUuid("MediaEvidenceId");
 export const RewardLedgerEntryId = brandedUuid("RewardLedgerEntryId");
 export const RewardId = brandedUuid("RewardId");
+export const InvitationTokenId = brandedUuid("InvitationTokenId");
 
 export type FamilyId = z.infer<typeof FamilyId>;
 export type ParentId = z.infer<typeof ParentId>;
@@ -27,3 +28,4 @@ export type TaskCompletionId = z.infer<typeof TaskCompletionId>;
 export type MediaEvidenceId = z.infer<typeof MediaEvidenceId>;
 export type RewardLedgerEntryId = z.infer<typeof RewardLedgerEntryId>;
 export type RewardId = z.infer<typeof RewardId>;
+export type InvitationTokenId = z.infer<typeof InvitationTokenId>;

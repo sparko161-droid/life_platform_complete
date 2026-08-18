@@ -1,0 +1,89 @@
+# Wave Gate review artifact — W1 (Identity, Family and persistence foundation).
+#
+# Machine-checkable counterpart to docs/planning/phase-1-review-artifact-template.md.
+# The template's prose review is the human's job; this file holds the
+# claims a tool can check, and `task-registry control validate` checks
+# them against tasks/registry.yaml, tasks/phase-1-status.yaml and
+# tasks/phase-1-blockers.yaml.
+
+version: 1
+review_id: W1-1
+scope: W1
+reviewed_range: "66afd9c..63e4b94 (P1-001)"
+primary_reviewer: ai-cto
+architecture_control_lead: architecture-control-lead
+tasks:
+  - P1-001
+
+evidence:
+  - area: contracts
+    status: PASS
+    evidence: "Family aggregate schema (FamilySchema, ParentMembershipSchema, ChildProfileSchema, InvitationTokenSchema) validated with Zod v4; all event types enumerated in FAMILY_EVENT_TYPES."
+    note: "InvitationToken lifecycle PENDING/ACCEPTED/EXPIRED/REVOKED is self-contained; persistence layer is deferred to W3."
+  - area: domain_state
+    status: PASS
+    evidence: "Pure domain service functions in packages/domain-types/src/family-service.ts: createFamily, addChild, inviteParent, acceptInvitation, revokeParent, transitionFamilyStatus. All return {next, events}. No I/O."
+    note: ""
+  - area: api
+    status: NOT_REQUIRED
+    evidence: ""
+    note: "W1 is domain-layer only; the API surface (REST handlers) is built in W7."
+  - area: events
+    status: PASS
+    evidence: "FAMILY_EVENT_TYPES array exported from packages/domain-types/src/events.ts. Events: FAMILY_CREATED, CHILD_ADDED, PARENT_INVITED, PARENT_INVITATION_ACCEPTED, PARENT_MEMBERSHIP_REVOKED. Each command emits the correct event via EventEnvelope."
+    note: ""
+  - area: persistence_migrations
+    status: NOT_REQUIRED
+    evidence: ""
+    note: "Persistence is introduced in W3. Domain service operates on in-memory aggregates only."
+  - area: tests
+    status: PASS
+    evidence: "18 node:test unit tests in packages/domain-types/test/family-service.test.ts. Cover: createFamily, addChild, inviteParent (owner-only, capability set), acceptInvitation (happy path, wrong invitee, expired token), revokeParent (owner-only, self-revoke guard), transitionFamilyStatus, and full onboarding integration flow. All 18 pass."
+    note: ""
+  - area: security_engineering
+    status: PASS
+    evidence: "Pure domain service with no I/O or storage. Branded UUID types (FamilyId, ParentId, ChildId, InvitationTokenId) prevent cross-entity ID confusion. Owner-only gates on invite/revoke. Self-revoke prevented. Invitation expiry enforced."
+    note: ""
+  - area: security_red_team
+    status: NOT_REQUIRED
+    evidence: ""
+    note: "No network surface yet. Red team scheduled for W8 (P1-021)."
+  - area: child_safety
+    status: PASS
+    evidence: "ChildProfile contains only id, displayName, avatarUrl, dateOfBirth, createdAt — no PII beyond what is necessary. Child addition requires CHILD_POLICY capability or family ownership. Age field is dateOfBirth (date string), enabling DSL age-gate enforcement."
+    note: ""
+  - area: performance_scale
+    status: NOT_REQUIRED
+    evidence: ""
+    note: "Pure in-memory domain logic; scale guardrails are in W5 (P1-022)."
+  - area: observability_audit
+    status: NOT_REQUIRED
+    evidence: ""
+    note: "Domain services emit EventEnvelopes; instrumentation is wired at the application layer (W7+)."
+  - area: documentation_traceability
+    status: PASS
+    evidence: "family-service.ts and task-service.ts carry JSDoc explaining the pure command pattern. All new exports are annotated @public where used across package boundaries."
+    note: ""
+  - area: technical_debt
+    status: PASS
+    evidence: "No dead code. knip passes with @public annotations. ESM-only (type: module). Zod v4 discriminatedUnion for all tagged unions. No require() calls."
+    note: ""
+
+architecture_control:
+  dependency_direction: PASS
+  single_source_of_truth: PASS
+  contract_version_compatibility: PASS
+  migration_compatibility: NOT_REQUIRED
+  no_undocumented_breaking_changes: PASS
+  no_duplicate_domain_implementation: PASS
+  later_phase_concerns_bounded: PASS
+
+architecture_control_notes:
+  migration_compatibility: "No persistence or migrations exist yet; W3 introduces them."
+  later_phase_concerns_bounded: "InvitationToken expiry clock is a string datetime; actual expiry enforcement against real time is deferred to W7 application layer."
+
+decision: PASS
+
+accepted_deviations: []
+
+follow_up_tasks: []

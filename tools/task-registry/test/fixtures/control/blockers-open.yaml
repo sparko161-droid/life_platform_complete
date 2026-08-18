@@ -1,0 +1,6 @@
+version: 1
+blockers:
+  - id: BLK-FIX-002
+    status: OPEN
+    title: "Open blocker that still blocks the wave a review claims to pass"
+    blocks: [W0]

@@ -37,6 +37,26 @@ Discovery-driven work must preserve `origin_discovery` and `discovered_from`. A 
 
 A task may work against a frozen contract. It may not merge/integrate against an unfinished implementation dependency.
 
+### Where each class is enforced
+
+The two classes gate two different moments, which is the whole reason they
+are separate fields rather than one `deps` list:
+
+| Class | Gate | Enforced by |
+| --- | --- | --- |
+| `deps_contract` | starting work (`task-registry claim`, `task-registry next`) | `startBlockingDependencies()` / `claimableTasks()` |
+| `deps_implementation` | offering work for integration (`task-registry handoff`, i.e. `IN_PROGRESS -> REVIEW`) | `integrationProblems()` |
+
+`REVIEW` is used as the integration point because that is where work is
+offered for merge -- the first moment the rule can bite without also
+blocking the parallel contract-driven work the rule exists to permit.
+
+A task at `READY` may not carry unclassified `deps`. The legacy `deps`
+field still loads (registries written before this rule are not rejected
+outright) and is treated as start-blocking, but `readyAdmissionProblems()`
+refuses to admit a task that still uses it, which is what forces the
+migration instead of letting both models coexist indefinitely.
+
 ## Blocking conditions
 
 A task cannot become `READY` when:

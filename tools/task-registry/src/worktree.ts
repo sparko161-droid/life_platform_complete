@@ -5,6 +5,7 @@ import type { Task } from "./schema.js";
 
 const run = promisify(execFile);
 
+/** @public Thrown by worktree operations; catch-able by callers that import this module. */
 export class WorktreeError extends Error {}
 
 function slugify(title: string): string {
@@ -46,6 +47,7 @@ export async function repoRoot(): Promise<string> {
   return resolve(gitDir, "..");
 }
 
+/** @public Resolves the worktree path for a task; used by the worktree create sub-command and future CI tooling. */
 export async function worktreePath(task: Task): Promise<string> {
   const root = await repoRoot();
   const repoName = basename(root);

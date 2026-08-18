@@ -30,12 +30,17 @@ needs them. `P-APPROVALS` didn't exist at this tier before this task —
 Phase 1's exit criterion explicitly requires "parent can approve," so it
 was written to close that gap (`docs/ux/screens/parent-approvals.md`).
 
-## Known gap, disclosed rather than silently resolved
+## Screen identity (resolved by P1-013)
 
-`docs/ux/screens/` has two tiers using different screen-ID schemes for
-overlapping screens: this package's source tier (`C-TODAY`, `P-DASH`, ...,
-template-conformant per `docs/ux/screen-contract-template.md`) and an
-earlier, lighter numbered set (`docs/ux/screens/01-parent-registration.md`
-through `17-...md`, IDs like `UX-CHI-02`) that covers more screens but in
-less depth and doesn't follow the template. Recorded as a discovery on
-P1-009 rather than deleting either tier unilaterally.
+`docs/ux/screens/` used to have two tiers with two different ID schemes for
+overlapping screens — this package's semantic tier (`C-TODAY`, `P-DASH`,
+...) and the earlier numbered set (`UX-CHI-02`, ...). The semantic scheme
+is now canonical; every retired positional id is mapped in
+`RETIRED_SCREEN_IDS` (`src/screen-id-registry.ts`) so old references still
+resolve, and `SPECIFIED_SCREEN_IDS` names the eight screens that have a
+canonical id but no template-conformant contract yet.
+
+The numbered documents were kept as product source. They no longer declare
+an id where a contract exists; they point at the contract instead. The
+rationale and the full mapping table live in `docs/ux/screen-id-scheme.md`,
+and the rules are enforced by `test/screens.test.ts`, not by convention.

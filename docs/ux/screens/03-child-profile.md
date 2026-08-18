@@ -1,6 +1,7 @@
 # Экран: профиль ребёнка
 
-**ID:** UX-CHI-01
+**ID:** P-CHILD-PROFILE
+**Прежний ID:** UX-CHI-01 (выведен из употребления, см. `docs/ux/screen-id-scheme.md`)
 **Владелец:** Child Experience Lead + UI/UX Lead
 
 ## Назначение

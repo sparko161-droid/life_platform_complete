@@ -2,6 +2,9 @@ version: 1
 phase: 1
 review_artifacts:
   template: docs/planning/phase-1-review-artifact-template.md
+  # Machine-checkable artifacts (P1-020). One file per wave, validated by
+  # `pnpm run control:validate`.
+  directory: tasks/reviews
   architecture_control: docs/architecture/architecture-control-plane.md
   outcome_contract: docs/planning/phase-1-outcome-contract.md
   phase_gates: docs/governance/phase-1-gates.md

@@ -1,5 +1,229 @@
 # Planning Change Log
 
+## 0.17 (contracts/registry.yaml — catch up six shipped domain-service groups)
+
+`task-registry contracts validate` runs in CI (`pnpm run contracts:validate`,
+wired into `.github/workflows/ci.yml`), but this branch never opened a pull
+request until now -- CI only triggers on `pull_request`/`push` to `main`, so
+nothing had actually run it since P1-002A. Every domain-service file added
+since (`family-service.ts` P1-001, `task-service.ts` P1-002A,
+`media-service.ts` P1-005, `reward-service.ts` P1-006, `idempotency.ts`
+P1-008, `concurrency.ts` P1-015) shipped without a matching contract group,
+and `family.ts`/`events.ts` gained exports (`InvitationToken*`,
+`FAMILY_EVENT_TYPES`, `TASK_EVENT_TYPES`) their existing groups never
+listed. None of this is a new shape change -- every export already exists
+in code merged and gated `DONE` long before this entry. This is pure
+registry catch-up:
+
+- Six new FROZEN groups at version `0.1.0`: `family_service`,
+  `task_service`, `media_service`, `reward_service`, `idempotency`,
+  `concurrency`, each `defines.domain_types` pointing at its real file with
+  every actual export listed.
+- `family` group: added `INVITATION_STATUSES`, `InvitationStatus`,
+  `InvitationTokenSchema`, `InvitationToken` (shipped with P1-001).
+  Version stays `0.2.0` -- the shape didn't change, the registry's
+  bookkeeping was just incomplete.
+- `events` group: added `FAMILY_EVENT_TYPES`/`FamilyEventType`
+  (P1-001), `TASK_EVENT_TYPES`/`TaskEventType` (P1-002A). Version stays
+  `0.3.0` for the same reason.
+
+`contract_pack_version` stays `0.2.0` -- no schema shape changed as part of
+this entry, only what the registry indexes.
+
+## 0.16 (P1-014 — record corrected to the scope actually delivered)
+
+Raised in 0.12 and decided by the Human Architect: where a record does not
+match reality, the record changes.
+
+Checked what reality is. `services/api/src/index.ts` is still the Phase 0
+placeholder, so nothing produces a reward ledger entry at all. But
+`P1-014`'s own title is "first task-to-reward vertical slice **contract and
+event path**", and what it delivered matches that exactly: five OpenAPI
+operations, `DOMAIN_EVENT_TYPES` completed to the seven required events,
+the UI action-to-operation mapping, and three contract-group version bumps.
+Its handoff says in as many words that P1-015/P1-016 build the actual
+server-side handlers and client wiring.
+
+So `DONE` is the correct status for the scope this task had. What did not
+match reality was the acceptance line, which 0.13 imported from
+`tasks/phase-1-participant-matrix.yaml` -- "produces the correct reward
+event and ledger entry exactly once" describes the runtime slice, not the
+contract freeze, and that acceptance is already owned by P1-006
+(append-only ledger, exactly-once identity), P1-008 (duplicate
+completion/verification/reward), P1-015 (race/retry/conflict fixtures) and
+P1-007 (the full journey). It was duplicated onto P1-014, not assigned to
+it.
+
+Corrected in both the registry (version 10 -> 11) and the participant
+matrix: acceptance and test strategy now describe the contract freeze, and
+the five implementation dependencies the matrix listed are removed --
+a contract freeze does not depend on the implementations that will later
+consume it. Status stays `DONE`.
+
+## 0.15 (P1-020 / BLK-P1-011 — Wave Gates that can actually fail)
+
+`docs/governance/wave-gate.md` already required "a versioned review
+artifact records the result and follow-ups", and the artifact template
+already existed. Neither was checkable. A wave could be marked `exit: PASS`
+in `tasks/phase-1-status.yaml` with no review behind it at all, and a
+review could claim a PASS while the tasks it scoped were still `PLANNED`.
+Both directions are now closed.
+
+- `tools/task-registry/src/control.ts`: schema for `tasks/reviews/W<N>.yaml`
+  plus `validateControlPlane()`. A wave claiming an exit must have an
+  artifact that decided PASS; an artifact claiming PASS must not be
+  contradicted by task status or by a blocker that is still OPEN; every
+  evidence area from the template must be accounted for; a PASS may not
+  sit on top of a REWORK/BLOCKED area or architecture-control check.
+- `task-registry control validate` + `pnpm run control:validate`, wired
+  into CI next to `contracts:validate` and `docs:check`.
+- Fixtures with deliberate drift (a PASS scoping a PLANNED task), missing
+  evidence areas, an open blocker, and a wave with no artifact -- each
+  asserted to fail. A validator nobody has watched fail is a validator
+  nobody should trust.
+- `NOT_REQUIRED` added as an architecture-control verdict. W0 has no
+  migrations; answering PASS for a check nobody performed is the precise
+  failure the artifact exists to prevent. It costs a mandatory note.
+- New `task-registry admit <id>`: PLANNED -> READY, refusing any task
+  `readyAdmissionProblems()` rejects. The rules existed and `validate`
+  reported violations after the fact, but nothing enforced them at the
+  moment of admission, and no CLI verb performed the transition at all.
+
+`tasks/reviews/W0.yaml` is the first real artifact, and it decides
+**REWORK**, not PASS: P1-013 and P1-020 are in REVIEW rather than DONE,
+the independent Architecture Control review has not happened, and the
+technical-debt area is REWORK (knip failures that pre-date this work, and
+`handoff`'s comma-splitting of prose options). `control validate` would
+have rejected a PASS anyway.
+
+Verified: lint, typecheck, build, test (51 task-registry, 22 ux-contracts),
+docs:check, contracts validate, registry validate, control validate.
+
+## 0.14 (P1-013 / BLK-P1-001 — one canonical screen identity)
+
+Two screen-ID schemes had been coexisting since P1-009 recorded the
+discovery: the semantic ids code consumes (`C-TODAY`, `P-APPROVALS`) and
+the positional ids in the earlier sketches (`UX-CHI-02`, `UX-PAR-04`). The
+same screen had two names, so a reference from a test, an analytics event
+or a ticket had no single resolution.
+
+The semantic scheme is canonical (ADR-0005). It is the one code already
+consumes; it is stable under insertion; and the positional scheme had
+already failed on its own terms -- `11-parent-rewards.md` carried
+`UX-PAR-05 / UX-CHI-06` for one screen, because a surface-partitioned
+namespace cannot express a screen serving both surfaces.
+
+- `packages/ux-contracts/src/screen-id-registry.ts`: `RETIRED_SCREEN_IDS`
+  maps all 17 positional ids so old references still resolve;
+  `SPECIFIED_SCREEN_IDS` names the eight screens that are canonically
+  named but have no template-conformant contract yet, closing the window
+  in which a screen could acquire a second identity;
+  `resolveScreenId()` accepts either form.
+- All 17 numbered documents migrated. The nine that duplicate a
+  template-conformant contract were kept as product source but no longer
+  declare an id -- they point at the contract instead, and the contract
+  wins on conflict. Nothing a human wrote was deleted.
+- The action catalog now covers the whole Phase 1 exit journey. The
+  family/child rows of `docs/ux/action-api-catalog.md` were previously
+  unrepresentable because `ActionContract.screen` was typed as `ScreenId`;
+  it is now `CanonicalScreenId`, and `family.create`,
+  `family.parent.invite` and `child.create` are registered as SPECIFIED
+  against P1-001. Friend/chat/moderation/game rows stay out -- Phase 2+.
+- Enforced by tests, not convention: every retired id resolves, the
+  namespace has no duplicates, every document declares a canonical id and
+  every canonical id is declared by exactly one document.
+- `contracts/registry.yaml`: the `ux_contracts` group's open decision
+  ("two screen-ID schemes exist") is closed.
+
+Screen *boundaries* were not re-decided. Where the tiers disagreed about
+chat and rewards being one screen or two, the template-conformant document
+answered it explicitly and that answer was taken as-is.
+
+Verified: lint, typecheck, build, test (22 ux-contracts, 45 task-registry),
+docs:check, contracts validate, registry validate. `quality:dead-code`
+(knip) still fails on pre-existing unused exports in `tools/task-registry`
+-- unchanged by this work, and not introduced by it.
+
+## 0.13 (W0 — Phase 1 admission metadata completed)
+
+"Execute Phase 1 by priority" had no ordering to execute: 18 of the 24
+Phase 1 tasks sat at `wave: UNASSIGNED` / `priority: P2` (the schema
+defaults) with no reviewer, gate owners, acceptance criteria or test
+strategy, even though `tasks/phase-1-participant-matrix.yaml` had all of
+it. None of them could reach READY, because `readyAdmissionProblems()`
+rejects exactly those gaps.
+
+Registry migrated 9 -> 10 from the matrix. Every Phase 1 task now carries
+wave, priority, primary, reviewer, gate owners, acceptance criteria, test
+strategy and a source reference. Waves: W0 3, W1 1, W2 2, W3 3, W4 2,
+W5 2, W6 5, W7 2, W8 4.
+
+Three conflicts between the governance files had to be decided rather
+than copied:
+
+- **`P1-021` wave: W3 or W8?** `tasks/phase-1-control-tasks.yaml` said
+  W3, the participant matrix said W8, and the registry had followed the
+  former. `docs/planning/phase-1-execution-plan.md` lists "Security Red
+  Team adversarial assessment and retest" under W8 and, separately,
+  allows "red-team test design before runtime code is complete" to run in
+  parallel earlier. The assessment is therefore W8; the control-tasks
+  file was corrected to match, so all three sources now agree.
+- **`P1-009` priority was `DONE`** in the matrix -- a status written into
+  a priority field. Set to P0 from the execution plan's own "W0 ... P0 /
+  BLOCKING" wave definition, and fixed in the matrix.
+- **`P1-014` ownership was not overwritten.** The matrix plans
+  `primary: backend-lead, reviewer: chief-architect`; the registry records
+  `chief-architect` / `ai-cto`, who actually did and reviewed the work.
+  A finished task's ownership is a historical record, not a plan, so the
+  record stands and the divergence is noted here instead.
+
+## 0.12 (BLK-P1-003 — contract vs implementation dependencies)
+
+Closes the last W0 governance gap that existed only on paper:
+`docs/governance/task-admission.md` had specified `deps_contract` /
+`deps_implementation` since 0.11, and `tasks/phase-1-participant-matrix.yaml`
+already classified all 24 Phase 1 tasks that way, but
+`tools/task-registry` knew nothing about either field. Validation, claim
+and handoff all still ran on the single undifferentiated `deps` list, so
+the rule "a task may work against a frozen contract, but may not integrate
+against an unfinished implementation" was unenforceable.
+
+- `tools/task-registry/src/schema.ts`: added `deps_contract` and
+  `deps_implementation`; `allDependencies()` for existence/cycle checks;
+  `integrationProblems()` for the integration rule.
+- `readyAdmissionProblems()` now refuses a READY task that still carries
+  unclassified `deps`. The legacy field still *loads* (old registries are
+  not rejected outright) and is treated as start-blocking, so nothing
+  silently loosened during migration.
+- `claimableTasks()`/`claim` gate on contract dependencies only;
+  `handoff` (`IN_PROGRESS -> REVIEW`) gates on implementation
+  dependencies. `next`/`list` print dependencies by class rather than
+  flattening them back into one list.
+- `tasks/registry.yaml` migrated (version 8 -> 9) from
+  `tasks/phase-1-participant-matrix.yaml`, which is the authoritative
+  classification. Two deliberate deviations from a straight copy:
+  - **Union, never a silent drop.** The matrix omits dependencies the
+    registry declared -- e.g. it would have dropped `P1-003`, `P1-004`,
+    `P1-010` from `P1-007`'s dependencies and weakened `P1-008` from
+    `P1-002B` to `P1-002A`. Those edges were kept, as implementation
+    dependencies. Classifying a dependency is a metadata change; deleting
+    one is a scope change and does not belong in this task.
+  - **DONE tasks keep their real history.** `P1-014` is DONE, but the
+    matrix lists `P1-001`, `P1-002A`, `P1-005`, `P1-006`, `P1-008` as its
+    implementation dependencies -- all still PLANNED. Importing them would
+    have retroactively produced a DONE task with unfinished dependencies.
+    The matrix entry appears to describe the full task-to-reward slice
+    (`P1-007`) rather than what `P1-014` actually delivered, which was the
+    contract and event path. Left for the Human Architect: either the
+    matrix entry for `P1-014` is over-broad, or `P1-014` was closed early.
+    Recorded, not silently reconciled.
+- Fixed a stale governance status found while triaging: `BLK-P1-005` was
+  still `OPEN` although its split (`P1-002` -> `P1-002A`/`P1-002B`) had
+  landed in 0.11 and every dependent had already been redirected.
+
+Verified: `task-registry validate` (64 tasks), `contracts validate`,
+45/45 task-registry tests.
+
 ## 0.11 (governance reconciliation — Wave Gate / Architecture Control Plane)
 
 Reconciles `agent/phase-1-execution-governance` (PR #20, 33 commits, authored
