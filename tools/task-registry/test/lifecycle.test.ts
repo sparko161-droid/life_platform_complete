@@ -1,8 +1,19 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { allowedNextStates, isValidTransition } from "../src/schema.js";
+import { allowedNextStates, isValidTransition, readyAdmissionProblems, taskSchema } from "../src/schema.js";
 import { claimableTasks, outstandingDecisions, validateStructure } from "../src/registry.js";
 import type { Registry, Task } from "../src/schema.js";
+
+test("task id accepts a split-task letter suffix (P1-002A/P1-002B, docs/governance/task-admission.md's 'split into reviewable units')", () => {
+  const base = baseTask({ id: "P1-002A" });
+  assert.doesNotThrow(() => taskSchema.parse(base));
+  assert.doesNotThrow(() => taskSchema.parse(baseTask({ id: "P1-002B" })));
+});
+
+test("task id still rejects a genuinely malformed id", () => {
+  assert.throws(() => taskSchema.parse(baseTask({ id: "not-a-task-id" })));
+  assert.throws(() => taskSchema.parse(baseTask({ id: "P1-2" }))); // needs at least 3 digits
+});
 
 test("READY -> IN_PROGRESS is allowed", () => {
   assert.equal(isValidTransition("READY", "IN_PROGRESS"), true);
@@ -36,16 +47,107 @@ function baseTask(overrides: Partial<Registry["tasks"][number]> = {}): Registry[
     primary: "devops-lead",
     status: "READY",
     deps: [],
-    reviewer: null,
-    gate_owners: [],
+    // Non-null by default so the "clean" fixture genuinely satisfies
+    // readyAdmissionProblems() -- a base task fixture with status READY
+    // should represent a *valid* READY task unless a test deliberately
+    // overrides a field to test incompleteness.
+    reviewer: "chief-architect",
+    gate_owners: ["qa-lead"],
     discovery_links: [],
     blocked_reason: null,
     human_decisions: [],
     origin_discovery: null,
     discovered_from: null,
+    execution: {
+      wave: "W1",
+      priority: "P1",
+      acceptance_criteria: "acceptance",
+      test_strategy: "tests",
+      source_reference: "docs/planning/phases/phase-0.md",
+    },
     ...overrides,
   };
 }
+
+test("readyAdmissionProblems: a fully-specified task has no problems (docs/governance/task-admission.md)", () => {
+  assert.deepEqual(readyAdmissionProblems(baseTask()), []);
+});
+
+test("readyAdmissionProblems: flags each missing piece of mandatory metadata independently", () => {
+  assert.ok(readyAdmissionProblems(baseTask({ reviewer: null })).includes("missing independent reviewer"));
+  assert.ok(readyAdmissionProblems(baseTask({ gate_owners: [] })).includes("missing gate owners"));
+  assert.ok(
+    readyAdmissionProblems(baseTask({ execution: { ...baseTask().execution, wave: "UNASSIGNED" } })).includes(
+      "missing wave assignment",
+    ),
+  );
+  assert.ok(
+    readyAdmissionProblems(baseTask({ execution: { ...baseTask().execution, acceptance_criteria: "" } })).includes(
+      "missing acceptance criteria",
+    ),
+  );
+  assert.ok(
+    readyAdmissionProblems(baseTask({ execution: { ...baseTask().execution, test_strategy: "" } })).includes(
+      "missing test strategy",
+    ),
+  );
+  assert.ok(
+    readyAdmissionProblems(baseTask({ execution: { ...baseTask().execution, source_reference: "" } })).includes(
+      "missing source reference",
+    ),
+  );
+});
+
+test("readyAdmissionProblems: reviewer cannot be the same as primary", () => {
+  const task = baseTask({ primary: "backend-lead", reviewer: "backend-lead" });
+  assert.ok(readyAdmissionProblems(task).includes("reviewer must be independent from primary executor"));
+});
+
+test("readyAdmissionProblems: a blocking discovery or unresolved human decision blocks admission", () => {
+  const blockingDiscovery = baseTask({
+    discovery_links: [
+      {
+        discovery_id: "DISC-1",
+        source_task: "P0-001",
+        type: "SECURITY_FINDING",
+        finding: "f",
+        why_it_matters: "w",
+        affected_domains: [],
+        architecture_impact: null,
+        security_impact: null,
+        ux_impact: null,
+        recommended_solution: null,
+        alternatives: [],
+        priority: "HIGH",
+        blocking: true,
+        proposed_task: null,
+      },
+    ],
+  });
+  assert.ok(readyAdmissionProblems(blockingDiscovery).includes("blocking discovery remains unresolved"));
+
+  const unresolvedDecision = baseTask({
+    human_decisions: [{ decision_id: "D1", question: "q", decision: null, decided_at: null }],
+  });
+  assert.ok(readyAdmissionProblems(unresolvedDecision).includes("unresolved human decision remains"));
+});
+
+test("validateStructure prefixes READY admission problems with the task id", () => {
+  const registry: Registry = {
+    version: 1,
+    tasks: [baseTask({ id: "P1-777", status: "READY", reviewer: null })],
+  };
+  const problems = validateStructure(registry);
+  assert.ok(problems.includes("P1-777: missing independent reviewer"));
+});
+
+test("validateStructure does not apply admission rules to non-READY tasks", () => {
+  const registry: Registry = {
+    version: 1,
+    tasks: [baseTask({ id: "P1-778", status: "PLANNED", reviewer: null, gate_owners: [] })],
+  };
+  assert.deepEqual(validateStructure(registry), []);
+});
 
 test("validateStructure flags unknown dependency ids", () => {
   const registry: Registry = {

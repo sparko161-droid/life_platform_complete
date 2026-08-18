@@ -1,6 +1,6 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { dump, load } from "js-yaml";
-import { registrySchema, taskSchema, type Registry, type Task } from "./schema.js";
+import { readyAdmissionProblems, registrySchema, taskSchema, type Registry, type Task } from "./schema.js";
 
 export class RegistryError extends Error {}
 
@@ -45,6 +45,9 @@ export function replaceTask(registry: Registry, updated: Task): Registry {
  * Structural validation beyond per-field schema checks:
  * - every dependency id must exist
  * - the dependency graph must be acyclic
+ * - a READY task satisfies docs/governance/task-admission.md's mandatory
+ *   metadata (readyAdmissionProblems, reconciled from
+ *   agent/phase-1-execution-governance)
  * - at most one task may be IN_PROGRESS under a given primary at a time is
  *   NOT globally enforced here (an agent may legitimately run one active
  *   task); single-primary-executor is enforced per-task at claim time
@@ -59,6 +62,11 @@ export function validateStructure(registry: Registry): string[] {
     for (const dep of task.deps) {
       if (!ids.has(dep)) {
         problems.push(`${task.id}: unknown dependency ${dep}`);
+      }
+    }
+    if (task.status === "READY") {
+      for (const problem of readyAdmissionProblems(task)) {
+        problems.push(`${task.id}: ${problem}`);
       }
     }
   }

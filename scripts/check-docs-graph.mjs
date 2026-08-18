@@ -108,6 +108,18 @@ function readKnownTaskIds() {
   return ids;
 }
 
+// Task ids that once existed and were deliberately retired (a split, a
+// merge, a rescope) rather than a typo or a stale forward-reference.
+// Historical records -- change-log entries, archived handoffs, a
+// provenance/source_reference field pointing back at what a task was
+// split from -- are allowed to keep mentioning them; rewriting history to
+// remove the old id would be revisionist, not accurate. Add an entry here
+// (with why) the next time a task is retired, instead of loosening the
+// check generally.
+const RETIRED_TASK_IDS = new Set([
+  "P1-002", // split into P1-002A/P1-002B, BLK-P1-005 (agent/phase-1-execution-governance reconciliation)
+]);
+
 function checkTaskReferences() {
   const problems = [];
   const knownIds = readKnownTaskIds();
@@ -129,14 +141,16 @@ function checkTaskReferences() {
     walk(root);
   }
 
-  const taskIdPattern = /\bP\d+-\d{3}\b/g;
+  // [A-Z]? matches split-task ids like P1-002A/P1-002B (schema.ts's
+  // taskSchema.id regex allows the same suffix).
+  const taskIdPattern = /\bP\d+-\d{3}[A-Z]?\b/g;
   for (const file of filesToScan) {
     const rel = relative(repoRoot, file).split("\\").join("/");
     if (/template/i.test(rel)) continue; // template files intentionally hold placeholder ids like P0-000
     const text = readFileSync(file, "utf8");
     for (const m of text.matchAll(taskIdPattern)) {
       const id = m[0];
-      if (!knownIds.has(id)) {
+      if (!knownIds.has(id) && !RETIRED_TASK_IDS.has(id)) {
         problems.push(`${rel}: references task "${id}", which does not exist in tasks/registry.yaml.`);
       }
     }

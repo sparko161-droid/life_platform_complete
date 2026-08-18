@@ -1,5 +1,67 @@
 # Planning Change Log
 
+## 0.11 (governance reconciliation — Wave Gate / Architecture Control Plane)
+
+Reconciles `agent/phase-1-execution-governance` (PR #20, 33 commits, authored
+independently while P1-009/P1-014 were in progress) onto `main` by hand
+rather than a git merge — both branches rewrote overlapping regions of
+`tools/task-registry/src/schema.ts`/`registry.ts` and `scripts/dashboard-server.mjs`.
+
+- Added the full governance model: `docs/governance/{wave-gate,task-admission,phase-1-gates,phase-exit-decision,phase-review-cadence,security-red-team-protocol,architecture-control-plane}.md`,
+  `docs/architecture/{architecture-control-plane,versioning-and-compatibility,phase-1-scale-guardrails}.md`,
+  `docs/planning/{phase-1-execution-plan,phase-1-outcome-contract,phase-1-review-artifact-template}.md`.
+  Gate hierarchy: `Task Gate -> Wave Gate -> Phase Architecture Control ->
+  Phase Acceptance -> Human Architect Decision`.
+- Added four new assurance roles (Architecture Control Lead, Security
+  Engineering, Child Safety Lead, Security Red Team, Performance/Scale
+  Agent) to `docs/ai-team/{agent-registry.yaml,roles.md,instructions/role-charters.md}`
+  **alongside**, not instead of, the existing Security & Child Safety Agent
+  role -- P0-008 and other DONE tasks already used it as primary, so it
+  stays as the historical role for work that predates the split.
+- `tools/task-registry/src/schema.ts`: added `execution` (wave, priority,
+  acceptance_criteria, test_strategy, source_reference) to every task, and
+  `readyAdmissionProblems()` -- checked by `validateStructure()` only for
+  tasks at `READY`, so the 64-task registry didn't need every task
+  populated, only the one that was actually `READY` (P1-013, migrated with
+  real metadata matching `tasks/phase-1-participant-matrix.yaml`'s own
+  entry for it).
+- Found two more real bugs while reconciling, both fixed:
+  1. The task-id regex (`/^P\d+-\d{3,}$/u`, from the governance branch)
+     rejected the exact `P1-002A`/`P1-002B` ids that branch's own
+     participant matrix defines. Widened to allow a trailing split-task
+     letter; `scripts/check-docs-graph.mjs`'s task-id scanner and
+     `readyAdmissionProblems` coverage got the same fix.
+  2. `packages/domain-types`'s CI ordering bug (typecheck/test before
+     build) was found and fixed in this same reconciliation pass, before
+     this commit -- see 0.10's entry and the standalone `fix(ci)` commit.
+- Executed BLK-P1-005 for real: retired `P1-002` (never claimed, nothing
+  lost) and registered `P1-002A`/`P1-002B` in its place, redirecting every
+  dependent task's `deps` and `contracts/registry.yaml`'s `consumed_by`
+  entries from `P1-002` to `P1-002B` (which itself depends on `P1-002A`,
+  so one redirected edge still means "the whole Task/Rules DSL is ready").
+  Registered the five control/evolution/security/scale/evidence tasks
+  `tasks/phase-1-control-tasks.yaml` already specified (P1-019..P1-023) as
+  real `PLANNED` entries -- `docs:check` caught the drift (files
+  referencing tasks that didn't exist in the registry) before this was
+  done, which is exactly what that check exists for.
+- `scripts/dashboard-server.mjs` gains `/control.html`, `/api/control.json`
+  and file-watching for the three new `tasks/phase-1-*.yaml` control files,
+  merged into the existing SSE-based server rather than replacing it.
+  `/api/control.json`'s violations list reuses `readyAdmissionProblems()`
+  from the built `tools/task-registry` output instead of duplicating the
+  rule -- one source of truth for "what makes a READY task valid," checked
+  by both the CLI and the dashboard.
+- Updated `tasks/phase-1-blockers.yaml`: `BLK-P1-004` (independent
+  reviewer/gates) and `BLK-P1-016` (migrate READY tasks) marked `RESOLVED`
+  with evidence; `BLK-P1-002` (contract/API freeze) marked
+  `PARTIALLY_RESOLVED` -- P1-009/P1-014 close it for the vertical-slice
+  scope, Family/Task-DSL/Media operations beyond that are still open.
+  `BLK-P1-001` (screen-ID reconciliation) stays `OPEN` -- P1-009 documented
+  the discrepancy and chose a canonical tier for new work but did not
+  merge/deprecate the older numbered tier.
+- `docs/DOCS_GRAPH.md` gains a `## Governance` section and extends
+  `Architecture / platform` and `Planning`.
+
 ## 0.10 (P1-014 — task-to-reward vertical slice contract and event path)
 
 - Added five OpenAPI operations to `services/api/openapi/openapi.yaml`
