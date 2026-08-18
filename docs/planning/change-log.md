@@ -1,5 +1,52 @@
 # Planning Change Log
 
+## 0.12 (BLK-P1-003 — contract vs implementation dependencies)
+
+Closes the last W0 governance gap that existed only on paper:
+`docs/governance/task-admission.md` had specified `deps_contract` /
+`deps_implementation` since 0.11, and `tasks/phase-1-participant-matrix.yaml`
+already classified all 24 Phase 1 tasks that way, but
+`tools/task-registry` knew nothing about either field. Validation, claim
+and handoff all still ran on the single undifferentiated `deps` list, so
+the rule "a task may work against a frozen contract, but may not integrate
+against an unfinished implementation" was unenforceable.
+
+- `tools/task-registry/src/schema.ts`: added `deps_contract` and
+  `deps_implementation`; `allDependencies()` for existence/cycle checks;
+  `integrationProblems()` for the integration rule.
+- `readyAdmissionProblems()` now refuses a READY task that still carries
+  unclassified `deps`. The legacy field still *loads* (old registries are
+  not rejected outright) and is treated as start-blocking, so nothing
+  silently loosened during migration.
+- `claimableTasks()`/`claim` gate on contract dependencies only;
+  `handoff` (`IN_PROGRESS -> REVIEW`) gates on implementation
+  dependencies. `next`/`list` print dependencies by class rather than
+  flattening them back into one list.
+- `tasks/registry.yaml` migrated (version 8 -> 9) from
+  `tasks/phase-1-participant-matrix.yaml`, which is the authoritative
+  classification. Two deliberate deviations from a straight copy:
+  - **Union, never a silent drop.** The matrix omits dependencies the
+    registry declared -- e.g. it would have dropped `P1-003`, `P1-004`,
+    `P1-010` from `P1-007`'s dependencies and weakened `P1-008` from
+    `P1-002B` to `P1-002A`. Those edges were kept, as implementation
+    dependencies. Classifying a dependency is a metadata change; deleting
+    one is a scope change and does not belong in this task.
+  - **DONE tasks keep their real history.** `P1-014` is DONE, but the
+    matrix lists `P1-001`, `P1-002A`, `P1-005`, `P1-006`, `P1-008` as its
+    implementation dependencies -- all still PLANNED. Importing them would
+    have retroactively produced a DONE task with unfinished dependencies.
+    The matrix entry appears to describe the full task-to-reward slice
+    (`P1-007`) rather than what `P1-014` actually delivered, which was the
+    contract and event path. Left for the Human Architect: either the
+    matrix entry for `P1-014` is over-broad, or `P1-014` was closed early.
+    Recorded, not silently reconciled.
+- Fixed a stale governance status found while triaging: `BLK-P1-005` was
+  still `OPEN` although its split (`P1-002` -> `P1-002A`/`P1-002B`) had
+  landed in 0.11 and every dependent had already been redirected.
+
+Verified: `task-registry validate` (64 tasks), `contracts validate`,
+45/45 task-registry tests.
+
 ## 0.11 (governance reconciliation — Wave Gate / Architecture Control Plane)
 
 Reconciles `agent/phase-1-execution-governance` (PR #20, 33 commits, authored

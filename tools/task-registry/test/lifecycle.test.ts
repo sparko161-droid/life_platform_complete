@@ -1,6 +1,12 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { allowedNextStates, isValidTransition, readyAdmissionProblems, taskSchema } from "../src/schema.js";
+import {
+  allowedNextStates,
+  integrationProblems,
+  isValidTransition,
+  readyAdmissionProblems,
+  taskSchema,
+} from "../src/schema.js";
 import { claimableTasks, outstandingDecisions, validateStructure } from "../src/registry.js";
 import type { Registry, Task } from "../src/schema.js";
 
@@ -47,6 +53,8 @@ function baseTask(overrides: Partial<Registry["tasks"][number]> = {}): Registry[
     primary: "devops-lead",
     status: "READY",
     deps: [],
+    deps_contract: [],
+    deps_implementation: [],
     // Non-null by default so the "clean" fixture genuinely satisfies
     // readyAdmissionProblems() -- a base task fixture with status READY
     // should represent a *valid* READY task unless a test deliberately
@@ -174,11 +182,84 @@ test("validateStructure passes on a clean acyclic graph", () => {
   const registry: Registry = {
     version: 1,
     tasks: [
-      baseTask({ id: "P0-001", deps: [] }),
-      baseTask({ id: "P0-002", deps: ["P0-001"] }),
+      baseTask({ id: "P0-001" }),
+      // Classified, because a READY task with unclassified `deps` is no
+      // longer clean -- see the admission test below.
+      baseTask({ id: "P0-002", deps_contract: ["P0-001"] }),
     ],
   };
   assert.deepEqual(validateStructure(registry), []);
+});
+
+test("readyAdmissionProblems rejects a READY task whose deps are still unclassified (BLK-P1-003)", () => {
+  const problems = readyAdmissionProblems(baseTask({ deps: ["P0-002"] }));
+  assert.ok(problems.some((p) => p.includes("dependencies are not classified")));
+  assert.deepEqual(readyAdmissionProblems(baseTask({ deps_implementation: ["P0-002"] })), []);
+});
+
+test("validateStructure resolves and cycle-checks classified deps, not just legacy deps", () => {
+  const unknown = validateStructure({
+    version: 1,
+    tasks: [baseTask({ id: "P0-001", deps_implementation: ["P0-999"] })],
+  });
+  assert.deepEqual(unknown, ["P0-001: unknown dependency P0-999"]);
+
+  const cyclic = validateStructure({
+    version: 1,
+    tasks: [
+      baseTask({ id: "P0-001", deps_contract: ["P0-002"] }),
+      baseTask({ id: "P0-002", deps_implementation: ["P0-001"] }),
+    ],
+  });
+  assert.ok(cyclic.some((p) => p.startsWith("Dependency cycle:")));
+});
+
+test("validateStructure flags a dependency declared in two classes at once", () => {
+  const problems = validateStructure({
+    version: 1,
+    tasks: [
+      baseTask({ id: "P0-001", status: "DONE" }),
+      baseTask({ id: "P0-002", deps_contract: ["P0-001"], deps_implementation: ["P0-001"] }),
+    ],
+  });
+  assert.ok(problems.some((p) => p.includes("both a contract and an implementation dependency")));
+});
+
+test("an open implementation dependency does not block claiming, only integrating (docs/governance/task-admission.md)", () => {
+  const registry: Registry = {
+    version: 1,
+    tasks: [
+      baseTask({ id: "P0-001", status: "DONE" }),
+      baseTask({ id: "P0-002", status: "PLANNED" }),
+      baseTask({
+        id: "P1-001",
+        phase: 1,
+        status: "READY",
+        deps_contract: ["P0-001"],
+        deps_implementation: ["P0-002"],
+      }),
+    ],
+  };
+  // Startable: the contract it builds against is frozen.
+  assert.deepEqual(
+    claimableTasks(registry).map((t) => t.id),
+    ["P1-001"],
+  );
+  // Not integratable: the implementation it needs is still PLANNED.
+  const statusById = new Map(registry.tasks.map((t) => [t.id, t.status]));
+  const problems = integrationProblems(registry.tasks[2]!, (id) => statusById.get(id));
+  assert.deepEqual(problems, ["implementation dependency P0-002 is PLANNED, not DONE"]);
+});
+
+test("a contract dependency that is not DONE does block claiming", () => {
+  const registry: Registry = {
+    version: 1,
+    tasks: [
+      baseTask({ id: "P0-001", status: "IN_PROGRESS" }),
+      baseTask({ id: "P1-001", phase: 1, status: "READY", deps_contract: ["P0-001"] }),
+    ],
+  };
+  assert.deepEqual(claimableTasks(registry), []);
 });
 
 test("claimableTasks: only READY tasks with every dep DONE", () => {

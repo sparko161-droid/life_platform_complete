@@ -32,12 +32,22 @@ blockers:
       P1-014 from `blocks` since it is DONE.
   - id: BLK-P1-003
     priority: P0
-    status: OPEN
+    status: RESOLVED
     title: "Define contract-vs-implementation dependency semantics"
     owners: [ai-cto, chief-architect]
     reviewers: [documentation-agent, qa-lead]
-    blocks: [all_p1_ready_tasks]
+    blocks: []
     resolution: "Allow downstream contract work after a dependency is FROZEN; require implementation DONE for integration and release. Encode both dependency classes in task metadata and validation."
+    note: >-
+      Encoded, not just documented. `deps_contract`/`deps_implementation`
+      are real fields on the task schema; `claim`/`next` gate on contract
+      dependencies, `handoff` (IN_PROGRESS -> REVIEW) gates on
+      implementation dependencies, and `readyAdmissionProblems()` refuses
+      a READY task that still carries unclassified `deps`. All 64
+      registry tasks migrated from the participant matrix (registry
+      version 9) by union, so no dependency edge was dropped in the
+      process. See change-log 0.12 for the two deviations that needed a
+      judgement call.
   - id: BLK-P1-004
     priority: P0
     status: RESOLVED
@@ -54,12 +64,23 @@ blockers:
       required for any task at READY.
   - id: BLK-P1-005
     priority: P0
-    status: OPEN
+    status: RESOLVED
     title: "Split Task/Rules epic into reviewable implementation units"
     owners: [backend-lead, chief-architect]
     reviewers: [qa-lead, security-child-safety]
-    blocks: [P1-002A, P1-002B, P1-003, P1-004, P1-014]
+    blocks: []
     resolution: "Replace one oversized P1-002 implementation stream with Task lifecycle, scheduling/Rules DSL and completion/attempt boundaries."
+    note: >-
+      Status was left OPEN when the split actually landed. Verified against
+      the registry: `P1-002` is retired, `P1-002A` (task template and
+      lifecycle core) and `P1-002B` (Rules DSL, scheduling, composite
+      model) exist with full admission metadata and `discovered_from:
+      P1-002`, and every dependent was redirected -- P1-003, P1-004 and
+      P1-008 now depend on `P1-002B`, not on the retired epic. The third
+      unit named in the resolution, completion/attempt boundaries, is
+      `P1-008` (completion/verification/reward idempotency), which already
+      existed as its own reviewable task rather than being carved out
+      again.
   - id: BLK-P1-006
     priority: P0
     status: OPEN

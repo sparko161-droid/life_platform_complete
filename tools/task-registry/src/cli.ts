@@ -9,9 +9,16 @@ import {
   outstandingDecisions,
   replaceTask,
   saveRegistry,
+  startBlockingDependencies,
   validateStructure,
 } from "./registry.js";
-import { allowedNextStates, isValidTransition, type Task, type TaskState } from "./schema.js";
+import {
+  allowedNextStates,
+  integrationProblems,
+  isValidTransition,
+  type Task,
+  type TaskState,
+} from "./schema.js";
 import { renderHandoff } from "./handoff.js";
 import { createWorktree, removeWorktree, repoRoot } from "./worktree.js";
 import { loadContractRegistry, validateContractRegistry } from "./contracts.js";
@@ -32,6 +39,16 @@ function handoffArchivePath(registryPath: string, id: string): string {
 
 function registryPath(opts: { registry?: string }): string {
   return opts.registry ? resolve(invocationCwd, opts.registry) : DEFAULT_REGISTRY_PATH;
+}
+
+// Dependencies are printed by class, not as one flat list, because the two
+// classes gate different things (start vs integrate) -- collapsing them
+// back into `deps=[...]` in the human-facing output would hide exactly the
+// distinction BLK-P1-003 introduced.
+function describeDeps(task: Task): string {
+  const parts = [`contract=[${task.deps_contract.join(",")}]`, `impl=[${task.deps_implementation.join(",")}]`];
+  if (task.deps.length > 0) parts.push(`unclassified=[${task.deps.join(",")}]`);
+  return parts.join(" ");
 }
 
 function transition(task: Task, to: TaskState): Task {
@@ -69,7 +86,7 @@ program
     });
     for (const t of rows) {
       console.log(
-        `${t.id}\t${t.status}\t${t.primary}\t${t.reviewer ?? "-"}\tdeps=[${t.deps.join(",")}]\t${t.title}`,
+        `${t.id}\t${t.status}\t${t.primary}\t${t.reviewer ?? "-"}\t${describeDeps(t)}\t${t.title}`,
       );
     }
     console.log(`\n${rows.length} task(s)`);
@@ -77,7 +94,7 @@ program
 
 program
   .command("next")
-  .description("list tasks an agent could claim right now (READY with every dep DONE), sorted by phase then id")
+  .description("list tasks an agent could claim right now (READY with every contract dep DONE), sorted by phase then id")
   .option("--role <role>", "only tasks whose primary matches this role")
   .option("--limit <n>", "cap the number of results", "20")
   .action((cmdOpts, cmd) => {
@@ -88,11 +105,11 @@ program
     const limited = claimable.slice(0, Number(cmdOpts.limit));
 
     if (limited.length === 0) {
-      console.log("Nothing claimable right now (no READY task has every dependency DONE" + (cmdOpts.role ? ` for role ${cmdOpts.role}` : "") + ").");
+      console.log("Nothing claimable right now (no READY task has every contract dependency DONE" + (cmdOpts.role ? ` for role ${cmdOpts.role}` : "") + ").");
       return;
     }
     for (const t of limited) {
-      console.log(`${t.id}\tphase=${t.phase}\t${t.primary}\tdeps=[${t.deps.join(",")}]\t${t.title}`);
+      console.log(`${t.id}\tphase=${t.phase}\t${t.primary}\t${describeDeps(t)}\t${t.title}`);
     }
     console.log(`\n${limited.length} of ${claimable.length} claimable task(s) shown.`);
   });
@@ -146,11 +163,16 @@ program
       const registry = loadRegistry(path);
       const task = findTask(registry, id);
 
-      for (const dep of task.deps) {
+      // Only start-blocking dependencies (contract + still-unclassified)
+      // are checked here. An open implementation dependency is allowed to
+      // start -- docs/governance/task-admission.md permits building
+      // against a frozen contract in parallel -- and is caught at handoff
+      // instead.
+      for (const dep of startBlockingDependencies(task)) {
         const depTask = findTask(registry, dep);
         if (depTask.status !== "DONE") {
           throw new Error(
-            `${id} cannot be claimed: dependency ${dep} is ${depTask.status}, not DONE.`,
+            `${id} cannot be claimed: contract dependency ${dep} is ${depTask.status}, not DONE.`,
           );
         }
       }
@@ -186,6 +208,19 @@ program
       const registry = loadRegistry(path);
       const task = findTask(registry, id);
       const split = (v?: string) => (v ? v.split(",").map((s: string) => s.trim()).filter(Boolean) : []);
+
+      // docs/governance/task-admission.md: a task may be built against a
+      // frozen contract, but may not be integrated while an
+      // implementation dependency is unfinished. REVIEW is where the work
+      // is offered for merge, so that is where the rule is enforced.
+      const statusById = new Map(registry.tasks.map((t) => [t.id, t.status as TaskState]));
+      const integration = integrationProblems(task, (depId) => statusById.get(depId));
+      if (integration.length > 0) {
+        throw new Error(
+          `${id} cannot be handed off for integration:\n  - ${integration.join("\n  - ")}\n` +
+            `Keep it IN_PROGRESS, or reclassify the dependency if it is really only a contract dependency.`,
+        );
+      }
 
       const updated = transition(
         {
@@ -340,7 +375,15 @@ program
         title: cmdOpts.title,
         primary: cmdOpts.primary,
         status: "BACKLOG",
-        deps: cmdOpts.deps ? cmdOpts.deps.split(",").map((s: string) => s.trim()).filter(Boolean) : [],
+        deps: [],
+        // A new task's dependencies default to the strictest class:
+        // implementation. Classifying one down to `deps_contract` is a
+        // deliberate act (the upstream contract really is frozen), not
+        // something a CLI default should decide.
+        deps_contract: [],
+        deps_implementation: cmdOpts.deps
+          ? cmdOpts.deps.split(",").map((s: string) => s.trim()).filter(Boolean)
+          : [],
         reviewer: null,
         gate_owners: [],
         discovery_links: [],

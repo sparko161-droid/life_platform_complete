@@ -84,7 +84,8 @@ Worth re-checking if a future change adds one.
 `task-registry next [--role <role>] [--limit N]` lists tasks that are
 `READY` with every dependency `DONE`, sorted by phase then id. Before this,
 finding claimable work meant running `list --status READY` and manually
-checking each task's `deps` against their current status. The filter logic
+checking each task's start-blocking dependencies (`deps_contract`, plus any
+legacy unclassified `deps`) against their current status. The filter logic
 lives in `registry.ts`'s exported `claimableTasks()` so it's unit-tested
 independent of the CLI.
 

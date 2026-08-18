@@ -41,7 +41,7 @@ Three blocking decisions from
 `tasks/packets/P0-009-phase1-contract-pack.md` are flagged inline in the
 affected schemas, not resolved: money policy (amount precision/currency),
 the full parent role permission set, and child profile visibility rules.
-Confirm with the Human Architect before P1-001/P1-002/P1-006 build on
+Confirm with the Human Architect before P1-001/P1-002A/P1-006 build on
 them.
 
 ## Versioning
