@@ -715,7 +715,7 @@ tasks:
     phase: 1
     title: Implement vertical slice state, idempotency and conflict fixtures
     primary: backend-lead
-    status: PLANNED
+    status: DONE
     deps: []
     deps_contract:
       - P0-009
