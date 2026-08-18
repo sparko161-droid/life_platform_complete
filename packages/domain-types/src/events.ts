@@ -16,7 +16,11 @@ export const EventEnvelopeSchema = z.object({
   childId: ChildId.optional(),
   aggregateId: z.string(),
   version: z.number().int().positive(),
-  payload: z.record(z.unknown()),
+  // zod 4 removed the single-argument z.record(valueSchema) overload -- the
+  // key schema is mandatory now. z.record(z.string(), ...) spells out what
+  // the one-argument form already meant in zod 3, so the envelope contract
+  // is unchanged: string keys, unknown values.
+  payload: z.record(z.string(), z.unknown()),
 });
 export type EventEnvelope = z.infer<typeof EventEnvelopeSchema>;
 
