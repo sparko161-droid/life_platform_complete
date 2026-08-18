@@ -8,6 +8,12 @@ importers:
 
   .:
     devDependencies:
+      '@types/js-yaml':
+        specifier: ^4.0.9
+        version: 4.0.9
+      js-yaml:
+        specifier: ^4.3.1
+        version: 4.3.1
       knip:
         specifier: ^5.63.1
         version: 5.88.1(@types/node@22.20.1)(typescript@5.9.3)
@@ -143,6 +149,22 @@ importers:
 
   packages/ui:
     devDependencies:
+      typescript:
+        specifier: ^5.9.2
+        version: 5.9.3
+
+  packages/ux-contracts:
+    dependencies:
+      '@life/domain-types':
+        specifier: workspace:*
+        version: link:../domain-types
+    devDependencies:
+      '@types/node':
+        specifier: ^22.10.2
+        version: 22.20.1
+      tsx:
+        specifier: ^4.19.2
+        version: 4.23.12
       typescript:
         specifier: ^5.9.2
         version: 5.9.3

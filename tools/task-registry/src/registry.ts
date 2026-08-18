@@ -1,6 +1,6 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { dump, load } from "js-yaml";
-import { registrySchema, taskSchema, type Registry, type Task } from "./schema.js";
+import { readyAdmissionProblems, registrySchema, taskSchema, type Registry, type Task } from "./schema.js";
 
 export class RegistryError extends Error {}
 
@@ -45,6 +45,9 @@ export function replaceTask(registry: Registry, updated: Task): Registry {
  * Structural validation beyond per-field schema checks:
  * - every dependency id must exist
  * - the dependency graph must be acyclic
+ * - a READY task satisfies docs/governance/task-admission.md's mandatory
+ *   metadata (readyAdmissionProblems, reconciled from
+ *   agent/phase-1-execution-governance)
  * - at most one task may be IN_PROGRESS under a given primary at a time is
  *   NOT globally enforced here (an agent may legitimately run one active
  *   task); single-primary-executor is enforced per-task at claim time
@@ -59,6 +62,11 @@ export function validateStructure(registry: Registry): string[] {
     for (const dep of task.deps) {
       if (!ids.has(dep)) {
         problems.push(`${task.id}: unknown dependency ${dep}`);
+      }
+    }
+    if (task.status === "READY") {
+      for (const problem of readyAdmissionProblems(task)) {
+        problems.push(`${task.id}: ${problem}`);
       }
     }
   }
@@ -85,4 +93,66 @@ export function validateStructure(registry: Registry): string[] {
   for (const task of registry.tasks) visit(task.id, []);
 
   return problems;
+}
+
+/**
+ * Tasks an agent could `claim` right now: READY, with every dependency
+ * DONE, optionally narrowed to one role. Sorted by phase then id so an
+ * orchestrator (or a human) picking "what's next" gets a stable order
+ * instead of registry file order (P0-011).
+ */
+export function claimableTasks(registry: Registry, opts: { role?: string } = {}): Task[] {
+  const byId = new Map(registry.tasks.map((t) => [t.id, t]));
+  return registry.tasks
+    .filter((t) => {
+      if (t.status !== "READY") return false;
+      if (opts.role && t.primary !== opts.role) return false;
+      return t.deps.every((depId) => byId.get(depId)?.status === "DONE");
+    })
+    .sort((a, b) => a.phase - b.phase || a.id.localeCompare(b.id));
+}
+
+export interface OutstandingDecision {
+  taskId: string;
+  kind: "blocked" | "human_decision" | "blocking_discovery";
+  summary: string;
+}
+
+/**
+ * Implements docs/planning/phases/phase-0.md's exit criterion "Human
+ * Architect sees only unresolved decisions" (P0-012): everything in the
+ * registry that genuinely needs a human's attention, and nothing else --
+ * not the 43 PLANNED tasks, not the ones quietly moving through gates.
+ *
+ * Three sources, each already tracked on Task but never surfaced together:
+ * - a *_BLOCKED status (blocked_reason names why)
+ * - a human_decisions entry whose `decision` is still null
+ * - a discovery_links entry marked `blocking`
+ */
+export function outstandingDecisions(registry: Registry): OutstandingDecision[] {
+  const out: OutstandingDecision[] = [];
+  for (const t of registry.tasks) {
+    if (t.status.endsWith("_BLOCKED")) {
+      out.push({
+        taskId: t.id,
+        kind: "blocked",
+        summary: `${t.status}: ${t.blocked_reason ?? "(no reason recorded)"}`,
+      });
+    }
+    for (const hd of t.human_decisions) {
+      if (hd.decision === null) {
+        out.push({ taskId: t.id, kind: "human_decision", summary: hd.question });
+      }
+    }
+    for (const dl of t.discovery_links) {
+      if (dl.blocking) {
+        out.push({
+          taskId: t.id,
+          kind: "blocking_discovery",
+          summary: `${dl.discovery_id}: ${dl.finding}`,
+        });
+      }
+    }
+  }
+  return out;
 }

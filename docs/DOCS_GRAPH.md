@@ -4,6 +4,13 @@
 
 ## Governance
 - `governance/project-evolution.md`
+- `governance/architecture-control-plane.md`
+- `governance/wave-gate.md`
+- `governance/phase-1-gates.md`
+- `governance/phase-exit-decision.md`
+- `governance/phase-review-cadence.md`
+- `governance/task-admission.md`
+- `governance/security-red-team-protocol.md`
 
 ## Product
 - `product/vision.md`
@@ -14,6 +21,7 @@
 - `product/daily-load.md`
 - `product/learning-profile.md`
 - `product/avatar.md`
+- `product/competition.md`
 
 ## Family / task / learning
 - `game/task-engine.md`
@@ -25,8 +33,11 @@
 - `game/progression.md`
 - `game/scenarios.md`
 - `game/competition-fairness.md`
-- `game/reward-redemption.md`
-- `game/completion-reward-chain.md`
+- `game/games.md`
+- `game/rewards.md`
+- `game/rules-engine.md`
+- `learning/development-profile.md`
+- `learning/learning-sessions.md`
 
 ## Mechanics
 - `mechanics/child-daily-loop.md`
@@ -67,6 +78,11 @@
 - `planning/responsibility-matrix.md`
 - `planning/mechanics-contract-map.md`
 - `planning/mechanics-gaps.md`
+- `planning/gap-backlog.md`
+- `planning/change-log.md`
+- `planning/phase-1-execution-plan.md`
+- `planning/phase-1-outcome-contract.md`
+- `planning/phase-1-review-artifact-template.md`
 - `planning/phases/*.md`
 
 ## AI team
@@ -82,12 +98,16 @@
 - `ai-team/gates.md`
 - `ai-team/escalation.md`
 - `ai-team/context-management.md`
+- `ai-team/cto-dashboard.md`
+- `ai-team/decision-record-template.md`
+- `ai-team/task-template.md`
 
 ## Architecture / platform
 - `architecture/system-context.md`
 - `architecture/domain-map.md`
 - `architecture/data-architecture.md`
 - `architecture/api-contracts.md`
+- `architecture/contract-registry.md`
 - `architecture/events.md`
 - `architecture/realtime.md`
 - `architecture/deployment.md`
@@ -101,6 +121,10 @@
 - `architecture/concurrency-and-conflicts.md`
 - `architecture/child-experience-model.md`
 - `architecture/offline-and-sync.md`
+- `architecture/architecture-control-plane.md`
+- `architecture/versioning-and-compatibility.md`
+- `architecture/phase-1-scale-guardrails.md`
+- `platform/device-capabilities.md`
 
 ## Social / safety
 - `social/graph.md`
@@ -110,6 +134,7 @@
 - `social/chat-lifecycle.md`
 - `social/competition.md`
 - `social/notifications.md`
+- `social/safe-sharing.md`
 - `security/child-safety.md`
 - `security/permissions.md`
 - `security/effective-policy.md`
@@ -124,10 +149,42 @@
 - `ai/knowledge-base.md`
 - `ai/ai-safety.md`
 - `ai/evaluation.md`
+- `ai/avatar.md`
 - `integrations/alice.md`
 - `integrations/telegram.md`
 - `integrations/max.md`
 - `integrations/mcp.md`
+- `integrations/sandbox-separation.md`
+
+## Engineering
+Developer-workspace and CI/CD process docs (`planning/phases/phase-0.md`'s output). Cross-referenced against `tasks/registry.yaml` by `scripts/check-docs-graph.mjs` (P0-012).
+- `engineering/repo-structure.md`
+- `engineering/repo-status.md`
+- `engineering/stack.md`
+- `engineering/dev-workspace.md`
+- `engineering/local-environment.md`
+- `engineering/git-workflow.md`
+- `engineering/ci-cd.md`
+- `engineering/branch-protection.md`
+- `engineering/merge-gate.md`
+- `engineering/coding-standards.md`
+- `engineering/testing.md`
+- `engineering/observability.md`
+- `engineering/performance.md`
+- `engineering/cost-controls.md`
+- `engineering/release-management.md`
+- `engineering/backup-dr.md`
+- `engineering/environments.md`
+- `engineering/mobile-build-path.md`
+- `engineering/phase-0-checklist.md`
+
+## Implementations
+Concrete "how this was actually built" records for `tasks/registry.yaml` entries, one level more detailed than the phase docs.
+- `implementations/README.md`
+- `implementations/phase-0-task-registry.md`
+- `implementations/phase-0-agent-worktrees.md`
+- `implementations/phase-0-ai-orchestration.md`
+- `implementations/phase-0-docs-traceability.md`
 
 ## Cases
 `cases/` contains user journeys linked to domains and acceptance tests.

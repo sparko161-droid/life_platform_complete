@@ -22,13 +22,20 @@ pnpm dev -- <command> [options]
 ## Commands
 
 - `list [--status S] [--phase N] [--primary role]`
+- `next [--role role] [--limit N]` — tasks claimable right now (`READY`
+  with every dependency `DONE`), sorted by phase then id (P0-011)
+- `decisions` — everything that needs a human's attention: `*_BLOCKED`
+  tasks, unresolved `human_decisions`, blocking `discovery_links` — and
+  nothing else (P0-012, "Human Architect sees only unresolved decisions")
 - `validate` — schema + unknown-dependency + cycle checks
 - `claim <id> --agent <role>` — refuses if a dependency isn't `DONE`, or the
   task is already `IN_PROGRESS` under another agent (single-primary-executor
   rule)
 - `handoff <id> --reviewer <role> [--gate-owners a,b] [--branch ...] [--files ...] [--contracts ...] [--tests ...] [--risks ...] [--decisions ...] [--next ...]`
-  — moves the task to `REVIEW` and prints the fixed handoff report
-  (`tasks/templates/handoff-template.md` documents the same format for
+  — moves the task to `REVIEW`, prints the fixed handoff report, and
+  archives it to `tasks/handoffs/<id>.md` (P0-010 — a review can be
+  reconstructed later instead of depending on terminal scrollback;
+  `tasks/templates/handoff-template.md` documents the same format for
   writing one by hand)
 - `block <id> --type architecture|product|security|dependency --reason "..."`
 - `unblock <id> --status IN_PROGRESS|READY`
@@ -37,10 +44,28 @@ pnpm dev -- <command> [options]
 - `create-child-task --from-discovery DISC-ID --id NEW-ID --title "..." --primary role --phase N [--deps a,b]`
   — new task keeps `origin_discovery`/`discovered_from` links per
   `docs/ai-team/discovery-rework.md`
-- `close <id> [--status DONE|NEW_TASK]`
+- `close <id> [--status DONE|NEW_TASK]` — despite the flag's default, this
+  is a generic single-hop transition (it calls the same state-machine check
+  as every other command), so it's also how a task under `REVIEW` walks
+  forward one gate at a time: `close <id> --status QA`, then `--status
+  SECURITY`, `--status ACCEPTANCE`, `--status DONE`. There's no single
+  "skip to DONE" command by design — `REVIEW -> DONE` isn't a valid
+  transition (see State machine below).
+- `contracts validate [--file contracts/registry.yaml]` — checks
+  `contracts/registry.yaml` against `packages/domain-types`'s real exports,
+  `tasks/registry.yaml`'s task ids, and `docs/planning/change-log.md`'s
+  headings (P0-010; see `docs/architecture/contract-registry.md`)
 
 All commands accept `-r, --registry <path>` to point at a different YAML
 file (used by tests / dry runs against a scratch copy).
+
+Every command that mutates the registry (`claim`, `handoff`, `block`,
+`unblock`, `reassign`, `add-discovery`, `create-child-task`, `close`)
+serializes through a real file lock
+(`tools/task-registry/src/lock.ts`, P0-011) so two agents running commands
+against the same `tasks/registry.yaml` at the same time can't both "win" a
+claim on the same task. `list`/`next`/`validate`/`contracts validate` are
+read-only and don't take the lock.
 
 Known limitation: `--files`/`--tests`/`--risks`/`--decisions`/`--next` on
 `handoff` split on every comma, so a single item containing a comma gets
