@@ -2,7 +2,18 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "dist",
-    "rootDir": "src"
+    "rootDir": "src",
+    // Declared explicitly because TypeScript 7's automatic @types discovery
+    // does not pick @types/node up for this package, even though it is a
+    // direct devDependency and physically present at
+    // tools/task-registry/node_modules/@types/node. Without this, all five
+    // source files using node: builtins fail with TS2591 "Cannot find name
+    // 'node:fs'" / "Cannot find name 'process'" and TS2503 "Cannot find
+    // namespace 'NodeJS'" -- 20 errors that vanish entirely once the types
+    // are named here. Being explicit is the better default regardless: it
+    // stops every unrelated @types/* package in scope from being pulled
+    // into the global namespace.
+    "types": ["node"]
   },
   "include": ["src"]
 }
