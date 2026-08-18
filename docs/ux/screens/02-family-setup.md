@@ -1,6 +1,7 @@
 # Экран: создание семьи
 
-**ID:** UX-FAM-01
+**ID:** P-FAMILY-SETUP
+**Прежний ID:** UX-FAM-01 (выведен из употребления, см. `docs/ux/screen-id-scheme.md`)
 **Владелец:** UI/UX Lead + Family Domain Lead
 
 ## Назначение

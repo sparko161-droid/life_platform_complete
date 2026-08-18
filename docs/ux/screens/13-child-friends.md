@@ -1,6 +1,7 @@
 # Экран: друзья ребёнка
 
-**ID:** UX-SOC-02
+**ID:** C-FRIENDS
+**Прежний ID:** UX-SOC-02 (выведен из употребления, см. `docs/ux/screen-id-scheme.md`)
 **Владелец:** Child Experience Lead + Social Lead + Child Safety
 
 ## Назначение

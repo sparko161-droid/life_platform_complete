@@ -1,6 +1,7 @@
 # Экран: регистрация родителя
 
-**ID:** UX-PAR-01
+**ID:** P-REGISTRATION
+**Прежний ID:** UX-PAR-01 (выведен из употребления, см. `docs/ux/screen-id-scheme.md`)
 **Владелец:** UI/UX Lead + Auth Lead
 
 ## Назначение

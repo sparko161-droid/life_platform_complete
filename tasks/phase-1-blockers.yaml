@@ -5,13 +5,26 @@ status: BLOCKED
 blockers:
   - id: BLK-P1-001
     priority: P0
-    status: OPEN
+    status: RESOLVED
     title: "Reconcile duplicate screen ID systems"
     source: DISC-P1-009-1
     owners: [uiux-lead, chief-architect]
     reviewers: [frontend-lead, backend-lead, qa-lead]
-    blocks: [P1-013, P1-003, P1-004, P1-010, P1-016]
+    blocks: []
     resolution: "Select one canonical screen-ID system and update UX docs, contracts, tests and traceability references."
+    note: >-
+      Canonical scheme is the semantic one (`C-TODAY`, `P-APPROVALS`, ...),
+      because it is what code already consumes, it is stable under
+      insertion, and the positional scheme had already broken down --
+      `11-parent-rewards.md` carried two ids for one screen. All 17
+      positional ids are mapped in `RETIRED_SCREEN_IDS`
+      (packages/ux-contracts/src/screen-id-registry.ts) so old references
+      still resolve; the namespace is completed by
+      `SPECIFIED_SCREEN_IDS` for the eight screens that have a canonical
+      name but no template-conformant contract yet. The nine early
+      sketches that duplicate a contract were kept as product source but
+      no longer declare an id. Enforced by tests, not by convention. See
+      docs/ux/screen-id-scheme.md.
   - id: BLK-P1-002
     priority: P0
     status: PARTIALLY_RESOLVED

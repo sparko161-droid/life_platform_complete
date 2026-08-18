@@ -1,6 +1,7 @@
 # Экран: настройки семьи и безопасность
 
-**ID:** UX-PAR-06
+**ID:** P-SETTINGS
+**Прежний ID:** UX-PAR-06 (выведен из употребления, см. `docs/ux/screen-id-scheme.md`)
 **Владелец:** Security & Child Safety + Parent Experience Lead
 
 ## Разделы

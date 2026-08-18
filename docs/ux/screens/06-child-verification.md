@@ -1,6 +1,7 @@
 # Экран: выполнение и подтверждение задания
 
-**ID:** UX-CHI-04
+**ID:** C-VERIFICATION
+**Прежний ID:** UX-CHI-04 (выведен из употребления, см. `docs/ux/screen-id-scheme.md`)
 **Владелец:** Verification Lead + Child Experience Lead
 
 ## Назначение

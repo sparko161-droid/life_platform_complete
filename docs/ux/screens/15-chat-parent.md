@@ -1,6 +1,7 @@
 # Экран: общение родителей
 
-**ID:** UX-SOC-04
+**ID:** P-CHAT
+**Прежний ID:** UX-SOC-04 (выведен из употребления, см. `docs/ux/screen-id-scheme.md`)
 **Владелец:** Social Lead + Parent Experience Lead
 
 ## Назначение

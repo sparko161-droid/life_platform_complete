@@ -1,5 +1,50 @@
 # Planning Change Log
 
+## 0.14 (P1-013 / BLK-P1-001 — one canonical screen identity)
+
+Two screen-ID schemes had been coexisting since P1-009 recorded the
+discovery: the semantic ids code consumes (`C-TODAY`, `P-APPROVALS`) and
+the positional ids in the earlier sketches (`UX-CHI-02`, `UX-PAR-04`). The
+same screen had two names, so a reference from a test, an analytics event
+or a ticket had no single resolution.
+
+The semantic scheme is canonical (ADR-0005). It is the one code already
+consumes; it is stable under insertion; and the positional scheme had
+already failed on its own terms -- `11-parent-rewards.md` carried
+`UX-PAR-05 / UX-CHI-06` for one screen, because a surface-partitioned
+namespace cannot express a screen serving both surfaces.
+
+- `packages/ux-contracts/src/screen-id-registry.ts`: `RETIRED_SCREEN_IDS`
+  maps all 17 positional ids so old references still resolve;
+  `SPECIFIED_SCREEN_IDS` names the eight screens that are canonically
+  named but have no template-conformant contract yet, closing the window
+  in which a screen could acquire a second identity;
+  `resolveScreenId()` accepts either form.
+- All 17 numbered documents migrated. The nine that duplicate a
+  template-conformant contract were kept as product source but no longer
+  declare an id -- they point at the contract instead, and the contract
+  wins on conflict. Nothing a human wrote was deleted.
+- The action catalog now covers the whole Phase 1 exit journey. The
+  family/child rows of `docs/ux/action-api-catalog.md` were previously
+  unrepresentable because `ActionContract.screen` was typed as `ScreenId`;
+  it is now `CanonicalScreenId`, and `family.create`,
+  `family.parent.invite` and `child.create` are registered as SPECIFIED
+  against P1-001. Friend/chat/moderation/game rows stay out -- Phase 2+.
+- Enforced by tests, not convention: every retired id resolves, the
+  namespace has no duplicates, every document declares a canonical id and
+  every canonical id is declared by exactly one document.
+- `contracts/registry.yaml`: the `ux_contracts` group's open decision
+  ("two screen-ID schemes exist") is closed.
+
+Screen *boundaries* were not re-decided. Where the tiers disagreed about
+chat and rewards being one screen or two, the template-conformant document
+answered it explicitly and that answer was taken as-is.
+
+Verified: lint, typecheck, build, test (22 ux-contracts, 45 task-registry),
+docs:check, contracts validate, registry validate. `quality:dead-code`
+(knip) still fails on pre-existing unused exports in `tools/task-registry`
+-- unchanged by this work, and not introduced by it.
+
 ## 0.13 (W0 — Phase 1 admission metadata completed)
 
 "Execute Phase 1 by priority" had no ordering to execute: 18 of the 24

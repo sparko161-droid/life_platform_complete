@@ -1,6 +1,7 @@
 # Экран: друзья родителей
 
-**ID:** UX-SOC-01
+**ID:** P-SOCIAL
+**Прежний ID:** UX-SOC-01 (выведен из употребления, см. `docs/ux/screen-id-scheme.md`)
 **Владелец:** Social Lead + Parent Experience Lead
 
 ## Назначение

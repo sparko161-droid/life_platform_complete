@@ -209,8 +209,7 @@ groups:
       # traceability even though its FROZEN artifact is a separate package.
     consumed_by: [P1-003, P1-004, P1-010, P1-012, P1-013, P1-014]
     changelog_ref: "0.10"
-    open_decisions:
-      - "Two screen-ID schemes exist for overlapping screens (docs/ux/screens/01-17 vs the template-conformant tier packages/ux-contracts sources from) -- see packages/ux-contracts/README.md"
+    open_decisions: []
 
   - name: task_dsl
     status: PLANNED
