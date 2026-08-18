@@ -76,6 +76,16 @@ jobs:
   secret-scan:
     name: gitleaks
     runs-on: ubuntu-latest
+    # Dependabot-triggered runs get a read-only GITHUB_TOKEN with no
+    # pull-requests scope by default. Without this, gitleaks-action's own
+    # `pulls.listCommits` call to scope the PR diff 403s with "Resource not
+    # accessible by integration" on every single Dependabot PR -- now a
+    # required check (docs/engineering/branch-protection.md), so that 403
+    # silently blocked every dependency-update PR from ever merging.
+    # Reproduced on all 14 open Dependabot PRs before adding this.
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
       - uses: actions/checkout@v4
         with:
