@@ -1,0 +1,260 @@
+version: 1
+phase: 1
+status: ACTIVE
+source_of_truth: docs/planning/phase-1-execution-plan.md
+
+roles:
+  ai-cto: "Delivery governance, orchestration, dependency policy, final process gate"
+  chief-architect: "Architecture, contracts, integration boundaries, architectural review"
+  backend-lead: "Domain/application services, persistence, API runtime"
+  frontend-lead: "Web UI, API client, recovery states"
+  game-engine-lead: "Reward/economy domain and ledger rules"
+  uiux-lead: "Screen model, UX contracts, localization"
+  qa-lead: "Acceptance, automated QA, release gate"
+  journey-agent: "Real user journey and interaction traceability"
+  security-child-safety: "Authorization, child safety, privacy and security gate"
+  documentation-agent: "Documentation graph, traceability and evidence"
+  devops-lead: "CI/CD, observability, environments and release plumbing"
+
+rules:
+  ready_requires:
+    - primary
+    - reviewer
+    - gate_owners
+    - acceptance_criteria
+    - test_strategy
+    - dependency_classification
+  reviewer_must_be_independent_from_primary: true
+  gate_owner_is_not_automatically_the_reviewer: true
+  architecture_changes_require_chief_architect_review: true
+  security_sensitive_changes_require_security_gate: true
+  phase_exit_requires_qa_security_architecture_and_documentation_evidence: true
+
+tasks:
+  P1-001:
+    title: "Family lifecycle and second-parent invitation"
+    priority: P1
+    wave: W1
+    primary: backend-lead
+    reviewer: chief-architect
+    gate_owners: [qa-lead, security-child-safety]
+    participants: [ai-cto, backend-lead, chief-architect, security-child-safety, qa-lead, documentation-agent]
+    deps_contract: [P0-009, P0-010]
+    deps_implementation: []
+    acceptance: "Create family, add child, invite/accept second parent, enforce membership and authorization, persist lifecycle and audit evidence."
+
+  P1-002A:
+    title: "Task template and lifecycle core"
+    priority: P1
+    wave: W1
+    primary: backend-lead
+    reviewer: chief-architect
+    gate_owners: [qa-lead, security-child-safety]
+    participants: [ai-cto, backend-lead, chief-architect, qa-lead, security-child-safety, documentation-agent]
+    deps_contract: [P0-009, P0-010]
+    deps_implementation: [P1-001]
+    acceptance: "Create/update/publish task template, assign child and enforce lifecycle transitions."
+
+  P1-002B:
+    title: "Rules DSL, scheduling and composite task model"
+    priority: P1
+    wave: W1
+    primary: backend-lead
+    reviewer: chief-architect
+    gate_owners: [qa-lead, security-child-safety]
+    participants: [ai-cto, backend-lead, chief-architect, child-experience-lead, qa-lead, security-child-safety]
+    deps_contract: [P0-009, P0-010]
+    deps_implementation: [P1-002A]
+    acceptance: "Validate rules deterministically, support required schedule/recurrence/composite semantics and reject invalid rules."
+
+  P1-003:
+    title: "Parent task builder UX"
+    priority: P1
+    wave: W3
+    primary: frontend-lead
+    reviewer: uiux-lead
+    gate_owners: [qa-lead, security-child-safety]
+    participants: [frontend-lead, uiux-lead, backend-lead, journey-agent, qa-lead, security-child-safety]
+    deps_contract: [P1-013]
+    deps_implementation: [P1-002A, P1-002B]
+    acceptance: "Parent can create/edit/publish a task through the UI with validation and recovery states."
+
+  P1-004:
+    title: "Child today/tasks UX"
+    priority: P1
+    wave: W3
+    primary: frontend-lead
+    reviewer: uiux-lead
+    gate_owners: [qa-lead, security-child-safety]
+    participants: [frontend-lead, uiux-lead, child-experience-lead, journey-agent, qa-lead, security-child-safety]
+    deps_contract: [P1-013]
+    deps_implementation: [P1-002A, P1-002B]
+    acceptance: "Child sees assigned tasks, opens a task, starts an attempt and sees deterministic state/recovery feedback."
+
+  P1-005:
+    title: "Media evidence storage and upload policy"
+    priority: P1
+    wave: W2
+    primary: backend-lead
+    reviewer: security-child-safety
+    gate_owners: [qa-lead, chief-architect]
+    participants: [backend-lead, security-child-safety, qa-lead, chief-architect, frontend-lead, devops-lead]
+    deps_contract: [P0-002, P0-009]
+    deps_implementation: [P1-001]
+    acceptance: "Store/retrieve permitted evidence, enforce family isolation, retention/classification and safe upload limits."
+
+  P1-006:
+    title: "Reward ledger and configurable N-day rewards"
+    priority: P1
+    wave: W2
+    primary: game-engine-lead
+    reviewer: backend-lead
+    gate_owners: [qa-lead, security-child-safety]
+    participants: [game-engine-lead, backend-lead, chief-architect, qa-lead, security-child-safety]
+    deps_contract: [P0-009, P0-010]
+    deps_implementation: [P1-001]
+    acceptance: "Append-only reward ledger, deterministic reward calculation, exactly-once source reward identity and audit trail."
+
+  P1-007:
+    title: "End-to-end family vertical slice"
+    priority: P0
+    wave: W4
+    primary: qa-lead
+    reviewer: chief-architect
+    gate_owners: [security-child-safety, documentation-agent, ai-cto]
+    participants: [qa-lead, chief-architect, security-child-safety, journey-agent, documentation-agent, ai-cto, backend-lead, frontend-lead]
+    deps_contract: [P1-013]
+    deps_implementation: [P1-001, P1-002A, P1-002B, P1-005, P1-006, P1-008, P1-014, P1-015, P1-016]
+    acceptance: "Complete the full parent/child task/proof/approval/reward/audit journey without manual DB edits."
+
+  P1-008:
+    title: "Completion/verification/reward idempotency rules and fixtures"
+    priority: P1
+    wave: W2
+    primary: backend-lead
+    reviewer: chief-architect
+    gate_owners: [qa-lead, security-child-safety]
+    participants: [backend-lead, chief-architect, qa-lead, security-child-safety, game-engine-lead]
+    deps_contract: [P0-009]
+    deps_implementation: [P1-002A, P1-006]
+    acceptance: "Duplicate completion, duplicate verification and duplicate reward requests resolve deterministically without double effects."
+
+  P1-009:
+    title: "UI architecture, screen map and state/API contracts"
+    priority: DONE
+    wave: W0
+    primary: uiux-lead
+    reviewer: chief-architect
+    gate_owners: [qa-lead, frontend-lead, backend-lead]
+    participants: [uiux-lead, chief-architect, qa-lead, frontend-lead, backend-lead, documentation-agent]
+    deps_contract: [P0-005, P0-009]
+    deps_implementation: []
+    acceptance: "Contract baseline remains frozen and screen/action/state IDs are canonical."
+
+  P1-010:
+    title: "Parent/child core navigation and API wiring"
+    priority: P1
+    wave: W3
+    primary: frontend-lead
+    reviewer: backend-lead
+    gate_owners: [qa-lead, security-child-safety]
+    participants: [frontend-lead, backend-lead, uiux-lead, journey-agent, qa-lead, security-child-safety]
+    deps_contract: [P1-013]
+    deps_implementation: [P1-001, P1-002A]
+    acceptance: "Core screens call real API operations and preserve auth, state and recovery semantics."
+
+  P1-011:
+    title: "Core screen E2E journeys and interaction traceability"
+    priority: P2
+    wave: W4
+    primary: journey-agent
+    reviewer: qa-lead
+    gate_owners: [uiux-lead, security-child-safety]
+    participants: [journey-agent, qa-lead, uiux-lead, frontend-lead, backend-lead, security-child-safety]
+    deps_contract: [P1-013]
+    deps_implementation: [P1-010, P1-016]
+    acceptance: "Critical UI actions map to domain/API operations and the journey is executable in automation."
+
+  P1-012:
+    title: "Russian-only UI localization lint and forbidden-term checks"
+    priority: P2
+    wave: W3
+    primary: uiux-lead
+    reviewer: documentation-agent
+    gate_owners: [qa-lead]
+    participants: [uiux-lead, documentation-agent, frontend-lead, qa-lead]
+    deps_contract: [P1-009]
+    deps_implementation: []
+    acceptance: "Required Russian-only UI scope is mechanically checked in CI."
+
+  P1-013:
+    title: "Finalize core screen contracts and action/API traceability"
+    priority: P0
+    wave: W0
+    primary: uiux-lead
+    reviewer: chief-architect
+    gate_owners: [frontend-lead, backend-lead, qa-lead]
+    participants: [uiux-lead, chief-architect, frontend-lead, backend-lead, qa-lead, documentation-agent]
+    deps_contract: [P1-009]
+    deps_implementation: []
+    acceptance: "One canonical screen-ID system, complete action catalog and authoritative API mapping for the Phase 1 slice."
+
+  P1-014:
+    title: "Implement first task-to-reward vertical slice event path"
+    priority: P1
+    wave: W2
+    primary: backend-lead
+    reviewer: chief-architect
+    gate_owners: [qa-lead, security-child-safety]
+    participants: [backend-lead, chief-architect, game-engine-lead, qa-lead, security-child-safety, documentation-agent]
+    deps_contract: [P0-009, P0-010]
+    deps_implementation: [P1-001, P1-002A, P1-005, P1-006, P1-008]
+    acceptance: "Task completion/verification/approval produces the correct reward event and ledger entry exactly once."
+
+  P1-015:
+    title: "Vertical slice state, idempotency and conflict fixtures"
+    priority: P1
+    wave: W2
+    primary: backend-lead
+    reviewer: qa-lead
+    gate_owners: [chief-architect, security-child-safety]
+    participants: [backend-lead, qa-lead, chief-architect, security-child-safety]
+    deps_contract: [P0-009]
+    deps_implementation: [P1-008, P1-014]
+    acceptance: "Race/retry/conflict fixtures prove state transitions and exactly-once behavior."
+
+  P1-016:
+    title: "Vertical slice API/client wiring and recovery states"
+    priority: P1
+    wave: W3
+    primary: frontend-lead
+    reviewer: backend-lead
+    gate_owners: [qa-lead, security-child-safety]
+    participants: [frontend-lead, backend-lead, uiux-lead, journey-agent, qa-lead, security-child-safety]
+    deps_contract: [P1-013]
+    deps_implementation: [P1-014, P1-015]
+    acceptance: "UI executes the real vertical slice and handles loading, retry, conflict and rejected-proof states."
+
+  P1-017:
+    title: "Execute vertical slice QA/security/journey gates"
+    priority: P0
+    wave: W4
+    primary: qa-lead
+    reviewer: security-child-safety
+    gate_owners: [chief-architect, journey-agent, documentation-agent, ai-cto]
+    participants: [qa-lead, security-child-safety, chief-architect, journey-agent, documentation-agent, ai-cto, devops-lead]
+    deps_contract: [P1-013]
+    deps_implementation: [P1-015, P1-016]
+    acceptance: "All Phase 1 exit gates pass with reproducible evidence."
+
+  P1-018:
+    title: "Verify vertical slice against source-of-truth and lifecycle rules"
+    priority: P0
+    wave: W4
+    primary: chief-architect
+    reviewer: ai-cto
+    gate_owners: [qa-lead, security-child-safety, documentation-agent]
+    participants: [chief-architect, ai-cto, qa-lead, security-child-safety, documentation-agent, backend-lead, frontend-lead]
+    deps_contract: [P1-013]
+    deps_implementation: [P1-015, P1-016]
+    acceptance: "Implementation is revalidated against authoritative contracts, lifecycle rules, task registry and evidence graph."
