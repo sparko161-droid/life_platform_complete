@@ -1,5 +1,27 @@
 # Planning Change Log
 
+## 0.8 (P0-012 — docs/task traceability, Phase 0 complete)
+
+- Added `scripts/check-docs-graph.mjs` (`pnpm run docs:check`, CI-wired):
+  checks `docs/DOCS_GRAPH.md` against the real `docs/` tree in both
+  directions (dead references, undocumented docs), and every
+  `P<phase>-<NNN>` token in `docs/`/`tasks/`/`AGENTS.md` against real
+  `tasks/registry.yaml` ids.
+- Run cold before any fix: 74 real problems. Two dead references in
+  `DOCS_GRAPH.md`; the other 72 were real docs never indexed, almost all
+  from six entire sections (`engineering/`, `implementations/`,
+  `governance/`, `learning/`, `platform/`, and most of `planning/`) that
+  arrived during Phase 0 execution and were never added to the graph.
+  Fixed `DOCS_GRAPH.md` directly rather than loosening the check.
+- Added `task-registry decisions` (`registry.ts`'s `outstandingDecisions()`):
+  implements `docs/planning/phases/phase-0.md`'s "Human Architect sees only
+  unresolved decisions" exit criterion directly — lists `*_BLOCKED` tasks,
+  unresolved `human_decisions`, and blocking `discovery_links`, and nothing
+  else. Currently empty against the live registry, which is the correct,
+  honest answer today.
+- This closes the last of the twelve Phase 0 tasks (P0-001 through P0-012).
+  `docs/engineering/phase-0-checklist.md` reflects the full set.
+
 ## 0.7 (P0-011 — AI task orchestration)
 
 - Added `task-registry next [--role][--limit]`: lists tasks claimable right

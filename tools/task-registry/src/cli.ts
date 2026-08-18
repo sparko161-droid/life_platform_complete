@@ -6,6 +6,7 @@ import {
   claimableTasks,
   findTask,
   loadRegistry,
+  outstandingDecisions,
   replaceTask,
   saveRegistry,
   validateStructure,
@@ -94,6 +95,29 @@ program
       console.log(`${t.id}\tphase=${t.phase}\t${t.primary}\tdeps=[${t.deps.join(",")}]\t${t.title}`);
     }
     console.log(`\n${limited.length} of ${claimable.length} claimable task(s) shown.`);
+  });
+
+program
+  .command("decisions")
+  .description("everything that needs a human's attention -- blocked tasks, unresolved human_decisions, blocking discoveries -- and nothing else")
+  .action((_opts, cmd) => {
+    const path = registryPath(cmd.optsWithGlobals());
+    const registry = loadRegistry(path);
+    const items = outstandingDecisions(registry);
+
+    if (items.length === 0) {
+      console.log("No outstanding decisions. Nothing needs Human Architect attention right now.");
+      return;
+    }
+    const labels: Record<(typeof items)[number]["kind"], string> = {
+      blocked: "BLOCKED",
+      human_decision: "DECISION",
+      blocking_discovery: "DISCOVERY",
+    };
+    for (const item of items) {
+      console.log(`${item.taskId}\t${labels[item.kind]}\t${item.summary}`);
+    }
+    console.log(`\n${items.length} item(s) need a decision.`);
   });
 
 program

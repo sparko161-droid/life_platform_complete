@@ -24,6 +24,9 @@ pnpm dev -- <command> [options]
 - `list [--status S] [--phase N] [--primary role]`
 - `next [--role role] [--limit N]` — tasks claimable right now (`READY`
   with every dependency `DONE`), sorted by phase then id (P0-011)
+- `decisions` — everything that needs a human's attention: `*_BLOCKED`
+  tasks, unresolved `human_decisions`, blocking `discovery_links` — and
+  nothing else (P0-012, "Human Architect sees only unresolved decisions")
 - `validate` — schema + unknown-dependency + cycle checks
 - `claim <id> --agent <role>` — refuses if a dependency isn't `DONE`, or the
   task is already `IN_PROGRESS` under another agent (single-primary-executor

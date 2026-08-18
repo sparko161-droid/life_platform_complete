@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { allowedNextStates, isValidTransition } from "../src/schema.js";
-import { claimableTasks, validateStructure } from "../src/registry.js";
+import { claimableTasks, outstandingDecisions, validateStructure } from "../src/registry.js";
 import type { Registry, Task } from "../src/schema.js";
 
 test("READY -> IN_PROGRESS is allowed", () => {
@@ -117,4 +117,66 @@ test("claimableTasks: --role narrows to one primary", () => {
   };
   const claimable = claimableTasks(registry, { role: "frontend-lead" }).map((t: Task) => t.id);
   assert.deepEqual(claimable, ["P1-002"]);
+});
+
+test("outstandingDecisions: empty registry has nothing outstanding", () => {
+  const registry: Registry = { version: 1, tasks: [baseTask()] };
+  assert.deepEqual(outstandingDecisions(registry), []);
+});
+
+test("outstandingDecisions: a *_BLOCKED task surfaces its reason", () => {
+  const registry: Registry = {
+    version: 1,
+    tasks: [baseTask({ id: "P1-003", status: "PRODUCT_BLOCKED", blocked_reason: "needs pricing decision" })],
+  };
+  const items = outstandingDecisions(registry);
+  assert.deepEqual(items, [{ taskId: "P1-003", kind: "blocked", summary: "PRODUCT_BLOCKED: needs pricing decision" }]);
+});
+
+test("outstandingDecisions: only unresolved human_decisions surface, not answered ones", () => {
+  const registry: Registry = {
+    version: 1,
+    tasks: [
+      baseTask({
+        id: "P1-004",
+        human_decisions: [
+          { decision_id: "D1", question: "Currency for money rewards?", decision: null, decided_at: null },
+          { decision_id: "D2", question: "Already answered?", decision: "RUB", decided_at: "2026-01-01" },
+        ],
+      }),
+    ],
+  };
+  const items = outstandingDecisions(registry);
+  assert.deepEqual(items, [{ taskId: "P1-004", kind: "human_decision", summary: "Currency for money rewards?" }]);
+});
+
+test("outstandingDecisions: only blocking discoveries surface, not informational ones", () => {
+  const baseDiscovery = {
+    source_task: "P1-005",
+    type: "MISSING_REQUIREMENT",
+    finding: "f",
+    why_it_matters: "w",
+    affected_domains: [],
+    architecture_impact: null,
+    security_impact: null,
+    ux_impact: null,
+    recommended_solution: null,
+    alternatives: [],
+    priority: "HIGH",
+    proposed_task: null,
+  };
+  const registry: Registry = {
+    version: 1,
+    tasks: [
+      baseTask({
+        id: "P1-005",
+        discovery_links: [
+          { ...baseDiscovery, discovery_id: "DISC-1", finding: "blocking one", blocking: true },
+          { ...baseDiscovery, discovery_id: "DISC-2", finding: "fyi only", blocking: false },
+        ],
+      }),
+    ],
+  };
+  const items = outstandingDecisions(registry);
+  assert.deepEqual(items, [{ taskId: "P1-005", kind: "blocking_discovery", summary: "DISC-1: blocking one" }]);
 });

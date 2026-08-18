@@ -57,6 +57,12 @@ jobs:
       - name: Contract registry is in sync
         run: pnpm run contracts:validate
 
+      # docs/implementations/phase-0-ai-orchestration.md's sibling doc,
+      # P0-012: fails if docs/DOCS_GRAPH.md drifts from the real docs/ tree,
+      # or any doc/task file references a task id that doesn't exist.
+      - name: Docs graph and task references are in sync
+        run: pnpm run docs:check
+
   secret-scan:
     name: gitleaks
     runs-on: ubuntu-latest

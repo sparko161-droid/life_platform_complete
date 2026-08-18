@@ -103,3 +103,48 @@ export function claimableTasks(registry: Registry, opts: { role?: string } = {})
     })
     .sort((a, b) => a.phase - b.phase || a.id.localeCompare(b.id));
 }
+
+export interface OutstandingDecision {
+  taskId: string;
+  kind: "blocked" | "human_decision" | "blocking_discovery";
+  summary: string;
+}
+
+/**
+ * Implements docs/planning/phases/phase-0.md's exit criterion "Human
+ * Architect sees only unresolved decisions" (P0-012): everything in the
+ * registry that genuinely needs a human's attention, and nothing else --
+ * not the 43 PLANNED tasks, not the ones quietly moving through gates.
+ *
+ * Three sources, each already tracked on Task but never surfaced together:
+ * - a *_BLOCKED status (blocked_reason names why)
+ * - a human_decisions entry whose `decision` is still null
+ * - a discovery_links entry marked `blocking`
+ */
+export function outstandingDecisions(registry: Registry): OutstandingDecision[] {
+  const out: OutstandingDecision[] = [];
+  for (const t of registry.tasks) {
+    if (t.status.endsWith("_BLOCKED")) {
+      out.push({
+        taskId: t.id,
+        kind: "blocked",
+        summary: `${t.status}: ${t.blocked_reason ?? "(no reason recorded)"}`,
+      });
+    }
+    for (const hd of t.human_decisions) {
+      if (hd.decision === null) {
+        out.push({ taskId: t.id, kind: "human_decision", summary: hd.question });
+      }
+    }
+    for (const dl of t.discovery_links) {
+      if (dl.blocking) {
+        out.push({
+          taskId: t.id,
+          kind: "blocking_discovery",
+          summary: `${dl.discovery_id}: ${dl.finding}`,
+        });
+      }
+    }
+  }
+  return out;
+}
