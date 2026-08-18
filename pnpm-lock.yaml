@@ -138,6 +138,25 @@ importers:
         specifier: ^5.9.2
         version: 5.9.3
 
+  packages/security-red-team:
+    dependencies:
+      '@life/domain-types':
+        specifier: workspace:*
+        version: link:../domain-types
+      zod:
+        specifier: ^4.4.3
+        version: 4.4.3
+    devDependencies:
+      '@types/node':
+        specifier: ^26.2.0
+        version: 26.2.0
+      tsx:
+        specifier: ^4.19.2
+        version: 4.23.12
+      typescript:
+        specifier: ^5.9.2
+        version: 5.9.3
+
   packages/task-engine:
     dependencies:
       zod:
