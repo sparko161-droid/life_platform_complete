@@ -1,0 +1,104 @@
+version: 1
+phase: 1
+status: BLOCKED
+
+blockers:
+  - id: BLK-P1-001
+    priority: P0
+    status: OPEN
+    title: "Reconcile duplicate screen ID systems"
+    source: DISC-P1-009-1
+    owners: [uiux-lead, chief-architect]
+    reviewers: [frontend-lead, backend-lead, qa-lead]
+    blocks: [P1-013, P1-003, P1-004, P1-010, P1-016]
+    resolution: "Select one canonical screen-ID system and update UX docs, contracts, tests and traceability references."
+
+  - id: BLK-P1-002
+    priority: P0
+    status: OPEN
+    title: "Complete Phase 1 contract and operation/API traceability freeze"
+    owners: [uiux-lead, chief-architect, backend-lead]
+    reviewers: [qa-lead, documentation-agent]
+    blocks: [P1-001, P1-002A, P1-002B, P1-003, P1-004, P1-010, P1-014, P1-016]
+    resolution: "Freeze canonical operation IDs, state transitions, API mappings and error/recovery semantics before runtime implementation."
+
+  - id: BLK-P1-003
+    priority: P0
+    status: OPEN
+    title: "Define contract-vs-implementation dependency semantics"
+    owners: [ai-cto, chief-architect]
+    reviewers: [documentation-agent, qa-lead]
+    blocks: [all_p1_ready_tasks]
+    resolution: "Allow downstream contract work after a dependency is FROZEN; require implementation DONE for integration and release. Encode both dependency classes in task metadata and validation."
+
+  - id: BLK-P1-004
+    priority: P0
+    status: OPEN
+    title: "Every Phase 1 task must have independent reviewer and gate owners"
+    owners: [ai-cto]
+    reviewers: [chief-architect, qa-lead]
+    blocks: [all_p1_ready_tasks]
+    resolution: "Populate primary/reviewer/gate_owners, acceptance criteria and test strategy before status READY."
+
+  - id: BLK-P1-005
+    priority: P0
+    status: OPEN
+    title: "Split Task/Rules epic into reviewable implementation units"
+    owners: [backend-lead, chief-architect]
+    reviewers: [qa-lead, security-child-safety]
+    blocks: [P1-002A, P1-002B, P1-003, P1-004, P1-014]
+    resolution: "Replace one oversized P1-002 implementation stream with Task lifecycle, scheduling/Rules DSL and completion/attempt boundaries."
+
+  - id: BLK-P1-006
+    priority: P0
+    status: OPEN
+    title: "Start real Phase 1 runtime implementation"
+    owners: [backend-lead]
+    reviewers: [chief-architect]
+    gates: [qa-lead, security-child-safety]
+    blocks: [P1-007, P1-010, P1-016, P1-017, P1-018]
+    resolution: "Implement Family, Task, persistence, verification, reward and application-service runtime instead of placeholder entrypoints."
+
+  - id: BLK-P1-007
+    priority: P0
+    status: OPEN
+    title: "Implement transactional persistence and real API path"
+    owners: [backend-lead, devops-lead]
+    reviewers: [chief-architect, security-child-safety]
+    blocks: [P1-014, P1-015, P1-016, P1-017]
+    resolution: "Add migrations, repositories/application services, API handlers, authorization and transaction boundaries for the vertical slice."
+
+  - id: BLK-P1-008
+    priority: P0
+    status: OPEN
+    title: "Prove exactly-once completion, verification and reward behavior"
+    owners: [backend-lead, game-engine-lead]
+    reviewers: [qa-lead, chief-architect]
+    gates: [security-child-safety]
+    blocks: [P1-015, P1-016, P1-017, P1-007]
+    resolution: "Create retry/race/conflict fixtures and enforce unique source reward identity plus deterministic state transitions."
+
+  - id: BLK-P1-009
+    priority: P0
+    status: OPEN
+    title: "Implement the first true family vertical slice"
+    owners: [backend-lead, frontend-lead]
+    reviewers: [chief-architect, qa-lead]
+    gates: [security-child-safety, journey-agent, documentation-agent]
+    blocks: [P1-007, P1-017, P1-018]
+    resolution: "Parent creates task -> child receives -> child completes -> proof -> parent approval -> reward ledger -> audit, with no manual DB intervention."
+
+  - id: BLK-P1-010
+    priority: P0
+    status: OPEN
+    title: "Phase 1 exit evidence gate"
+    owners: [qa-lead]
+    reviewers: [chief-architect, ai-cto]
+    gates: [security-child-safety, documentation-agent, journey-agent]
+    blocks: [P2-001, P2-002, P2-003, P2-005, P5-005, P5-006]
+    resolution: "Do not mark Phase 1 DONE until QA, security/child-safety, architecture revalidation, journey and documentation evidence all pass."
+
+historical_discoveries:
+  - id: DISC-P1-009-2
+    status: RESOLVED_IF_VALIDATED
+    note: "domain-types package export metadata was discovered as a blocking import defect during P1-009. The active task registry must not retain it as an unresolved blocker once package import/typecheck evidence passes."
