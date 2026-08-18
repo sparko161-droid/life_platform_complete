@@ -1458,7 +1458,7 @@ tasks:
     phase: 1
     title: Task template and lifecycle core
     primary: backend-lead
-    status: REVIEW
+    status: DONE
     deps: []
     deps_contract:
       - P0-009
@@ -1484,7 +1484,7 @@ tasks:
     phase: 1
     title: Rules DSL, scheduling and composite task model
     primary: backend-lead
-    status: PLANNED
+    status: DONE
     deps: []
     deps_contract:
       - P0-009
