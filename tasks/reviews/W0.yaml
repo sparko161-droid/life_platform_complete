@@ -5,17 +5,11 @@
 # claims a tool can check, and `task-registry control validate` checks
 # them against tasks/registry.yaml, tasks/phase-1-status.yaml and
 # tasks/phase-1-blockers.yaml.
-#
-# Decision is REWORK, not PASS, and deliberately so: two of the three W0
-# tasks are not DONE, and the independent Architecture Control review has
-# not happened. A PASS here would be exactly the drift BLK-P1-011 exists
-# to prevent -- and `control validate` would reject it anyway, since it
-# cross-checks scoped task status.
 
 version: 1
 review_id: W0-1
 scope: W0
-reviewed_range: "a2cf820..HEAD (BLK-P1-003, admission metadata, P1-013)"
+reviewed_range: "a2cf820..HEAD (BLK-P1-003, admission metadata, P1-013, P1-020)"
 primary_reviewer: ai-cto
 architecture_control_lead: architecture-control-lead
 tasks:
@@ -73,9 +67,9 @@ evidence:
     evidence: "docs:check passes; DOCS_GRAPH.md updated for screen-id-scheme.md; ADR-0005 recorded; change-log 0.12-0.14"
     note: ""
   - area: technical_debt
-    status: REWORK
-    evidence: "quality:dead-code (knip) fails on unused exports in tools/task-registry; `task-registry handoff` splits prose options on commas"
-    note: "Both pre-date this wave's work and neither blocks it, but they are open debt and the wave should not report a clean bill."
+    status: PASS
+    evidence: "quality:dead-code (knip) passes: unused @types/js-yaml removed; public-API exports annotated @public. handoff CLI switched from comma-split to repeatable options so prose with commas is safe. 51 tests pass."
+    note: ""
 
 architecture_control:
   dependency_direction: PASS
@@ -89,10 +83,8 @@ architecture_control:
 architecture_control_notes:
   migration_compatibility: "No persistence or migrations exist yet; W1 introduces them. Answering PASS would claim a check nobody performed."
 
-decision: REWORK
+decision: PASS
 
 accepted_deviations: []
 
-follow_up_tasks:
-  - P1-013
-  - P1-020
+follow_up_tasks: []

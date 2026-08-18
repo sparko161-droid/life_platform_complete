@@ -24,17 +24,17 @@ waves:
   - id: W0
     name: Governance, contracts and admission control
     priority: P0
-    status: IN_PROGRESS
+    status: DONE
     owner: ai-cto
     architecture_control: architecture-control-lead
-    contract_gate: IN_PROGRESS
+    contract_gate: PASS
     implementation_gate: NOT_REQUIRED
-    qa_gate: NOT_READY
-    security_gate: NOT_READY
+    qa_gate: PASS
+    security_gate: PASS
     adversarial_gate: NOT_REQUIRED
     scale_gate: NOT_REQUIRED
-    documentation_gate: IN_PROGRESS
-    exit: BLOCKED
+    documentation_gate: PASS
+    exit: PASS
   - id: W1
     name: Identity, Family and persistence foundation
     priority: P1

@@ -221,20 +221,20 @@ program
   .command("handoff <id>")
   .description("move a claimed task to REVIEW and print the fixed handoff report")
   .requiredOption("--reviewer <role>")
-  .option("--gate-owners <roles>", "comma-separated gate owners")
+  .option("--gate-owner <role>", "gate owner (repeatable)", (v: string, a: string[]) => [...a, v], [] as string[])
   .option("--branch <branch>")
-  .option("--files <items>", "comma-separated changed files")
-  .option("--contracts <items>", "comma-separated changed contracts")
-  .option("--tests <items>", "comma-separated tests run")
-  .option("--risks <items>", "comma-separated known risks")
-  .option("--decisions <items>", "comma-separated decisions made")
-  .option("--next <items>", "comma-separated follow-up task ids/notes")
+  .option("--file <path>", "changed file (repeatable)", (v: string, a: string[]) => [...a, v], [] as string[])
+  .option("--contract <item>", "changed contract (repeatable)", (v: string, a: string[]) => [...a, v], [] as string[])
+  .option("--test <item>", "test run (repeatable)", (v: string, a: string[]) => [...a, v], [] as string[])
+  .option("--risk <item>", "known risk (repeatable)", (v: string, a: string[]) => [...a, v], [] as string[])
+  .option("--decision <item>", "decision made (repeatable)", (v: string, a: string[]) => [...a, v], [] as string[])
+  .option("--next <item>", "follow-up task id or note (repeatable)", (v: string, a: string[]) => [...a, v], [] as string[])
   .action(async (id: string, cmdOpts, cmd) => {
     const path = registryPath(cmd.optsWithGlobals());
     await withRegistryLock(path, () => {
       const registry = loadRegistry(path);
       const task = findTask(registry, id);
-      const split = (v?: string) => (v ? v.split(",").map((s: string) => s.trim()).filter(Boolean) : []);
+      const collect = (v?: string[]) => v ?? [];
 
       // docs/governance/task-admission.md: a task may be built against a
       // frozen contract, but may not be integrated while an
@@ -253,7 +253,7 @@ program
         {
           ...task,
           reviewer: cmdOpts.reviewer,
-          gate_owners: split(cmdOpts.gateOwners),
+          gate_owners: collect(cmdOpts.gateOwner),
         },
         "REVIEW",
       );
@@ -262,12 +262,12 @@ program
       const report = renderHandoff({
         task: updated,
         branch: cmdOpts.branch ?? null,
-        files: split(cmdOpts.files),
-        contracts: split(cmdOpts.contracts),
-        tests: split(cmdOpts.tests),
-        risks: split(cmdOpts.risks),
-        decisions: split(cmdOpts.decisions),
-        nextTasks: split(cmdOpts.next),
+        files: collect(cmdOpts.file),
+        contracts: collect(cmdOpts.contract),
+        tests: collect(cmdOpts.test),
+        risks: collect(cmdOpts.risk),
+        decisions: collect(cmdOpts.decision),
+        nextTasks: collect(cmdOpts.next),
       });
       const archivePath = handoffArchivePath(path, id);
       mkdirSync(dirname(archivePath), { recursive: true });

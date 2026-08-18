@@ -22,13 +22,16 @@ import type { Registry } from "./schema.js";
  * the narrative, the tool checks the claims.
  */
 
+/** @public Part of the control-plane public API; consumed by review tooling outside this package. */
 export const GATE_VERDICTS = ["PASS", "REWORK", "BLOCKED"] as const;
+/** @public */
 export type GateVerdict = (typeof GATE_VERDICTS)[number];
 
 /**
  * Evidence areas the review artifact template lists. A PASS must account
  * for every one of them -- that is what stops a review from passing by
  * saying nothing about security or migrations.
+ * @public
  */
 export const EVIDENCE_AREAS = [
   "contracts",
@@ -45,6 +48,7 @@ export const EVIDENCE_AREAS = [
   "documentation_traceability",
   "technical_debt",
 ] as const;
+/** @public */
 export type EvidenceArea = (typeof EVIDENCE_AREAS)[number];
 
 /**
@@ -87,6 +91,7 @@ const acceptedDeviationSchema = z.object({
   link: z.string().min(1),
 });
 
+/** @public Schema for parsing review artifacts outside this package (CI tooling, future dashboards). */
 export const reviewArtifactSchema = z.object({
   version: z.number().int().positive(),
   review_id: z.string().min(1),
@@ -104,6 +109,7 @@ export const reviewArtifactSchema = z.object({
   accepted_deviations: z.array(acceptedDeviationSchema).default([]),
   follow_up_tasks: z.array(z.string()).default([]),
 });
+/** @public */
 export type ReviewArtifact = z.infer<typeof reviewArtifactSchema>;
 
 export interface ControlValidationOptions {

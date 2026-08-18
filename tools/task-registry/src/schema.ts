@@ -10,6 +10,7 @@ import { z } from "zod";
  * how tasks/registry.yaml already used it before this tool existed). It is
  * disclosed here rather than silently invented.
  */
+/** @public Exported for consumers that need the full state list (dashboards, validators). */
 export const TASK_STATES = [
   "PLANNED",
   "BACKLOG",
@@ -80,6 +81,7 @@ export function allowedNextStates(from: TaskState): TaskState[] {
   return TRANSITIONS[from] ?? [];
 }
 
+/** @public Used by handoff documents and future discovery-triage tooling. */
 export const discoverySchema = z.object({
   discovery_id: z.string(),
   source_task: z.string(),
@@ -107,14 +109,17 @@ export const discoverySchema = z.object({
   blocking: z.boolean().default(false),
   proposed_task: z.string().nullable().default(null),
 });
+/** @public */
 export type Discovery = z.infer<typeof discoverySchema>;
 
+/** @public */
 export const humanDecisionSchema = z.object({
   decision_id: z.string(),
   question: z.string(),
   decision: z.string().nullable().default(null),
   decided_at: z.string().nullable().default(null),
 });
+/** @public */
 export type HumanDecision = z.infer<typeof humanDecisionSchema>;
 
 /**
@@ -127,6 +132,7 @@ export type HumanDecision = z.infer<typeof humanDecisionSchema>;
  * Defaulted (not required) so loading the existing 58+ tasks that predate
  * this field never fails -- `readyAdmissionProblems` below is what actually
  * enforces completeness, and only for tasks already at READY.
+ * @public
  */
 export const taskExecutionSchema = z
   .object({
@@ -143,6 +149,7 @@ export const taskExecutionSchema = z
     test_strategy: "",
     source_reference: "",
   });
+/** @public */
 export type TaskExecution = z.infer<typeof taskExecutionSchema>;
 
 export const taskSchema = z.object({

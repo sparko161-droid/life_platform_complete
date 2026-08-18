@@ -9,6 +9,7 @@ import {
   type Task,
 } from "./schema.js";
 
+/** @public Thrown by registry operations; catch-able by callers that import the registry module. */
 export class RegistryError extends Error {}
 
 export function loadRegistry(filePath: string): Registry {

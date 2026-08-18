@@ -649,7 +649,7 @@ tasks:
     phase: 1
     title: Finalize core screen contracts and action/API traceability
     primary: uiux-lead
-    status: REVIEW
+    status: DONE
     deps: []
     deps_contract:
       - P1-009
@@ -1539,7 +1539,7 @@ tasks:
     phase: 1
     title: Wave Gate and Phase Architecture Control implementation
     primary: architecture-control-lead
-    status: REVIEW
+    status: DONE
     deps: []
     deps_contract:
       - P0-010
