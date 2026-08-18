@@ -17,3 +17,4 @@ export * from "./media.js";
 export * from "./media-service.js";
 export * from "./task.js";
 export * from "./reward.js";
+export * from "./reward-service.js";
