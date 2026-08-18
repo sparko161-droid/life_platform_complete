@@ -52,13 +52,25 @@ export const FAMILY_EVENT_TYPES = [
 ] as const;
 export type FamilyEventType = (typeof FAMILY_EVENT_TYPES)[number];
 
-export const DOMAIN_EVENT_TYPES = [
-  ...FAMILY_EVENT_TYPES,
+/**
+ * Task lifecycle events added by P1-002A. Template publishing and child
+ * submission events fill gaps in the original P0-009 list.
+ */
+export const TASK_EVENT_TYPES = [
+  "TASK_TEMPLATE_CREATED",
+  "TASK_TEMPLATE_PUBLISHED",
   "TASK_ASSIGNED",
   "TASK_STARTED",
-  "TASK_COMPLETED",
+  "TASK_SUBMITTED",
   "TASK_APPROVED",
   "TASK_REJECTED",
+  "TASK_COMPLETED",
+] as const;
+export type TaskEventType = (typeof TASK_EVENT_TYPES)[number];
+
+export const DOMAIN_EVENT_TYPES = [
+  ...FAMILY_EVENT_TYPES,
+  ...TASK_EVENT_TYPES,
   "VERIFICATION_COMPLETED",
   "XP_GRANTED",
   "COINS_GRANTED",

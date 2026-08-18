@@ -311,7 +311,7 @@ tasks:
     phase: 1
     title: Family lifecycle and second-parent invitation
     primary: backend-lead
-    status: IN_PROGRESS
+    status: REVIEW
     deps: []
     deps_contract:
       - P0-009
@@ -1458,7 +1458,7 @@ tasks:
     phase: 1
     title: Task template and lifecycle core
     primary: backend-lead
-    status: PLANNED
+    status: IN_PROGRESS
     deps: []
     deps_contract:
       - P0-009
