@@ -1,27 +1,25 @@
 #!/usr/bin/env node
 // Persistent local dashboard server for tasks/registry.yaml.
-//
-// `pnpm run dashboard` (or `node scripts/dashboard-server.mjs`) serves
-// scripts/dashboard/index.html on a fixed local port, with the registry
-// data fetched live from tasks/registry.yaml on every request (never
-// baked into the HTML, unlike the one-off Artifact snapshot) and pushed to
-// the browser over Server-Sent Events the moment the file changes -- so
-// running any `task-registry` command that mutates the registry updates
-// the open dashboard tab within a second, no manual refresh.
-//
-// Deliberately plain `node:http` + `fs.watch`, no framework and no new
-// runtime dependency beyond `js-yaml` (already a root devDependency) --
-// this is a single-user local tool, not a service.
+// `pnpm run dashboard` serves the task dashboard and a separate control view:
+//   /                  task board
+//   /control.html      Phase/Wave/Architecture Control
+//   /api/registry.json raw task registry
+//   /api/control.json  task + phase status + admission-rule diagnostics
+//   /events            live registry-change SSE
 
 import { createReadStream, existsSync, readFileSync, statSync, watch } from "node:fs";
 import { createServer } from "node:http";
-import { dirname, extname, resolve } from "node:path";
+import { extname, resolve } from "node:path";
+import { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { load } from "js-yaml";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const dashboardDir = resolve(repoRoot, "scripts/dashboard");
 const registryPath = resolve(repoRoot, "tasks/registry.yaml");
+const phaseStatusPath = resolve(repoRoot, "tasks/phase-1-status.yaml");
+const blockersPath = resolve(repoRoot, "tasks/phase-1-blockers.yaml");
+const matrixPath = resolve(repoRoot, "tasks/phase-1-participant-matrix.yaml");
 const PORT = Number(process.env.DASHBOARD_PORT || 4747);
 
 const MIME = {
@@ -30,41 +28,65 @@ const MIME = {
   ".json": "application/json; charset=utf-8",
 };
 
-function readRegistryAsJSON() {
-  const doc = load(readFileSync(registryPath, "utf8"));
-  return JSON.stringify(doc);
+function readYaml(path) {
+  return load(readFileSync(path, "utf8"));
 }
 
-// SSE clients currently connected. A Set, not a single value, because
-// several browser tabs (or the same tab across reloads) can be open at once.
-const sseClients = new Set();
+function readRegistry() {
+  return readYaml(registryPath);
+}
 
+function readControl() {
+  const registry = readRegistry();
+  const phaseStatus = readYaml(phaseStatusPath);
+  const blockersDoc = readYaml(blockersPath);
+  const matrix = readYaml(matrixPath);
+  const tasks = registry.tasks ?? [];
+  const taskMatrix = matrix.tasks ?? {};
+
+  const blocked = tasks.filter(t => String(t.status).endsWith("_BLOCKED"));
+  const reviewStatuses = new Set(["REVIEW", "QA", "SECURITY", "ACCEPTANCE"]);
+  const review = tasks.filter(t => reviewStatuses.has(t.status));
+  const done = tasks.filter(t => t.status === "DONE");
+
+  const violations = [];
+  for (const t of tasks) {
+    const m = taskMatrix[t.id];
+    if (t.status === "READY" || (m && m.priority === "P0" && t.phase === 1)) {
+      if (!t.primary) violations.push({ id: t.id, type: "PRIMARY", message: "missing primary executor" });
+      if (!t.reviewer) violations.push({ id: t.id, type: "REVIEWER", message: "missing independent reviewer" });
+      if (!Array.isArray(t.gate_owners) || t.gate_owners.length === 0) violations.push({ id: t.id, type: "GATE", message: "missing gate owners" });
+      if (m && !m.acceptance) violations.push({ id: t.id, type: "ACCEPTANCE", message: "participant matrix has no acceptance criteria" });
+      if (m && (!Array.isArray(m.deps_contract) || !Array.isArray(m.deps_implementation))) violations.push({ id: t.id, type: "DEPENDENCY", message: "dependency classification is incomplete" });
+    }
+    if (t.status === "READY" && t.discovery_links?.some(d => d.blocking)) {
+      violations.push({ id: t.id, type: "BLOCKING_DISCOVERY", message: "READY task has a blocking discovery" });
+    }
+  }
+
+  return {
+    registryVersion: registry.version,
+    tasks: { total: tasks.length, done: done.length, review: review.length, blocked: blocked.length },
+    phase: phaseStatus.phase,
+    waves: phaseStatus.waves ?? [],
+    blockers: (blockersDoc.blockers ?? []).filter(b => b.status === "OPEN"),
+    violations,
+  };
+}
+
+const sseClients = new Set();
 function broadcastChange() {
   const payload = `event: registry-changed\ndata: ${Date.now()}\n\n`;
   for (const res of sseClients) {
-    try {
-      res.write(payload);
-    } catch {
-      sseClients.delete(res);
-    }
+    try { res.write(payload); } catch { sseClients.delete(res); }
   }
 }
-
-// fs.watch fires more than once per logical save on some platforms
-// (editors, and task-registry's own write-then-rename-free plain
-// writeFileSync can still trigger duplicate "change" events). Debounce so
-// one `task-registry claim` command doesn't fire the SSE event three times.
 let debounceTimer = null;
-function onRegistryFileEvent() {
-  clearTimeout(debounceTimer);
-  debounceTimer = setTimeout(broadcastChange, 150);
-}
+function onRegistryFileEvent() { clearTimeout(debounceTimer); debounceTimer = setTimeout(broadcastChange, 150); }
 
 function serveStatic(req, res, filePath) {
   if (!existsSync(filePath) || !statSync(filePath).isFile()) {
-    res.writeHead(404, { "Content-Type": "text/plain" });
-    res.end("Not found");
-    return;
+    res.writeHead(404, { "Content-Type": "text/plain" }); res.end("Not found"); return;
   }
   const ext = extname(filePath);
   res.writeHead(200, { "Content-Type": MIME[ext] || "application/octet-stream" });
@@ -76,9 +98,8 @@ const server = createServer((req, res) => {
 
   if (url.pathname === "/api/registry.json") {
     try {
-      const json = readRegistryAsJSON();
       res.writeHead(200, { "Content-Type": MIME[".json"], "Cache-Control": "no-store" });
-      res.end(json);
+      res.end(JSON.stringify(readRegistry()));
     } catch (err) {
       res.writeHead(500, { "Content-Type": "text/plain" });
       res.end(`Failed to read tasks/registry.yaml: ${err instanceof Error ? err.message : String(err)}`);
@@ -86,40 +107,40 @@ const server = createServer((req, res) => {
     return;
   }
 
-  if (url.pathname === "/events") {
-    res.writeHead(200, {
-      "Content-Type": "text/event-stream",
-      "Cache-Control": "no-cache",
-      Connection: "keep-alive",
-    });
-    res.write(": connected\n\n");
-    sseClients.add(res);
-    req.on("close", () => sseClients.delete(res));
+  if (url.pathname === "/api/control.json") {
+    try {
+      res.writeHead(200, { "Content-Type": MIME[".json"], "Cache-Control": "no-store" });
+      res.end(JSON.stringify(readControl()));
+    } catch (err) {
+      res.writeHead(500, { "Content-Type": "text/plain" });
+      res.end(`Failed to read control-plane state: ${err instanceof Error ? err.message : String(err)}`);
+    }
     return;
+  }
+
+  if (url.pathname === "/events") {
+    res.writeHead(200, { "Content-Type": "text/event-stream", "Cache-Control": "no-cache", Connection: "keep-alive" });
+    res.write(": connected\n\n"); sseClients.add(res); req.on("close", () => sseClients.delete(res)); return;
   }
 
   if (url.pathname === "/healthz") {
-    res.writeHead(200, { "Content-Type": "text/plain" });
-    res.end("ok");
-    return;
+    res.writeHead(200, { "Content-Type": "text/plain" }); res.end("ok"); return;
   }
 
   const fsPath = url.pathname === "/" ? "/index.html" : url.pathname;
-  // Prevent path traversal outside scripts/dashboard/ -- this is a local
-  // tool, but it still binds a real TCP port, so don't hand out arbitrary
-  // filesystem reads.
   const resolved = resolve(dashboardDir, `.${fsPath}`);
   if (!resolved.startsWith(dashboardDir)) {
-    res.writeHead(403, { "Content-Type": "text/plain" });
-    res.end("Forbidden");
-    return;
+    res.writeHead(403, { "Content-Type": "text/plain" }); res.end("Forbidden"); return;
   }
   serveStatic(req, res, resolved);
 });
 
-watch(registryPath, { persistent: true }, onRegistryFileEvent);
+for (const watchedPath of [registryPath, phaseStatusPath, blockersPath, matrixPath]) {
+  watch(watchedPath, { persistent: true }, onRegistryFileEvent);
+}
 
 server.listen(PORT, "127.0.0.1", () => {
   console.log(`Dashboard: http://localhost:${PORT}/`);
-  console.log(`Watching: ${registryPath}`);
+  console.log(`Control:   http://localhost:${PORT}/control.html`);
+  console.log(`Watching:  ${registryPath}, ${phaseStatusPath}, ${blockersPath}, ${matrixPath}`);
 });
