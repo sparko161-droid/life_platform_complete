@@ -36,14 +36,24 @@ jobs:
       - name: Lint
         run: pnpm lint
 
+      # Build before typecheck/test, not after: several packages (starting
+      # with packages/ux-contracts importing packages/domain-types)
+      # resolve a sibling workspace package through its package.json
+      # "exports" -> "./dist/...", which only exists once that package has
+      # been built. tsc and tsx's Node ESM resolver both read "exports" the
+      # same way at typecheck/test time, so either step running before
+      # `build` fails with "Cannot find module" for any cross-package
+      # import -- reproduced for real on this exact CI run (P1-014's
+      # merge), masked locally only because a stale dist/ from an earlier
+      # manual build was still on disk.
+      - name: Build
+        run: pnpm build
+
       - name: Typecheck
         run: pnpm typecheck
 
       - name: Unit tests
         run: pnpm test
-
-      - name: Build
-        run: pnpm build
 
       # docs/architecture/api-contracts.md ("Generation pipeline"):
       # fails if services/api/openapi/openapi.yaml changed without
