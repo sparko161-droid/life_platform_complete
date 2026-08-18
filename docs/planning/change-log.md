@@ -1,5 +1,35 @@
 # Planning Change Log
 
+## 0.16 (P1-014 — record corrected to the scope actually delivered)
+
+Raised in 0.12 and decided by the Human Architect: where a record does not
+match reality, the record changes.
+
+Checked what reality is. `services/api/src/index.ts` is still the Phase 0
+placeholder, so nothing produces a reward ledger entry at all. But
+`P1-014`'s own title is "first task-to-reward vertical slice **contract and
+event path**", and what it delivered matches that exactly: five OpenAPI
+operations, `DOMAIN_EVENT_TYPES` completed to the seven required events,
+the UI action-to-operation mapping, and three contract-group version bumps.
+Its handoff says in as many words that P1-015/P1-016 build the actual
+server-side handlers and client wiring.
+
+So `DONE` is the correct status for the scope this task had. What did not
+match reality was the acceptance line, which 0.13 imported from
+`tasks/phase-1-participant-matrix.yaml` -- "produces the correct reward
+event and ledger entry exactly once" describes the runtime slice, not the
+contract freeze, and that acceptance is already owned by P1-006
+(append-only ledger, exactly-once identity), P1-008 (duplicate
+completion/verification/reward), P1-015 (race/retry/conflict fixtures) and
+P1-007 (the full journey). It was duplicated onto P1-014, not assigned to
+it.
+
+Corrected in both the registry (version 10 -> 11) and the participant
+matrix: acceptance and test strategy now describe the contract freeze, and
+the five implementation dependencies the matrix listed are removed --
+a contract freeze does not depend on the implementations that will later
+consume it. Status stays `DONE`.
+
 ## 0.15 (P1-020 / BLK-P1-011 — Wave Gates that can actually fail)
 
 `docs/governance/wave-gate.md` already required "a versioned review

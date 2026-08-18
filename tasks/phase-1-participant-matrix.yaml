@@ -249,9 +249,9 @@ tasks:
     gate_owners: [qa-lead, security-engineering, security-red-team]
     participants: [backend-lead, chief-architect, game-engine-lead, qa-lead, security-engineering, security-red-team, documentation-agent]
     deps_contract: [P0-009, P0-010]
-    deps_implementation: [P1-001, P1-002A, P1-005, P1-006, P1-008]
-    acceptance: "Task completion/verification/approval produces the correct reward event and ledger entry exactly once."
-    test_strategy: "Application integration, event replay and duplicate reward tests."
+    deps_implementation: []
+    acceptance: "Task completion/verification/approval path frozen as contract: OpenAPI operations, the seven required domain events and the UI action mapping. Runtime handlers are P1-015/P1-016; exactly-once ledger behaviour is P1-006/P1-008."
+    test_strategy: "Contract-level tests: required-event completeness, action-to-operationId mapping, contract registry validation."
 
   P1-015:
     title: "Vertical slice state, idempotency and conflict fixtures"

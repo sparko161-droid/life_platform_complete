@@ -1,4 +1,4 @@
-version: 10
+version: 11
 tasks:
   - id: P0-001
     phase: 0
@@ -708,9 +708,9 @@ tasks:
     execution:
       wave: W4
       priority: P1
-      acceptance_criteria: Task completion/verification/approval produces the correct reward event and ledger entry exactly once.
-      test_strategy: Application integration, event replay and duplicate reward tests.
-      source_reference: tasks/phase-1-participant-matrix.yaml
+      acceptance_criteria: 'Task completion/verification/approval path is frozen as contract: OpenAPI operations, the seven required domain events and the UI action mapping, with no runtime handler required at this task''s scope.'
+      test_strategy: 'Contract-level tests: required-event completeness, action-to-operationId mapping and contract registry validation.'
+      source_reference: tasks/handoffs/P1-014.md (delivered scope); exactly-once ledger behaviour is owned by P1-006/P1-008/P1-015/P1-007
   - id: P1-015
     phase: 1
     title: Implement vertical slice state, idempotency and conflict fixtures
