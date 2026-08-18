@@ -1,5 +1,33 @@
 # Planning Change Log
 
+## 0.6 (P0-010 — contract registry)
+
+- Added `contracts/registry.yaml`: one entry per contract group (family,
+  task, verification, media, reward, events, classification, plus a
+  `PLANNED` `task_dsl` placeholder for the Rules DSL P1-002 hasn't built
+  yet), each recording its version, owning role, exact `domain-types`
+  exports, matching OpenAPI schema names, consuming tasks and open
+  decisions. Satisfies `docs/planning/gap-backlog.md`'s P0 item.
+- Added `task-registry contracts validate`
+  (`tools/task-registry/src/contracts.ts`, `pnpm run contracts:validate`):
+  cross-checks the registry against real `domain-types` exports, real
+  `tasks/registry.yaml` ids and real change-log headings; flags both
+  claimed-but-missing exports and real-but-unclaimed ones (orphans). Wired
+  into CI as "Contract registry is in sync".
+- `handoff` now archives its report to `tasks/handoffs/<id>.md` in addition
+  to printing it, so a completed review survives past the terminal that ran
+  it.
+- Also closed a process gap found while starting this task: P0-001 through
+  P0-009 had all been merged to `main` but were still sitting at `REVIEW`
+  in `tasks/registry.yaml` — the QA/SECURITY/ACCEPTANCE gate transitions
+  from `docs/engineering/merge-gate.md`'s "Post-merge: ... update task
+  status" step had never actually been run. Walked all nine through
+  `REVIEW -> QA -> SECURITY -> ACCEPTANCE -> DONE` before this task could
+  even be claimed, since `claim` correctly refuses a task whose dependency
+  isn't `DONE`.
+- See `docs/architecture/contract-registry.md` for the full format and
+  versioning policy.
+
 ## 0.5 (contracts/v0.2.0 — P0-009 revalidation)
 
 Triggered by `docs/governance/project-evolution.md`'s mandatory

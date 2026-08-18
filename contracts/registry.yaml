@@ -1,0 +1,207 @@
+# Versioned contract registry (P0-010).
+#
+# Single index of every domain contract: where it's defined (domain-types +
+# OpenAPI), what version it's frozen at, who owns it, and which tasks
+# consume it. Exists because `packages/domain-types` and
+# `services/api/openapi/openapi.yaml` can each drift independently and
+# nothing previously cross-checked them against each other or against
+# `tasks/registry.yaml`'s `deps`. Validated by
+# `task-registry contracts validate` (wired into CI).
+#
+# Satisfies docs/planning/gap-backlog.md's P0 item: "Contract Registry must
+# link task DSL, rules, family lifecycle, permissions and events."
+#
+# Versioning policy (semver-shaped, not semver-tooled):
+#   - patch: doc/comment clarification, no shape change.
+#   - minor: additive, backward-compatible field or enum value.
+#   - major: breaking change to an already-consumed group -- requires a new
+#     task (never a silent edit) and a merge-gate.md Human Architect
+#     decision, per that doc's "no silent scope changes" rule.
+# All FROZEN groups below have moved together so far (0.1.0 -> 0.2.0, see
+# docs/planning/change-log.md 0.4/0.5) because P0-009's revalidation touched
+# every entity at once. `packages/domain-types`'s exported `CONTRACT_VERSION`
+# is that whole-pack version; per-group `version` fields exist here so a
+# future change can bump one group without implying the others moved too.
+
+version: 1
+contract_pack_version: "0.2.0"
+
+groups:
+  - name: family
+    status: FROZEN
+    version: "0.2.0"
+    owner: chief-architect
+    defines:
+      domain_types: packages/domain-types/src/family.ts
+      exports:
+        - CONTRACT_VERSION
+        - FAMILY_STATUSES
+        - FamilyStatus
+        - isValidFamilyTransition
+        - PARENT_CAPABILITIES
+        - ParentCapability
+        - PARENT_MEMBERSHIP_STATUSES
+        - ParentMembershipStatus
+        - ParentMembershipSchema
+        - ParentMembership
+        - PARENT_MEMBERSHIP_CLASSIFICATION
+        - ChildProfileSchema
+        - ChildProfile
+        - CHILD_PROFILE_CLASSIFICATION
+        - FamilySchema
+        - Family
+        - FAMILY_CLASSIFICATION
+      openapi_schemas:
+        - Family
+        - ParentMembership
+        - ChildProfile
+        - ParentCapability
+    consumed_by: [P1-001, P1-009]
+    changelog_ref: "0.5"
+    open_decisions:
+      - "Parent role permission set beyond PARENT_CAPABILITIES's disclosed placeholder (tasks/packets/P0-009-phase1-contract-pack.md)"
+
+  - name: task
+    status: FROZEN
+    version: "0.2.0"
+    owner: chief-architect
+    defines:
+      domain_types: packages/domain-types/src/task.ts
+      exports:
+        - TASK_TEMPLATE_STATUSES
+        - TaskTemplateStatus
+        - isValidTaskTemplateTransition
+        - TaskTemplateSchema
+        - TaskTemplate
+        - TASK_TEMPLATE_CLASSIFICATION
+        - TASK_ASSIGNMENT_STATUSES
+        - TaskAssignmentStatus
+        - isValidTaskAssignmentTransition
+        - TaskAssignmentSchema
+        - TaskAssignment
+        - TASK_ASSIGNMENT_CLASSIFICATION
+        - TaskCompletionSchema
+        - TaskCompletion
+        - TASK_COMPLETION_CLASSIFICATION
+      openapi_schemas:
+        - TaskTemplate
+        - TaskAssignment
+        - TaskCompletion
+    consumed_by: [P1-002, P1-003, P1-004, P1-009]
+    changelog_ref: "0.5"
+    open_decisions: []
+
+  - name: verification
+    status: FROZEN
+    version: "0.2.0"
+    owner: chief-architect
+    defines:
+      domain_types: packages/domain-types/src/verification.ts
+      exports:
+        - VERIFICATION_STRATEGIES
+        - VerificationStrategy
+        - VERIFICATION_OUTCOMES
+        - VerificationOutcome
+        - VerificationResultSchema
+        - VerificationResult
+        - VERIFICATION_RESULT_CLASSIFICATION
+      openapi_schemas:
+        - VerificationResult
+        - VerificationStrategy
+    consumed_by: [P1-002, P1-008]
+    changelog_ref: "0.4"
+    open_decisions: []
+
+  - name: media
+    status: FROZEN
+    version: "0.2.0"
+    owner: security-child-safety
+    defines:
+      domain_types: packages/domain-types/src/media.ts
+      exports:
+        - MEDIA_KINDS
+        - MediaKind
+        - MediaEvidenceSchema
+        - MediaEvidence
+        - MEDIA_EVIDENCE_CLASSIFICATION
+      openapi_schemas:
+        - MediaEvidence
+    consumed_by: [P1-005]
+    changelog_ref: "0.4"
+    open_decisions:
+      - "Storage-key-only, never-public-URL rule (docs/security/privacy.md) needs a concrete signed-URL mechanism at P1-005 implementation time"
+
+  - name: reward
+    status: FROZEN
+    version: "0.2.0"
+    owner: game-engine-lead
+    defines:
+      domain_types: packages/domain-types/src/reward.ts
+      exports:
+        - REWARD_LEDGER_KINDS
+        - RewardLedgerKind
+        - REWARD_LEDGER_REASONS
+        - RewardLedgerReason
+        - RewardLedgerEntrySchema
+        - RewardLedgerEntry
+        - REWARD_LEDGER_ENTRY_CLASSIFICATION
+        - REWARD_TYPES
+        - RewardType
+        - REWARD_STATUSES
+        - RewardStatus
+        - isValidRewardTransition
+        - RewardSchema
+        - Reward
+        - REWARD_CLASSIFICATION
+      openapi_schemas:
+        - RewardLedgerEntry
+        - Reward
+        - RewardType
+    consumed_by: [P1-006, P1-008]
+    changelog_ref: "0.5"
+    open_decisions:
+      - "Money policy precision/currency (tasks/packets/P0-009-phase1-contract-pack.md)"
+
+  - name: events
+    status: FROZEN
+    version: "0.2.0"
+    owner: chief-architect
+    defines:
+      domain_types: packages/domain-types/src/events.ts
+      exports:
+        - EventEnvelopeSchema
+        - EventEnvelope
+        - DOMAIN_EVENT_TYPES
+        - DomainEventType
+      openapi_schemas: []
+    consumed_by: [P1-007, P1-014]
+    changelog_ref: "0.4"
+    open_decisions:
+      - "No OpenAPI/transport binding yet -- envelope shape only, event bus choice is a P1-014 concern"
+
+  - name: classification
+    status: FROZEN
+    version: "0.2.0"
+    owner: security-child-safety
+    defines:
+      domain_types: packages/domain-types/src/classification.ts
+      exports:
+        - DATA_CLASSES
+        - ClassificationMap
+      openapi_schemas: []
+    consumed_by: [P1-001, P1-002, P1-005, P1-006]
+    changelog_ref: "0.5"
+    open_decisions: []
+
+  - name: task_dsl
+    status: PLANNED
+    version: null
+    owner: backend-lead
+    defines:
+      domain_types: null
+      exports: []
+      openapi_schemas: []
+    consumed_by: [P1-002]
+    changelog_ref: null
+    open_decisions:
+      - "Not yet defined. docs/planning/gap-backlog.md: \"Task Builder validation rules must be executable and testable.\" P1-002 (\"Task template, assignment and Rules DSL\") owns designing and freezing this group; listed here so its absence is visible instead of silently missing from the registry."

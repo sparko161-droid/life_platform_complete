@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { Command } from "commander";
-import { resolve } from "node:path";
+import { mkdirSync, writeFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
 import {
   findTask,
   loadRegistry,
@@ -10,13 +11,21 @@ import {
 } from "./registry.js";
 import { allowedNextStates, isValidTransition, type Task, type TaskState } from "./schema.js";
 import { renderHandoff } from "./handoff.js";
-import { createWorktree, removeWorktree } from "./worktree.js";
+import { createWorktree, removeWorktree, repoRoot } from "./worktree.js";
+import { loadContractRegistry, validateContractRegistry } from "./contracts.js";
 
 // pnpm --filter runs scripts with cwd set to the package directory, not the
 // repo root the CLI is meant to operate from. pnpm sets INIT_CWD to the
 // directory the command was originally invoked from, so prefer that.
 const invocationCwd = process.env.INIT_CWD ?? process.cwd();
 const DEFAULT_REGISTRY_PATH = resolve(invocationCwd, "tasks/registry.yaml");
+
+// Handoff reports are archived next to the registry (tasks/handoffs/<id>.md)
+// so a review can be reconstructed later instead of relying on whoever ran
+// the command having kept their terminal scrollback (P0-010).
+function handoffArchivePath(registryPath: string, id: string): string {
+  return resolve(dirname(registryPath), "handoffs", `${id}.md`);
+}
 
 function registryPath(opts: { registry?: string }): string {
   return opts.registry ? resolve(invocationCwd, opts.registry) : DEFAULT_REGISTRY_PATH;
@@ -147,7 +156,12 @@ program
       decisions: split(cmdOpts.decisions),
       nextTasks: split(cmdOpts.next),
     });
+    const archivePath = handoffArchivePath(path, id);
+    mkdirSync(dirname(archivePath), { recursive: true });
+    writeFileSync(archivePath, report.endsWith("\n") ? report : `${report}\n`, "utf8");
+
     console.log(report);
+    console.log(`\n(archived to ${archivePath})`);
   });
 
 program
@@ -327,6 +341,39 @@ worktree
     const task = findTask(registry, id);
     await removeWorktree(task, { branch: cmdOpts.branch, force: Boolean(cmdOpts.force) });
     console.log(`Removed worktree for ${id}.`);
+  });
+
+const contracts = program.command("contracts").description("contracts/registry.yaml (P0-010)");
+
+contracts
+  .command("validate")
+  .description("check contracts/registry.yaml against domain-types exports, task ids and change-log headings")
+  .option("--file <path>", "path to contracts/registry.yaml", "contracts/registry.yaml")
+  .action(async (cmdOpts, cmd) => {
+    const regPath = registryPath(cmd.optsWithGlobals());
+    const root = await repoRoot();
+
+    const taskRegistry = loadRegistry(regPath);
+    const contractsPath = resolve(root, cmdOpts.file);
+    const contractRegistry = loadContractRegistry(contractsPath);
+
+    const problems = validateContractRegistry(contractRegistry, {
+      repoRoot: root,
+      taskRegistry,
+      changelogPath: resolve(root, "docs/planning/change-log.md"),
+      domainTypesSrcDir: "packages/domain-types/src",
+      orphanScanExclude: ["index.ts", "ids.ts", "classification.ts"],
+    });
+
+    if (problems.length > 0) {
+      console.error(`Contract registry validation FAILED (${contractsPath}):`);
+      for (const p of problems) console.error(`  - ${p}`);
+      process.exitCode = 1;
+      return;
+    }
+    console.log(
+      `Contract registry OK: ${contractRegistry.groups.length} group(s), pack version ${contractRegistry.contract_pack_version}.`,
+    );
   });
 
 program.parseAsync(process.argv).catch((err) => {

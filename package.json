@@ -20,6 +20,7 @@
     "format": "pnpm exec prettier . --write",
     "check": "pnpm lint && pnpm typecheck && pnpm test",
     "task-registry": "pnpm --filter @life/tools-task-registry run dev",
+    "contracts:validate": "pnpm --filter @life/tools-task-registry run dev -- contracts validate",
     "quality:dead-code": "knip"
   },
   "devDependencies": {

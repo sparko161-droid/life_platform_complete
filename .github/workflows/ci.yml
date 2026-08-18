@@ -51,6 +51,12 @@ jobs:
       - name: OpenAPI client is up to date
         run: pnpm --filter @life/api-client run generate:check
 
+      # docs/architecture/contract-registry.md / P0-010: fails if
+      # contracts/registry.yaml drifts from packages/domain-types' real
+      # exports, tasks/registry.yaml's task ids, or change-log.md headings.
+      - name: Contract registry is in sync
+        run: pnpm run contracts:validate
+
   secret-scan:
     name: gitleaks
     runs-on: ubuntu-latest

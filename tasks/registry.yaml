@@ -4,7 +4,7 @@ tasks:
     phase: 0
     title: Protect main and configure CI gates
     primary: devops-lead
-    status: REVIEW
+    status: DONE
     deps: []
     reviewer: chief-architect
     gate_owners:
@@ -19,7 +19,7 @@ tasks:
     phase: 0
     title: Provision local dev stack and health checks
     primary: devops-lead
-    status: REVIEW
+    status: DONE
     deps: []
     reviewer: chief-architect
     gate_owners:
@@ -33,7 +33,7 @@ tasks:
     phase: 0
     title: Implement task registry lifecycle and dependency fields
     primary: ai-cto
-    status: REVIEW
+    status: DONE
     deps: []
     reviewer: chief-architect
     gate_owners:
@@ -62,7 +62,7 @@ tasks:
     phase: 0
     title: Implement agent worktree and handoff conventions
     primary: ai-cto
-    status: REVIEW
+    status: DONE
     deps:
       - P0-003
     reviewer: chief-architect
@@ -77,7 +77,7 @@ tasks:
     phase: 0
     title: Define OpenAPI and typed client generation path
     primary: backend-lead
-    status: REVIEW
+    status: DONE
     deps: []
     reviewer: chief-architect
     gate_owners:
@@ -91,7 +91,7 @@ tasks:
     phase: 0
     title: Create synthetic family fixtures and seed data
     primary: qa-lead
-    status: REVIEW
+    status: DONE
     deps:
       - P0-005
     reviewer: chief-architect
@@ -106,7 +106,7 @@ tasks:
     phase: 0
     title: Baseline observability and error reporting
     primary: devops-lead
-    status: REVIEW
+    status: DONE
     deps:
       - P0-002
     reviewer: chief-architect
@@ -121,7 +121,7 @@ tasks:
     phase: 0
     title: Establish security baseline and secrets policy
     primary: security-child-safety
-    status: REVIEW
+    status: DONE
     deps: []
     reviewer: chief-architect
     gate_owners:
@@ -135,7 +135,7 @@ tasks:
     phase: 0
     title: Create Phase 1 contract pack
     primary: chief-architect
-    status: REVIEW
+    status: DONE
     deps:
       - P0-005
       - P0-008
@@ -166,11 +166,13 @@ tasks:
     phase: 0
     title: Versioned contract registry and handoff artifacts
     primary: chief-architect
-    status: READY
+    status: DONE
     deps:
       - P0-009
-    reviewer: null
-    gate_owners: []
+    reviewer: ai-cto
+    gate_owners:
+      - qa-lead
+      - security-child-safety
     discovery_links: []
     blocked_reason: null
     human_decisions: []
