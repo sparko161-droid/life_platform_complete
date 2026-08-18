@@ -59,3 +59,8 @@ desktop.ini
 # Local DB dump/backup files (never real data, but real backups can be
 # large and are always machine-local -- see scripts/db-backup.mjs)
 backups/
+
+# task-registry's advisory lock directory (tools/task-registry/src/lock.ts,
+# P0-011). Self-cleaning on a normal exit; only survives a hard crash, and
+# even then is never something to commit.
+tasks/.registry.yaml.lock/

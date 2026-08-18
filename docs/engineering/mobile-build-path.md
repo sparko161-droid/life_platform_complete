@@ -41,22 +41,67 @@ internal-verification-only** artifacts:
 confirmed `lib/main.dart` and `pubspec.yaml` were untouched), and
 `flutter doctor` confirms a fully working Android toolchain.
 
-The actual `flutter build apk --debug` compile step could not be
-completed on this machine: it fails with
-`java.io.IOException: Unable to establish loopback connection`. Traced
-this past Gradle entirely to a bare `java.nio.channels.Selector.open()`
-call failing the same way — the JVM's internal loopback pipe now uses a
-Unix-domain-socket connect on Windows, and `connect()` returns `EINVAL`
-in this specific sandboxed session. Reproduced identically on both JDK
-21 and JDK 17, so it isn't a JDK-version choice; this reads as a
-sandbox-level restriction on `AF_UNIX` sockets, not a project
-misconfiguration — and not something to work around by changing system
-network settings, which is out of scope for a coding agent to touch.
-**This is a local-environment limitation, not a workflow-correctness
-one**: `.github/workflows/mobile-android.yml` runs on GitHub's own
-`ubuntu-latest` runners, which don't share this sandbox's restriction —
-the workflow itself was not blocked by this, only this one manual local
-verification attempt was.
+**A debug APK has now been built locally and verified** —
+`app-debug.apk`, 143 MB, containing `classes.dex`, `AndroidManifest.xml`
+and `libflutter.so` for `arm64-v8a`/`armeabi-v7a`/`x86_64`. Getting there
+took two fixes, both of which are *path* problems on Windows, and both
+worth recording because the first one was initially misdiagnosed.
+
+### Fix 1 — `Unable to establish loopback connection`
+
+Gradle failed instantly with
+`java.io.IOException: Unable to establish loopback connection`, traced
+past Gradle to a bare `java.nio.channels.Selector.open()` failing the
+same way: the JVM's internal loopback pipe uses a Unix-domain-socket
+connect on Windows, and `connect()` returned `EINVAL`.
+
+This was **first written up here as an unfixable sandbox restriction on
+`AF_UNIX` sockets. That conclusion was wrong.** The evidence that looked
+conclusive — identical failure on JDK 21 and JDK 17, and with the
+selector provider forced to `WindowsSelectorProvider` — only ruled out
+the JDK version and the selector implementation. It never tested the
+socket *path*. Re-running the same bare-Java repro with the sandbox
+disabled failed identically, which ruled out the sandbox too and pointed
+at the environment itself.
+
+The actual cause: the JVM creates that socket under the temp directory,
+which on this machine resolves to the 8.3 short name
+`C:\Users\KUVSHI~1\AppData\Local\Temp\`. An `AF_UNIX` `connect()` on
+such a path fails with `EINVAL`. Pointing the JVM at a clean short ASCII
+directory fixes it outright:
+
+```
+JAVA_TOOL_OPTIONS=-Djdk.net.unixdomain.tmpdir=C:\jtmp
+```
+
+Deliberately **not** committed into `android/gradle.properties`: the
+value is a machine-local absolute path, and a developer whose `TEMP` is
+a normal long path never hits this. It belongs in the local environment
+of whoever hits the error, which is what this section is for.
+
+### Fix 2 — non-ASCII project path
+
+With Fix 1 in place the build ran for 7 minutes and then failed on the
+Android Gradle Plugin's own check:
+
+> Your project path contains non-ASCII characters. This will most likely
+> cause the build to fail on Windows.
+
+The repo lives under `…\Desktop\Работа\…`. AGP refuses outright rather
+than failing later in a confusing way. Verified the fix the
+non-destructive way — a `git worktree` at `C:\lp-ascii` (same commit,
+pure-ASCII path) — and the APK built there on the first attempt. AGP
+offers `android.overridePathCheck=true` to silence the check; that was
+not used, because AGP's own message says the build will most likely fail
+anyway, and a green build from an ASCII path is stronger evidence than a
+suppressed warning.
+
+**Consequence for anyone building Android on this machine:** build from
+an ASCII path. Either move the repo out from under `Работа`, or keep a
+dedicated worktree (`git worktree add C:\lp-ascii <branch>`) for mobile
+builds. CI is unaffected — GitHub's runners check out to
+`/home/runner/work/...`, which is ASCII, and set a normal `TMPDIR`, so
+neither fix is needed there.
 
 ## iOS: not locally verifiable at all
 

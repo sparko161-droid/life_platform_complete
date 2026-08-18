@@ -1,0 +1,174 @@
+version: 3
+phase: 1
+status: BLOCKED
+
+blockers:
+  - id: BLK-P1-001
+    priority: P0
+    status: OPEN
+    title: "Reconcile duplicate screen ID systems"
+    source: DISC-P1-009-1
+    owners: [uiux-lead, chief-architect]
+    reviewers: [frontend-lead, backend-lead, qa-lead]
+    blocks: [P1-013, P1-003, P1-004, P1-010, P1-016]
+    resolution: "Select one canonical screen-ID system and update UX docs, contracts, tests and traceability references."
+  - id: BLK-P1-002
+    priority: P0
+    status: PARTIALLY_RESOLVED
+    title: "Complete Phase 1 contract and operation/API traceability freeze"
+    owners: [uiux-lead, chief-architect, backend-lead]
+    reviewers: [qa-lead, documentation-agent]
+    blocks: [P1-001, P1-002A, P1-002B, P1-003, P1-004, P1-010, P1-016]
+    resolution: "Freeze canonical operation IDs, state transitions, API mappings and error/recovery semantics before runtime implementation."
+    note: >-
+      P1-009 (screen map, action catalog, task/reward UI-state mappings) and
+      P1-014 (5 real OpenAPI operations for the vertical slice: getChildToday,
+      startTaskAssignment, approveTaskCompletion, rejectTaskCompletion,
+      redeemReward, all with real operationIds in packages/ux-contracts's
+      action catalog) close this for the vertical-slice scope. Family
+      (P1-001), the Task DSL/Rules operations beyond the vertical slice
+      (P1-002A/P1-002B), and Media (P1-005) operations are not frozen yet --
+      this blocker stays open, narrowed to that remaining scope. Removed
+      P1-014 from `blocks` since it is DONE.
+  - id: BLK-P1-003
+    priority: P0
+    status: OPEN
+    title: "Define contract-vs-implementation dependency semantics"
+    owners: [ai-cto, chief-architect]
+    reviewers: [documentation-agent, qa-lead]
+    blocks: [all_p1_ready_tasks]
+    resolution: "Allow downstream contract work after a dependency is FROZEN; require implementation DONE for integration and release. Encode both dependency classes in task metadata and validation."
+  - id: BLK-P1-004
+    priority: P0
+    status: RESOLVED
+    title: "Every Phase 1 task must have independent reviewer and gate owners"
+    owners: [ai-cto]
+    reviewers: [chief-architect, qa-lead]
+    blocks: []
+    resolution: "Populate primary/reviewer/gate_owners, acceptance criteria and test strategy before status READY."
+    note: >-
+      `readyAdmissionProblems()` (tools/task-registry/src/schema.ts) enforces
+      this structurally now, wired into `validateStructure()` and run by
+      `task-registry validate`. Checked, not just documented: reviewer ==
+      primary is explicitly rejected, and all five metadata fields are
+      required for any task at READY.
+  - id: BLK-P1-005
+    priority: P0
+    status: OPEN
+    title: "Split Task/Rules epic into reviewable implementation units"
+    owners: [backend-lead, chief-architect]
+    reviewers: [qa-lead, security-child-safety]
+    blocks: [P1-002A, P1-002B, P1-003, P1-004, P1-014]
+    resolution: "Replace one oversized P1-002 implementation stream with Task lifecycle, scheduling/Rules DSL and completion/attempt boundaries."
+  - id: BLK-P1-006
+    priority: P0
+    status: OPEN
+    title: "Start real Phase 1 runtime implementation"
+    owners: [backend-lead]
+    reviewers: [chief-architect]
+    gates: [qa-lead, security-engineering, child-safety-lead]
+    blocks: [P1-007, P1-010, P1-016, P1-017, P1-018]
+    resolution: "Implement Family, Task, persistence, verification, reward and application-service runtime instead of placeholder entrypoints."
+  - id: BLK-P1-007
+    priority: P0
+    status: OPEN
+    title: "Implement transactional persistence and real API path"
+    owners: [backend-lead, devops-lead]
+    reviewers: [chief-architect, security-engineering]
+    blocks: [P1-014, P1-015, P1-016, P1-017]
+    resolution: "Add migrations, repositories/application services, API handlers, authorization and transaction boundaries for the vertical slice."
+  - id: BLK-P1-008
+    priority: P0
+    status: OPEN
+    title: "Prove exactly-once completion, verification and reward behavior"
+    owners: [backend-lead, game-engine-lead]
+    reviewers: [qa-lead, chief-architect]
+    gates: [security-engineering, security-red-team]
+    blocks: [P1-015, P1-016, P1-017, P1-007]
+    resolution: "Create retry/race/conflict fixtures and enforce unique source reward identity plus deterministic state transitions."
+  - id: BLK-P1-009
+    priority: P0
+    status: OPEN
+    title: "Implement the first true family vertical slice"
+    owners: [backend-lead, frontend-lead]
+    reviewers: [chief-architect, qa-lead]
+    gates: [security-engineering, child-safety-lead, security-red-team, journey-agent, documentation-agent]
+    blocks: [P1-007, P1-017, P1-018]
+    resolution: "Parent creates task -> child receives -> child completes -> proof -> parent approval -> reward ledger -> audit, with no manual DB intervention."
+  - id: BLK-P1-010
+    priority: P0
+    status: OPEN
+    title: "Phase 1 exit evidence gate"
+    owners: [qa-lead, ai-cto]
+    reviewers: [chief-architect, architecture-control-lead]
+    gates: [security-engineering, child-safety-lead, security-red-team, performance-scale-agent, documentation-agent, journey-agent]
+    blocks: [P2-001, P2-002, P2-003, P2-005, P5-005, P5-006]
+    resolution: "Do not mark Phase 1 DONE until QA, security, child safety, adversarial security, scale, architecture control, journey and documentation evidence all pass."
+  - id: BLK-P1-011
+    priority: P0
+    status: OPEN
+    title: "Establish Architecture Control Plane and wave-level review artifacts"
+    owners: [architecture-control-lead, chief-architect]
+    reviewers: [ai-cto, documentation-agent]
+    gates: [qa-lead]
+    blocks: [W0-W8, phase-1-exit]
+    resolution: "Create independent Wave Gates, Phase Architecture Control Gate and versioned review artifacts that compare code/contracts/events/database/tests/docs as one system."
+  - id: BLK-P1-012
+    priority: P0
+    status: OPEN
+    title: "Establish versioning/evolution compatibility foundation"
+    owners: [architecture-control-lead, backend-lead, devops-lead]
+    reviewers: [chief-architect, qa-lead]
+    gates: [documentation-agent, performance-scale-agent]
+    blocks: [W5, phase-1-exit]
+    resolution: "Implement and validate API/domain/event versioning, persisted artifact schema versions, migration compatibility, deprecation policy and controlled rollout rules."
+  - id: BLK-P1-013
+    priority: P0
+    status: OPEN
+    title: "Independent Security Red Team capability"
+    owners: [security-red-team]
+    reviewers: [security-engineering, child-safety-lead]
+    gates: [qa-lead, chief-architect]
+    blocks: [W3, W4, W7, W8, phase-1-exit]
+    resolution: "Build adversarial cases and execute/redrive attacks against authorization, family isolation, replay, races, media access, reward manipulation and information disclosure; require retest after fixes."
+  - id: BLK-P1-014
+    priority: P1
+    status: OPEN
+    title: "Performance and scale guardrails for the foundation layer"
+    owners: [performance-scale-agent, backend-lead]
+    reviewers: [chief-architect, qa-lead]
+    gates: [architecture-control-lead]
+    blocks: [W5, W8]
+    resolution: "Prove pagination/indexing/no-obvious-N+1, identify concurrency hotspots, keep media out of primary DB paths and record unresolved scale risks with owners."
+  - id: BLK-P1-015
+    priority: P1
+    status: OPEN
+    title: "Phase 1 outcome evidence package"
+    owners: [documentation-agent, qa-lead]
+    reviewers: [architecture-control-lead, ai-cto]
+    gates: [chief-architect, security-engineering, security-red-team, performance-scale-agent]
+    blocks: [phase-1-exit]
+    resolution: "Assemble task/commit inventory, wave reviews, architecture control, compatibility, migration, tests, E2E, security/red-team retest, child-safety, scale, observability and technical-debt evidence into one acceptance package."
+  - id: BLK-P1-016
+    priority: P0
+    status: RESOLVED
+    title: "Migrate existing READY Phase 1 tasks to admission metadata"
+    owners: [ai-cto]
+    reviewers: [chief-architect]
+    gates: [qa-lead, documentation-agent]
+    blocks: []
+    resolution: "Populate wave, priority, source reference, acceptance criteria and test strategy for existing READY tasks or move them back to the correct pre-READY state; task-registry validate must pass."
+    note: >-
+      Only one task was actually READY at the time this schema landed
+      (P1-013) -- migrated with reviewer=chief-architect,
+      gate_owners=[frontend-lead, backend-lead, qa-lead], wave=W0,
+      matching this file's own participant-matrix entry for it.
+      `task-registry validate` passes clean on the live registry.
+
+historical_discoveries:
+  - id: DISC-P1-009-2
+    status: RESOLVED
+    note: "domain-types package export metadata was discovered as a blocking import defect during P1-009. Fixed (package.json main/types/exports added); a second, related defect was then found and fixed while reconciling this branch: CI ran typecheck/test before build, so the fix's dist-based exports still weren't resolvable on a clean CI runner (passed locally only because a stale dist/ masked it) -- .github/workflows/ci.yml now builds first. Verified on a real GitHub Actions run, not just locally."
+  - id: DISC-P1-014-1
+    status: RESOLVED
+    note: "packages/domain-types's DOMAIN_EVENT_TYPES was missing two of task-to-reward.md's seven Required events (PROGRESS_UPDATED, NOTIFICATION_REQUESTED), found while wiring P1-014's event path. Added both plus a completeness test."
