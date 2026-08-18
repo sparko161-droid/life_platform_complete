@@ -281,6 +281,162 @@ paths:
         "5XX":
           $ref: "#/components/responses/Error"
 
+  # -- Vertical slice (P1-014): docs/architecture/vertical-slice/task-to-reward.md's
+  # "Required commands" -- OpenToday, StartTask, ApproveCompletion,
+  # RejectCompletion, RedeemReward. SubmitProof is the existing
+  # `submitTaskCompletion` above, not duplicated here -- TaskCompletion
+  # already carries exactly what "proof" means (media/counter/timer/note).
+
+  /child/today:
+    get:
+      operationId: getChildToday
+      summary: >-
+        Authoritative view for the child's «Мой день» screen (C-TODAY,
+        packages/ux-contracts). docs/architecture/vertical-slice/api-and-events.md:
+        "returns authoritative task cards, progress, streak and available
+        actions." Scoped to the requesting child's own assignments only.
+      tags: [task, vertical-slice]
+      parameters:
+        - name: childId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Today's task cards for one child.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChildTodayView"
+        "5XX":
+          $ref: "#/components/responses/Error"
+
+  /task-assignments/{taskAssignmentId}/start:
+    post:
+      operationId: startTaskAssignment
+      summary: >-
+        Child starts an assigned task. ASSIGNED -> IN_PROGRESS
+        (packages/domain-types TASK_ASSIGNMENT_TRANSITIONS). Emits
+        TASK_STARTED. Idempotent: a repeat with the same key while already
+        IN_PROGRESS returns the current assignment, not a conflict --
+        "repeat taps must not create duplicate attempts"
+        (docs/ux/core-path-contracts.md).
+      tags: [task, vertical-slice]
+      parameters:
+        - $ref: "#/components/parameters/TaskAssignmentIdPath"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "200":
+          description: Assignment is now IN_PROGRESS.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskAssignment"
+        "5XX":
+          $ref: "#/components/responses/Error"
+
+  /task-assignments/{taskAssignmentId}/approve:
+    post:
+      operationId: approveTaskCompletion
+      summary: >-
+        Parent approves a submitted completion (P-APPROVALS,
+        packages/ux-contracts). VERIFYING -> APPROVED. Emits TASK_APPROVED,
+        then REWARD_UNLOCKED once the reward is granted. Approving an
+        already-APPROVED assignment with the same idempotency key returns
+        the original result and does not grant the reward a second time
+        (docs/architecture/vertical-slice/task-to-reward.md's invariants).
+      tags: [task, vertical-slice]
+      parameters:
+        - $ref: "#/components/parameters/TaskAssignmentIdPath"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                comment:
+                  type: string
+                  maxLength: 500
+              additionalProperties: false
+      responses:
+        "200":
+          description: Assignment is now APPROVED.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskAssignment"
+        "5XX":
+          $ref: "#/components/responses/Error"
+
+  /task-assignments/{taskAssignmentId}/reject:
+    post:
+      operationId: rejectTaskCompletion
+      summary: >-
+        Parent returns a submission for correction (P-APPROVALS's
+        «Попросить повторить»). VERIFYING -> REJECTED. Emits TASK_REJECTED;
+        never emits REWARD_UNLOCKED ("Rejected proof never grants the task
+        reward," task-to-reward.md's invariants). The child-facing next
+        state is derived client-side via
+        packages/ux-contracts's deriveUiTaskState, not asserted here.
+      tags: [task, vertical-slice]
+      parameters:
+        - $ref: "#/components/parameters/TaskAssignmentIdPath"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [comment]
+              properties:
+                comment:
+                  type: string
+                  minLength: 1
+                  maxLength: 500
+                  description: >-
+                    Shown to the child as the reason to try again -- never
+                    a raw internal error string
+                    (docs/ux/screens/child-task-detail.md's rule).
+              additionalProperties: false
+      responses:
+        "200":
+          description: Assignment is now REJECTED.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskAssignment"
+        "5XX":
+          $ref: "#/components/responses/Error"
+
+  /rewards/{rewardId}/redeem:
+    post:
+      operationId: redeemReward
+      summary: >-
+        Parent or child (per reward policy) redeems an available reward
+        (P-REWARDS). AVAILABLE -> REDEEMING immediately; REDEEMED follows
+        once the redemption settles. A retry with the same idempotency key
+        while REDEEMING returns the in-flight result rather than starting a
+        second redemption ("Reward grant cannot be duplicated by retries,"
+        task-to-reward.md's invariants).
+      tags: [reward, vertical-slice]
+      parameters:
+        - $ref: "#/components/parameters/RewardIdPath"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "200":
+          description: Redemption accepted; reward is now REDEEMING.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Reward"
+        "5XX":
+          $ref: "#/components/responses/Error"
+
 components:
   parameters:
     IdempotencyKey:
@@ -290,9 +446,14 @@ components:
       description: >
         Required for reward redemption, money ledger writes, completion
         submissions and integration callbacks, per
-        docs/architecture/api-contracts.md ("Idempotency"). Client-generated,
-        unique per logical operation; replaying the same key returns the
-        original result instead of repeating the side effect.
+        docs/architecture/api-contracts.md ("Idempotency"). The vertical
+        slice (docs/architecture/vertical-slice/api-and-events.md: "All
+        commands require actor, family scope, authorization and
+        idempotency key") widens this to every task-assignment/reward
+        state-changing command, not only the original list -- start,
+        approve and reject carry it too. Client-generated, unique per
+        logical operation; replaying the same key returns the original
+        result instead of repeating the side effect.
       schema:
         type: string
         minLength: 1
@@ -326,6 +487,13 @@ components:
         format: uuid
     TaskAssignmentIdPath:
       name: taskAssignmentId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    RewardIdPath:
+      name: rewardId
       in: path
       required: true
       schema:
@@ -586,6 +754,34 @@ components:
         selfReportNote:
           type: string
           maxLength: 500
+
+    ChildTodayView:
+      type: object
+      required: [childId, assignments, generatedAt]
+      description: >-
+        GET /child/today's response (P1-014, vertical slice). An
+        aggregate read model, not a stored entity -- built from current
+        TaskAssignment rows for the child, per
+        docs/architecture/vertical-slice/api-and-events.md ("returns
+        authoritative task cards, progress, streak and available
+        actions"). `streak` is optional because streak calculation is
+        Progression's territory (docs/game/progression.md), not yet
+        implemented by this task -- disclosed here rather than a fabricated
+        default.
+      properties:
+        childId:
+          type: string
+          format: uuid
+        assignments:
+          type: array
+          items:
+            $ref: "#/components/schemas/TaskAssignment"
+        streak:
+          type: integer
+          minimum: 0
+        generatedAt:
+          type: string
+          format: date-time
 
     VerificationResult:
       type: object

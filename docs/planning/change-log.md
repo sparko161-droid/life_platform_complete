@@ -1,5 +1,42 @@
 # Planning Change Log
 
+## 0.10 (P1-014 — task-to-reward vertical slice contract and event path)
+
+- Added five OpenAPI operations to `services/api/openapi/openapi.yaml`
+  implementing `docs/architecture/vertical-slice/task-to-reward.md`'s
+  "Required commands": `GET /child/today` (`getChildToday`),
+  `POST /task-assignments/{id}/start` (`startTaskAssignment`),
+  `POST /task-assignments/{id}/approve` (`approveTaskCompletion`),
+  `POST /task-assignments/{id}/reject` (`rejectTaskCompletion`),
+  `POST /rewards/{id}/redeem` (`redeemReward`). `SubmitProof` was already
+  `submitTaskCompletion` from P0-009 — not duplicated. All five carry the
+  idempotency key per `docs/architecture/vertical-slice/api-and-events.md`'s
+  "All commands require actor, family scope, authorization and idempotency
+  key," widening `IdempotencyKey`'s doc comment beyond its original list.
+- Added `ChildTodayView` schema — an aggregate read model, not a stored
+  entity, built from current `TaskAssignment` rows. `streak` is optional
+  because streak calculation is Progression's territory
+  (`docs/game/progression.md`), not built by this task; disclosed as
+  optional rather than given a fabricated default.
+- Closed a real gap in `docs/planning/phases/phase-1.md`'s "event path":
+  `packages/domain-types`'s `DOMAIN_EVENT_TYPES` was missing two of
+  `task-to-reward.md`'s seven "Required events" —
+  `PROGRESS_UPDATED` and `NOTIFICATION_REQUESTED`. Added both, with a
+  completeness test asserting all seven required events exist rather than
+  five of seven silently passing as "done."
+- `packages/ux-contracts`'s action catalog (P1-009) now reflects reality:
+  `task.attempt.start`, `task.approval.approve`, `task.approval.return`,
+  `reward.redeem` flip from `SPECIFIED` to `IMPLEMENTED` with the real
+  OpenAPI `operationId` attached; `task.evidence.submit` is corrected to
+  `IMPLEMENTED` too (it was already built by P0-009, mis-scoped as
+  `SPECIFIED` by P1-009). `task.publish` stays `SPECIFIED` — still P1-002's
+  to build.
+- Regenerated `packages/api-client/src/generated/openapi.d.ts`
+  (`generate:check` passes).
+- `contracts/registry.yaml`: `task` group to `0.3.0` (new `ChildTodayView`
+  schema), `events` group to `0.3.0` (two new event types), `reward` and
+  `ux_contracts` groups gain `P1-014` as a consumer.
+
 ## 0.9 (P1-009 — UI architecture, screen map and state/API contracts)
 
 - New `packages/ux-contracts`: typed screen map (nine screens with a

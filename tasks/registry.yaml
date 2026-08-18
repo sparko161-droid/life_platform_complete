@@ -447,13 +447,30 @@ tasks:
     phase: 1
     title: Implement first task-to-reward vertical slice contract and event path
     primary: chief-architect
-    status: READY
+    status: DONE
     deps:
       - P0-009
       - P0-010
-    reviewer: null
-    gate_owners: []
-    discovery_links: []
+    reviewer: ai-cto
+    gate_owners:
+      - qa-lead
+      - security-child-safety
+      - backend-lead
+    discovery_links:
+      - discovery_id: DISC-P1-014-1
+        source_task: P1-014
+        type: MISSING_REQUIREMENT
+        finding: 'packages/domain-types''s DOMAIN_EVENT_TYPES was missing two of docs/architecture/vertical-slice/task-to-reward.md''s seven Required events: PROGRESS_UPDATED and NOTIFICATION_REQUESTED.'
+        why_it_matters: phase-1.md's Contract gate requires the event path frozen before parallel streams consume it; five-of-seven required events silently 'passing' would have let downstream Progression/Notification work start against an incomplete contract.
+        affected_domains: []
+        architecture_impact: null
+        security_impact: null
+        ux_impact: null
+        recommended_solution: null
+        alternatives: []
+        priority: MEDIUM
+        blocking: false
+        proposed_task: null
     blocked_reason: null
     human_decisions: []
     origin_discovery: null

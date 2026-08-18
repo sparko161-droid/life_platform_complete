@@ -1,20 +1,19 @@
 /**
- * UI action -> canonical operation catalog (P1-009), scoped to the nine
- * screens in screens.ts. Source: docs/ux/action-api-catalog.md's full
- * 13-row table, narrowed to the rows this task's screen set actually
- * needs -- the full table also covers family/child creation and
- * friend-request flows that have no screen contract at this tier yet.
+ * UI action -> canonical operation catalog (P1-009, extended by P1-014),
+ * scoped to the nine screens in screens.ts. Source:
+ * docs/ux/action-api-catalog.md's full 13-row table, narrowed to the rows
+ * this task's screen set actually needs -- the full table also covers
+ * family/child creation and friend-request flows that have no screen
+ * contract at this tier yet.
  *
- * `operationId` names match `docs/ux/action-api-catalog.md`'s engineering
- * identifiers. None of them exist as real `services/api/openapi/openapi.yaml`
- * paths yet -- P0-009 froze the request/response *schemas*
- * (TaskAssignment, VerificationResult, RewardLedgerEntry, ...) but not
- * these operations. `operationStatus: "SPECIFIED"` discloses that
- * explicitly rather than implying an endpoint exists. The owning task
- * builds the real endpoint and should update this to "IMPLEMENTED" plus a
- * link to the OpenAPI path when it does -- this file is the freeze point
- * so that task doesn't have to reverse-engineer the contract from a doc
- * table.
+ * `operationId` is the dot-notation engineering identifier from
+ * docs/ux/action-api-catalog.md -- stable, never shown as user-facing
+ * text. `openapiOperationId` is the real `operationId` in
+ * services/api/openapi/openapi.yaml once one exists; `operationStatus`
+ * discloses which is true right now rather than implying every action has
+ * a working endpoint. P1-014 built the vertical-slice endpoints (start,
+ * approve, reject, redeem) and flipped those four to IMPLEMENTED;
+ * task.publish is still P1-002's to build.
  */
 
 import type { ScreenId } from "./screens.js";
@@ -26,11 +25,13 @@ export interface ActionContract {
   action: string;
   screen: ScreenId;
   operationId: string;
+  /** services/api/openapi/openapi.yaml's real operationId, once operationStatus is IMPLEMENTED. */
+  openapiOperationId: string | null;
   resultSummary: string;
   /** Free-text next state/screen description -- not always a screen change (e.g. same-screen state transition). */
   next: string;
   operationStatus: OperationStatus;
-  /** Which Phase 1 task is expected to implement the real endpoint. */
+  /** Which Phase 1 task built (or is expected to build) the real endpoint. */
   ownerTask: string;
 }
 
@@ -39,6 +40,7 @@ export const ACTIONS: ActionContract[] = [
     action: "task.publish",
     screen: "P-TASK-BUILDER",
     operationId: "task.publish",
+    openapiOperationId: null,
     resultSummary: "assignment created",
     next: "P-DASH",
     operationStatus: "SPECIFIED",
@@ -48,45 +50,52 @@ export const ACTIONS: ActionContract[] = [
     action: "task.attempt.start",
     screen: "C-TASK",
     operationId: "task.attempt.start",
-    resultSummary: "attempt created",
+    openapiOperationId: "startTaskAssignment",
+    resultSummary: "attempt created (ASSIGNED -> IN_PROGRESS)",
     next: "C-TASK (state: IN_PROGRESS)",
-    operationStatus: "SPECIFIED",
-    ownerTask: "P1-002",
+    operationStatus: "IMPLEMENTED",
+    ownerTask: "P1-014",
   },
   {
     action: "task.evidence.submit",
     screen: "C-TASK",
     operationId: "task.evidence.submit",
-    resultSummary: "evidence accepted",
+    openapiOperationId: "submitTaskCompletion",
+    resultSummary: "evidence accepted (IN_PROGRESS -> SUBMITTED -> VERIFYING)",
     next: "C-TASK (state: VERIFYING)",
-    operationStatus: "SPECIFIED",
-    ownerTask: "P1-002",
+    // Already implemented by P0-009, not P1-014 -- disclosed accurately
+    // rather than crediting the task that happened to touch this file.
+    operationStatus: "IMPLEMENTED",
+    ownerTask: "P0-009",
   },
   {
     action: "task.approval.approve",
     screen: "P-APPROVALS",
     operationId: "task.approval.approve",
-    resultSummary: "completion confirmed",
+    openapiOperationId: "approveTaskCompletion",
+    resultSummary: "completion confirmed (VERIFYING -> APPROVED)",
     next: "P-DASH (reward processing)",
-    operationStatus: "SPECIFIED",
-    ownerTask: "P1-002",
+    operationStatus: "IMPLEMENTED",
+    ownerTask: "P1-014",
   },
   {
     action: "task.approval.return",
     screen: "P-APPROVALS",
     operationId: "task.approval.return",
-    resultSummary: "correction requested",
-    next: "P-DASH; child sees C-TASK (state: RETRYABLE_FAILURE)",
-    operationStatus: "SPECIFIED",
-    ownerTask: "P1-002",
+    openapiOperationId: "rejectTaskCompletion",
+    resultSummary: "correction requested (VERIFYING -> REJECTED)",
+    next: "P-DASH; child sees C-TASK (state: FAILED or REJECTED, see task-state.ts)",
+    operationStatus: "IMPLEMENTED",
+    ownerTask: "P1-014",
   },
   {
     action: "reward.redeem",
     screen: "P-REWARDS",
     operationId: "reward.redeem",
-    resultSummary: "redemption created",
-    next: "P-REWARDS (state: REDEEMED)",
-    operationStatus: "SPECIFIED",
-    ownerTask: "P1-006",
+    openapiOperationId: "redeemReward",
+    resultSummary: "redemption created (AVAILABLE -> REDEEMING)",
+    next: "P-REWARDS (state: REDEEMING, then REDEEMED once settled)",
+    operationStatus: "IMPLEMENTED",
+    ownerTask: "P1-014",
   },
 ];

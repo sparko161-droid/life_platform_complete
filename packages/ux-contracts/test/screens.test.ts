@@ -41,3 +41,13 @@ test("action ids are unique", () => {
   const ids = ACTIONS.map((a) => a.action);
   assert.deepEqual(ids, [...new Set(ids)]);
 });
+
+test("operationStatus and openapiOperationId agree: IMPLEMENTED has a real id, SPECIFIED doesn't claim one", () => {
+  for (const action of ACTIONS) {
+    if (action.operationStatus === "IMPLEMENTED") {
+      assert.ok(action.openapiOperationId, `${action.action} is IMPLEMENTED but has no openapiOperationId`);
+    } else {
+      assert.equal(action.openapiOperationId, null, `${action.action} is SPECIFIED but claims openapiOperationId ${action.openapiOperationId}`);
+    }
+  }
+});

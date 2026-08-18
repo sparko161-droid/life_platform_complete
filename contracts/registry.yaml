@@ -63,7 +63,7 @@ groups:
 
   - name: task
     status: FROZEN
-    version: "0.2.0"
+    version: "0.3.0"
     owner: chief-architect
     defines:
       domain_types: packages/domain-types/src/task.ts
@@ -87,8 +87,9 @@ groups:
         - TaskTemplate
         - TaskAssignment
         - TaskCompletion
-    consumed_by: [P1-002, P1-003, P1-004, P1-009]
-    changelog_ref: "0.5"
+        - ChildTodayView
+    consumed_by: [P1-002, P1-003, P1-004, P1-009, P1-014]
+    changelog_ref: "0.10"
     open_decisions: []
 
   - name: verification
@@ -157,14 +158,14 @@ groups:
         - RewardLedgerEntry
         - Reward
         - RewardType
-    consumed_by: [P1-006, P1-008]
+    consumed_by: [P1-006, P1-008, P1-014]
     changelog_ref: "0.5"
     open_decisions:
       - "Money policy precision/currency (tasks/packets/P0-009-phase1-contract-pack.md)"
 
   - name: events
     status: FROZEN
-    version: "0.2.0"
+    version: "0.3.0"
     owner: chief-architect
     defines:
       domain_types: packages/domain-types/src/events.ts
@@ -175,9 +176,9 @@ groups:
         - DomainEventType
       openapi_schemas: []
     consumed_by: [P1-007, P1-014]
-    changelog_ref: "0.4"
+    changelog_ref: "0.10"
     open_decisions:
-      - "No OpenAPI/transport binding yet -- envelope shape only, event bus choice is a P1-014 concern"
+      - "No OpenAPI/transport binding yet -- envelope shape only. P1-014 completed the vertical slice's required event *names* (added PROGRESS_UPDATED, NOTIFICATION_REQUESTED); the event bus/transport choice itself is still open."
 
   - name: classification
     status: FROZEN
@@ -195,7 +196,7 @@ groups:
 
   - name: ux_contracts
     status: FROZEN
-    version: "0.1.0"
+    version: "0.2.0"
     owner: uiux-lead
     defines:
       domain_types: null
@@ -206,8 +207,8 @@ groups:
       # validator's domain_types/exports fields model backend contract
       # groups; this group is recorded here for consumed_by/changelog
       # traceability even though its FROZEN artifact is a separate package.
-    consumed_by: [P1-003, P1-004, P1-010, P1-012, P1-013]
-    changelog_ref: "0.9"
+    consumed_by: [P1-003, P1-004, P1-010, P1-012, P1-013, P1-014]
+    changelog_ref: "0.10"
     open_decisions:
       - "Two screen-ID schemes exist for overlapping screens (docs/ux/screens/01-17 vs the template-conformant tier packages/ux-contracts sources from) -- see packages/ux-contracts/README.md"
 
