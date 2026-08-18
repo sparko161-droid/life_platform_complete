@@ -41,14 +41,6 @@ const BLOCKED_STATES: TaskState[] = [
   "DEPENDENCY_BLOCKED",
 ];
 
-/**
- * Allowed forward transitions per docs/ai-team/task-lifecycle.md:
- * - main path: BACKLOG -> ANALYSIS -> ARCHITECTURE_CHECK -> READY -> IN_PROGRESS
- *   -> REVIEW -> QA -> SECURITY -> ACCEPTANCE -> DONE
- * - rework: REVIEW -> REWORK -> IN_PROGRESS
- * - discovery: REVIEW -> PASS_WITH_DISCOVERIES -> DISCOVERY_TRIAGE -> NEW_TASK
- * - blocked: any active state -> *_BLOCKED, and back once resolved
- */
 const TRANSITIONS: Record<TaskState, TaskState[]> = {
   PLANNED: ["BACKLOG", "READY"],
   BACKLOG: ["ANALYSIS", ...BLOCKED_STATES],
@@ -117,8 +109,25 @@ export const humanDecisionSchema = z.object({
 });
 export type HumanDecision = z.infer<typeof humanDecisionSchema>;
 
+export const taskExecutionSchema = z
+  .object({
+    wave: z.string().min(1).default("UNASSIGNED"),
+    priority: z.enum(["P0", "P1", "P2", "P3"]).default("P2"),
+    acceptance_criteria: z.string().min(1).default(""),
+    test_strategy: z.string().min(1).default(""),
+    source_reference: z.string().min(1).default(""),
+  })
+  .default({
+    wave: "UNASSIGNED",
+    priority: "P2",
+    acceptance_criteria: "",
+    test_strategy: "",
+    source_reference: "",
+  });
+export type TaskExecution = z.infer<typeof taskExecutionSchema>;
+
 export const taskSchema = z.object({
-  id: z.string().regex(/^P\d+-\d{3}$/, "task id must look like P0-001"),
+  id: z.string().regex(/^P\d+-\d{3,}$/u, "task id must look like P1-001 or P1-019"),
   phase: z.number().int().nonnegative(),
   title: z.string().min(1),
   primary: z.string().min(1),
@@ -131,8 +140,24 @@ export const taskSchema = z.object({
   human_decisions: z.array(humanDecisionSchema).default([]),
   origin_discovery: z.string().nullable().default(null),
   discovered_from: z.string().nullable().default(null),
+  execution: taskExecutionSchema,
 });
 export type Task = z.infer<typeof taskSchema>;
+
+export function readyAdmissionProblems(task: Task): string[] {
+  const problems: string[] = [];
+  if (!task.primary) problems.push("missing primary executor");
+  if (!task.reviewer) problems.push("missing independent reviewer");
+  if (task.gate_owners.length === 0) problems.push("missing gate owners");
+  if (!task.execution.wave || task.execution.wave === "UNASSIGNED") problems.push("missing wave");
+  if (!task.execution.source_reference) problems.push("missing source reference");
+  if (!task.execution.acceptance_criteria) problems.push("missing acceptance criteria");
+  if (!task.execution.test_strategy) problems.push("missing test strategy");
+  if (task.discovery_links.some((d) => d.blocking)) problems.push("blocking discovery remains unresolved");
+  if (task.human_decisions.some((d) => d.decision === null)) problems.push("unresolved human decision remains");
+  if (task.reviewer === task.primary) problems.push("reviewer must be independent from primary executor");
+  return problems;
+}
 
 export const registrySchema = z.object({
   version: z.number().int().positive(),
