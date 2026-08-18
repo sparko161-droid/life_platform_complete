@@ -69,13 +69,13 @@ waves:
     status: BLOCKED
     owner: backend-lead
     architecture_control: architecture-control-lead
-    contract_gate: NOT_READY
-    implementation_gate: NOT_READY
-    qa_gate: NOT_READY
+    contract_gate: PASS
+    implementation_gate: PASS
+    qa_gate: PASS
     security_gate: NOT_READY
     adversarial_gate: NOT_READY
-    scale_gate: NOT_READY
-    documentation_gate: NOT_READY
+    scale_gate: NOT_REQUIRED
+    documentation_gate: PASS
     exit: BLOCKED
   - id: W4
     name: Reward and Event Foundation
@@ -83,13 +83,13 @@ waves:
     status: BLOCKED
     owner: game-engine-lead
     architecture_control: architecture-control-lead
-    contract_gate: NOT_READY
-    implementation_gate: NOT_READY
-    qa_gate: NOT_READY
+    contract_gate: PASS
+    implementation_gate: PASS
+    qa_gate: PASS
     security_gate: NOT_READY
     adversarial_gate: NOT_READY
-    scale_gate: NOT_READY
-    documentation_gate: NOT_READY
+    scale_gate: NOT_REQUIRED
+    documentation_gate: PASS
     exit: BLOCKED
   - id: W5
     name: Evolution, Versioning and Scale Guardrails
