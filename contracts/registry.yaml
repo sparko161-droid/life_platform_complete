@@ -88,7 +88,7 @@ groups:
         - TaskAssignment
         - TaskCompletion
         - ChildTodayView
-    consumed_by: [P1-002, P1-003, P1-004, P1-009, P1-014]
+    consumed_by: [P1-002A, P1-002B, P1-003, P1-004, P1-009, P1-014]
     changelog_ref: "0.10"
     open_decisions: []
 
@@ -109,7 +109,7 @@ groups:
       openapi_schemas:
         - VerificationResult
         - VerificationStrategy
-    consumed_by: [P1-002, P1-008]
+    consumed_by: [P1-002A, P1-002B, P1-008]
     changelog_ref: "0.4"
     open_decisions: []
 
@@ -190,7 +190,7 @@ groups:
         - DATA_CLASSES
         - ClassificationMap
       openapi_schemas: []
-    consumed_by: [P1-001, P1-002, P1-005, P1-006]
+    consumed_by: [P1-001, P1-002A, P1-002B, P1-005, P1-006]
     changelog_ref: "0.5"
     open_decisions: []
 
@@ -220,7 +220,7 @@ groups:
       domain_types: null
       exports: []
       openapi_schemas: []
-    consumed_by: [P1-002]
+    consumed_by: [P1-002B]
     changelog_ref: null
     open_decisions:
-      - "Not yet defined. docs/planning/gap-backlog.md: \"Task Builder validation rules must be executable and testable.\" P1-002 (\"Task template, assignment and Rules DSL\") owns designing and freezing this group; listed here so its absence is visible instead of silently missing from the registry."
+      - "Not yet defined. docs/planning/gap-backlog.md: \"Task Builder validation rules must be executable and testable.\" P1-002B (\"Rules DSL, scheduling and composite task model\" -- BLK-P1-005 split P1-002 into P1-002A/P1-002B) owns designing and freezing this group; listed here so its absence is visible instead of silently missing from the registry."

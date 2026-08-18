@@ -348,6 +348,13 @@ program
         human_decisions: [],
         origin_discovery: cmdOpts.fromDiscovery,
         discovered_from: source.id,
+        execution: {
+          wave: "UNASSIGNED",
+          priority: "P2",
+          acceptance_criteria: "",
+          test_strategy: "",
+          source_reference: `discovery:${cmdOpts.fromDiscovery}`,
+        },
       };
 
       saveRegistry(path, { ...registry, tasks: [...registry.tasks, newTask] });

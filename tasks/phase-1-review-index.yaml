@@ -1,0 +1,43 @@
+version: 1
+phase: 1
+review_artifacts:
+  template: docs/planning/phase-1-review-artifact-template.md
+  architecture_control: docs/architecture/architecture-control-plane.md
+  outcome_contract: docs/planning/phase-1-outcome-contract.md
+  phase_gates: docs/governance/phase-1-gates.md
+  go_no_go: docs/governance/phase-exit-decision.md
+
+required_wave_reviews:
+  - W0
+  - W1
+  - W2
+  - W3
+  - W4
+  - W5
+  - W6
+  - W7
+  - W8
+
+required_evidence:
+  - task_commit_inventory
+  - wave_gate_reports
+  - phase_architecture_control_report
+  - api_domain_event_compatibility_report
+  - migration_report
+  - automated_test_report
+  - e2e_report
+  - security_engineering_report
+  - security_red_team_report
+  - child_safety_report
+  - performance_scale_report
+  - observability_audit_report
+  - documentation_graph_report
+  - technical_debt_register
+  - outstanding_decisions_report
+  - human_architect_go_no_go
+
+status_authority:
+  task: tasks/registry.yaml
+  phase_wave: tasks/phase-1-status.yaml
+  blockers: tasks/phase-1-blockers.yaml
+  participation: tasks/phase-1-participant-matrix.yaml
