@@ -1601,9 +1601,9 @@ tasks:
         why_it_matters: 'RT-003 (child self-approval) is CRITICAL severity: it fully defeats the PARENT_APPROVAL verification strategy with zero elevated access needed. The domain layer is pure by design (no Family aggregate available to check against) and family-service.ts''s own requireCapability shows the correct pattern already exists elsewhere in this same package -- task-service.ts and reward-service.ts just do not apply it. This is a hard requirement for whichever task builds the application/API layer (BLK-P1-007), not optional hardening.'
         affected_domains: []
         architecture_impact: null
-        security_impact: "CRITICAL: unauthenticated/wrong-role self-approval and cross-actor reward confirmation are exploitable the moment a real API layer exists, unless it independently adds the missing checks."
+        security_impact: 'CRITICAL: unauthenticated/wrong-role self-approval and cross-actor reward confirmation are exploitable the moment a real API layer exists, unless it independently adds the missing checks.'
         ux_impact: null
-        recommended_solution: "The application layer must load the real Family aggregate and verify actorId is an ACTIVE parent member with base access (or 'system' for the Verification Engine) -- and, for verifyTask specifically, that the actor's role is parent/system, not merely family membership -- before calling any of the listed functions."
+        recommended_solution: The application layer must load the real Family aggregate and verify actorId is an ACTIVE parent member with base access (or 'system' for the Verification Engine) -- and, for verifyTask specifically, that the actor's role is parent/system, not merely family membership -- before calling any of the listed functions.
         alternatives: []
         priority: HIGH
         blocking: false
@@ -1611,13 +1611,13 @@ tasks:
       - discovery_id: DISC-P1-021-2
         source_task: P1-021
         type: MISSING_REQUIREMENT
-        finding: "checkAssignmentVersion (packages/domain-types/src/concurrency.ts) correctly detects a stale version when a caller invokes it, but verifyTask/beginVerification never call it themselves -- two concurrent approvals against the same in-memory snapshot both succeed today (packages/security-red-team finding RT-010)."
-        why_it_matters: "The mechanism concurrency.ts documents (call checkVersion inside the same DB transaction as the read) requires a persistence layer that does not exist yet (BLK-P1-007 open); until then the optimistic-concurrency control is unenforced, not merely untested."
+        finding: checkAssignmentVersion (packages/domain-types/src/concurrency.ts) correctly detects a stale version when a caller invokes it, but verifyTask/beginVerification never call it themselves -- two concurrent approvals against the same in-memory snapshot both succeed today (packages/security-red-team finding RT-010).
+        why_it_matters: The mechanism concurrency.ts documents (call checkVersion inside the same DB transaction as the read) requires a persistence layer that does not exist yet (BLK-P1-007 open); until then the optimistic-concurrency control is unenforced, not merely untested.
         affected_domains: []
         architecture_impact: null
         security_impact: null
         ux_impact: null
-        recommended_solution: "The persistence layer must call checkAssignmentVersion (or an equivalent DB unique-version constraint) inside the same transaction as the read, per concurrency.ts's own usage example."
+        recommended_solution: The persistence layer must call checkAssignmentVersion (or an equivalent DB unique-version constraint) inside the same transaction as the read, per concurrency.ts's own usage example.
         alternatives: []
         priority: MEDIUM
         blocking: false
@@ -1636,7 +1636,7 @@ tasks:
     phase: 1
     title: Performance and scale guardrails
     primary: performance-scale-agent
-    status: PLANNED
+    status: DONE
     deps: []
     deps_contract:
       - P0-009

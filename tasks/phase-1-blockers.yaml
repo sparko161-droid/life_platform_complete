@@ -217,13 +217,24 @@ blockers:
       against the real implementation.
   - id: BLK-P1-014
     priority: P1
-    status: OPEN
+    status: PARTIALLY_RESOLVED
     title: "Performance and scale guardrails for the foundation layer"
     owners: [performance-scale-agent, backend-lead]
     reviewers: [chief-architect, qa-lead]
     gates: [architecture-control-lead]
     blocks: [W5, W8]
     resolution: "Prove pagination/indexing/no-obvious-N+1, identify concurrency hotspots, keep media out of primary DB paths and record unresolved scale risks with owners."
+    note: >-
+      P1-022 (@life/scale-guardrails) resolves 3 of the 4 clauses: media is
+      confirmed structurally out of primary DB paths (SG-004; MediaEvidenceSchema
+      has only an opaque storageKey), concurrency hotspots are identified
+      and covered by explicit version/idempotency-key semantics (SG-006,
+      SG-007, tested), and every unresolved risk is recorded with an
+      owner/reason/phase target (SCALE_RISK_REGISTER, SG-001/002/003/005).
+      Pagination/indexing/no-obvious-N+1 cannot be proven (SG-001/002/003
+      DEFERRED) without a real persistence/query layer, which does not
+      exist yet (BLK-P1-007 is open). Stays open, narrowed to that
+      remaining scope.
   - id: BLK-P1-015
     priority: P1
     status: OPEN
