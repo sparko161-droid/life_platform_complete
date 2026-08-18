@@ -1,4 +1,4 @@
-version: 1
+version: 2
 phase:
   id: 1
   name: Foundation Product Runtime
@@ -18,10 +18,11 @@ phase:
   final_approver: human-architect
   outcome_contract: docs/planning/phase-1-outcome-contract.md
   gate_definition: docs/governance/phase-1-gates.md
+  review_artifact_template: docs/planning/phase-1-review-artifact-template.md
 
 waves:
   - id: W0
-    name: Governance and Contract Repair
+    name: Governance, contracts and admission control
     priority: P0
     status: IN_PROGRESS
     owner: ai-cto
@@ -35,7 +36,7 @@ waves:
     documentation_gate: IN_PROGRESS
     exit: BLOCKED
   - id: W1
-    name: Identity Family and Persistence Foundation
+    name: Identity, Family and persistence foundation
     priority: P1
     status: BLOCKED
     owner: backend-lead
@@ -49,7 +50,7 @@ waves:
     documentation_gate: NOT_READY
     exit: BLOCKED
   - id: W2
-    name: Task Rules and Assignment Runtime
+    name: Task and Rules runtime
     priority: P1
     status: BLOCKED
     owner: backend-lead
@@ -63,7 +64,7 @@ waves:
     documentation_gate: NOT_READY
     exit: BLOCKED
   - id: W3
-    name: Evidence Verification and Idempotency
+    name: Evidence, Verification and Idempotency
     priority: P1
     status: BLOCKED
     owner: backend-lead
@@ -91,7 +92,7 @@ waves:
     documentation_gate: NOT_READY
     exit: BLOCKED
   - id: W5
-    name: Evolution Versioning and Scale Guardrails
+    name: Evolution, Versioning and Scale Guardrails
     priority: P1
     status: BLOCKED
     owner: architecture-control-lead
