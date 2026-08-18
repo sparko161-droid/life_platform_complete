@@ -158,6 +158,91 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/child/today": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Authoritative view for the child's «Мой день» screen (C-TODAY, packages/ux-contracts). docs/architecture/vertical-slice/api-and-events.md: "returns authoritative task cards, progress, streak and available actions." Scoped to the requesting child's own assignments only. */
+        get: operations["getChildToday"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/task-assignments/{taskAssignmentId}/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Child starts an assigned task. ASSIGNED -> IN_PROGRESS (packages/domain-types TASK_ASSIGNMENT_TRANSITIONS). Emits TASK_STARTED. Idempotent: a repeat with the same key while already IN_PROGRESS returns the current assignment, not a conflict -- "repeat taps must not create duplicate attempts" (docs/ux/core-path-contracts.md). */
+        post: operations["startTaskAssignment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/task-assignments/{taskAssignmentId}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Parent approves a submitted completion (P-APPROVALS, packages/ux-contracts). VERIFYING -> APPROVED. Emits TASK_APPROVED, then REWARD_UNLOCKED once the reward is granted. Approving an already-APPROVED assignment with the same idempotency key returns the original result and does not grant the reward a second time (docs/architecture/vertical-slice/task-to-reward.md's invariants). */
+        post: operations["approveTaskCompletion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/task-assignments/{taskAssignmentId}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Parent returns a submission for correction (P-APPROVALS's «Попросить повторить»). VERIFYING -> REJECTED. Emits TASK_REJECTED; never emits REWARD_UNLOCKED ("Rejected proof never grants the task reward," task-to-reward.md's invariants). The child-facing next state is derived client-side via packages/ux-contracts's deriveUiTaskState, not asserted here. */
+        post: operations["rejectTaskCompletion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/rewards/{rewardId}/redeem": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Parent or child (per reward policy) redeems an available reward (P-REWARDS). AVAILABLE -> REDEEMING immediately; REDEEMED follows once the redemption settles. A retry with the same idempotency key while REDEEMING returns the in-flight result rather than starting a second redemption ("Reward grant cannot be duplicated by retries," task-to-reward.md's invariants). */
+        post: operations["redeemReward"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -281,6 +366,15 @@ export interface components {
             timerSeconds?: number;
             selfReportNote?: string;
         };
+        /** @description GET /child/today's response (P1-014, vertical slice). An aggregate read model, not a stored entity -- built from current TaskAssignment rows for the child, per docs/architecture/vertical-slice/api-and-events.md ("returns authoritative task cards, progress, streak and available actions"). `streak` is optional because streak calculation is Progression's territory (docs/game/progression.md), not yet implemented by this task -- disclosed here rather than a fabricated default. */
+        ChildTodayView: {
+            /** Format: uuid */
+            childId: string;
+            assignments: components["schemas"]["TaskAssignment"][];
+            streak?: number;
+            /** Format: date-time */
+            generatedAt: string;
+        };
         VerificationResult: {
             /** Format: uuid */
             taskAssignmentId: string;
@@ -375,13 +469,14 @@ export interface components {
         };
     };
     parameters: {
-        /** @description Required for reward redemption, money ledger writes, completion submissions and integration callbacks, per docs/architecture/api-contracts.md ("Idempotency"). Client-generated, unique per logical operation; replaying the same key returns the original result instead of repeating the side effect. */
+        /** @description Required for reward redemption, money ledger writes, completion submissions and integration callbacks, per docs/architecture/api-contracts.md ("Idempotency"). The vertical slice (docs/architecture/vertical-slice/api-and-events.md: "All commands require actor, family scope, authorization and idempotency key") widens this to every task-assignment/reward state-changing command, not only the original list -- start, approve and reject carry it too. Client-generated, unique per logical operation; replaying the same key returns the original result instead of repeating the side effect. */
         IdempotencyKey: string;
         /** @description Opaque pagination cursor. Cursor pagination is used for social feeds, messages, catalogs and activity history per docs/architecture/api-contracts.md ("Pagination"); offset pagination is not used for these. */
         Cursor: string;
         PageLimit: number;
         FamilyIdPath: string;
         TaskAssignmentIdPath: string;
+        RewardIdPath: string;
     };
     requestBodies: never;
     headers: never;
@@ -605,7 +700,7 @@ export interface operations {
         parameters: {
             query?: never;
             header: {
-                /** @description Required for reward redemption, money ledger writes, completion submissions and integration callbacks, per docs/architecture/api-contracts.md ("Idempotency"). Client-generated, unique per logical operation; replaying the same key returns the original result instead of repeating the side effect. */
+                /** @description Required for reward redemption, money ledger writes, completion submissions and integration callbacks, per docs/architecture/api-contracts.md ("Idempotency"). The vertical slice (docs/architecture/vertical-slice/api-and-events.md: "All commands require actor, family scope, authorization and idempotency key") widens this to every task-assignment/reward state-changing command, not only the original list -- start, approve and reject carry it too. Client-generated, unique per logical operation; replaying the same key returns the original result instead of repeating the side effect. */
                 "Idempotency-Key": components["parameters"]["IdempotencyKey"];
             };
             path: {
@@ -655,6 +750,146 @@ export interface operations {
                     "application/json": components["schemas"]["CursorPage"] & {
                         items?: components["schemas"]["RewardLedgerEntry"][];
                     };
+                };
+            };
+            "5XX": components["responses"]["Error"];
+        };
+    };
+    getChildToday: {
+        parameters: {
+            query: {
+                childId: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Today's task cards for one child. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChildTodayView"];
+                };
+            };
+            "5XX": components["responses"]["Error"];
+        };
+    };
+    startTaskAssignment: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Required for reward redemption, money ledger writes, completion submissions and integration callbacks, per docs/architecture/api-contracts.md ("Idempotency"). The vertical slice (docs/architecture/vertical-slice/api-and-events.md: "All commands require actor, family scope, authorization and idempotency key") widens this to every task-assignment/reward state-changing command, not only the original list -- start, approve and reject carry it too. Client-generated, unique per logical operation; replaying the same key returns the original result instead of repeating the side effect. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                taskAssignmentId: components["parameters"]["TaskAssignmentIdPath"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Assignment is now IN_PROGRESS. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskAssignment"];
+                };
+            };
+            "5XX": components["responses"]["Error"];
+        };
+    };
+    approveTaskCompletion: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Required for reward redemption, money ledger writes, completion submissions and integration callbacks, per docs/architecture/api-contracts.md ("Idempotency"). The vertical slice (docs/architecture/vertical-slice/api-and-events.md: "All commands require actor, family scope, authorization and idempotency key") widens this to every task-assignment/reward state-changing command, not only the original list -- start, approve and reject carry it too. Client-generated, unique per logical operation; replaying the same key returns the original result instead of repeating the side effect. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                taskAssignmentId: components["parameters"]["TaskAssignmentIdPath"];
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    comment?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Assignment is now APPROVED. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskAssignment"];
+                };
+            };
+            "5XX": components["responses"]["Error"];
+        };
+    };
+    rejectTaskCompletion: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Required for reward redemption, money ledger writes, completion submissions and integration callbacks, per docs/architecture/api-contracts.md ("Idempotency"). The vertical slice (docs/architecture/vertical-slice/api-and-events.md: "All commands require actor, family scope, authorization and idempotency key") widens this to every task-assignment/reward state-changing command, not only the original list -- start, approve and reject carry it too. Client-generated, unique per logical operation; replaying the same key returns the original result instead of repeating the side effect. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                taskAssignmentId: components["parameters"]["TaskAssignmentIdPath"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description Shown to the child as the reason to try again -- never a raw internal error string (docs/ux/screens/child-task-detail.md's rule). */
+                    comment: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Assignment is now REJECTED. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskAssignment"];
+                };
+            };
+            "5XX": components["responses"]["Error"];
+        };
+    };
+    redeemReward: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Required for reward redemption, money ledger writes, completion submissions and integration callbacks, per docs/architecture/api-contracts.md ("Idempotency"). The vertical slice (docs/architecture/vertical-slice/api-and-events.md: "All commands require actor, family scope, authorization and idempotency key") widens this to every task-assignment/reward state-changing command, not only the original list -- start, approve and reject carry it too. Client-generated, unique per logical operation; replaying the same key returns the original result instead of repeating the side effect. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                rewardId: components["parameters"]["RewardIdPath"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Redemption accepted; reward is now REDEEMING. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reward"];
                 };
             };
             "5XX": components["responses"]["Error"];

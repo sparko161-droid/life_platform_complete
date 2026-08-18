@@ -153,6 +153,22 @@ importers:
         specifier: ^5.9.2
         version: 5.9.3
 
+  packages/ux-contracts:
+    dependencies:
+      '@life/domain-types':
+        specifier: workspace:*
+        version: link:../domain-types
+    devDependencies:
+      '@types/node':
+        specifier: ^22.10.2
+        version: 22.20.1
+      tsx:
+        specifier: ^4.19.2
+        version: 4.23.12
+      typescript:
+        specifier: ^5.9.2
+        version: 5.9.3
+
   packages/verification:
     devDependencies:
       typescript:

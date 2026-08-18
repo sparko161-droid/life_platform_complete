@@ -1,16 +1,9 @@
 {
-  "name": "@life/domain-types",
+  "name": "@life/ux-contracts",
   "private": true,
   "version": "0.1.0",
+  "description": "Frozen screen map, action/API catalog and UI-state mappings for the Phase 1 vertical slice (P1-009).",
   "type": "module",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
-    }
-  },
   "scripts": {
     "lint": "echo TODO",
     "typecheck": "tsc --noEmit",
@@ -18,7 +11,7 @@
     "build": "tsc -p tsconfig.json"
   },
   "dependencies": {
-    "zod": "^3.23.8"
+    "@life/domain-types": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",

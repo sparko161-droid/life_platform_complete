@@ -4,6 +4,13 @@
 
 ## Governance
 - `governance/project-evolution.md`
+- `governance/architecture-control-plane.md`
+- `governance/wave-gate.md`
+- `governance/phase-1-gates.md`
+- `governance/phase-exit-decision.md`
+- `governance/phase-review-cadence.md`
+- `governance/task-admission.md`
+- `governance/security-red-team-protocol.md`
 
 ## Product
 - `product/vision.md`
@@ -73,6 +80,9 @@
 - `planning/mechanics-gaps.md`
 - `planning/gap-backlog.md`
 - `planning/change-log.md`
+- `planning/phase-1-execution-plan.md`
+- `planning/phase-1-outcome-contract.md`
+- `planning/phase-1-review-artifact-template.md`
 - `planning/phases/*.md`
 
 ## AI team
@@ -111,6 +121,9 @@
 - `architecture/concurrency-and-conflicts.md`
 - `architecture/child-experience-model.md`
 - `architecture/offline-and-sync.md`
+- `architecture/architecture-control-plane.md`
+- `architecture/versioning-and-compatibility.md`
+- `architecture/phase-1-scale-guardrails.md`
 - `platform/device-capabilities.md`
 
 ## Social / safety

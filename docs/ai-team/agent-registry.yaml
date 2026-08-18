@@ -1,4 +1,4 @@
-version: 2
+version: 3
 roles:
   - id: ai-cto
     reports_to: human-architect
@@ -7,6 +7,9 @@ roles:
   - id: chief-architect
     reports_to: ai-cto
     can_approve_architecture: true
+  - id: architecture-control-lead
+    reports_to: ai-cto
+    primary_gate: cross-phase-integrity
   - id: product-manager
     reports_to: ai-cto
   - id: roadmap-advisor
@@ -45,6 +48,18 @@ roles:
     reports_to: qa-lead
   - id: journey-agent
     reports_to: qa-lead
+  - id: security-engineering
+    reports_to: ai-cto
+    primary_gate: security
+  - id: child-safety-lead
+    reports_to: ai-cto
+    primary_gate: child-safety
+  - id: security-red-team
+    reports_to: ai-cto
+    primary_gate: adversarial-security
+  - id: performance-scale-agent
+    reports_to: ai-cto
+    primary_gate: scale
   - id: security-child-safety
     reports_to: ai-cto
   - id: code-quality-agent
@@ -56,7 +71,13 @@ roles:
 
 ## Assignment rules
 - Every task has one primary executor and at least one independent reviewer.
+- Every wave has one wave owner, one architecture-control reviewer and explicit gate owners for QA, security and documentation where applicable.
+- Every phase has an architecture-control gate independent from task implementers and must produce a review artifact before phase exit.
 - Domain leads own contracts for their domains; they do not self-approve foundational changes.
+- Security engineering protects the system; Security Red Team independently attempts to break it. They are never the same primary role for the same critical change.
+- Child Safety is an independent concern from general security and must gate child-facing releases.
+- Performance/Scale validates cross-cutting capacity assumptions and architecture guardrails before later phases depend on them.
 - AI CTO owns orchestration, not product decisions reserved for the Human Architect.
 - Discovery findings are routed to the domain owner and become separate tasks when scope expands.
+- New tasks created from discoveries start in BACKLOG and cannot become READY until reviewer, gate owners, dependencies, acceptance criteria and test strategy are recorded.
 - Agents may use Codex, Claude Code or another approved coding runtime; role and gate are tool-agnostic.
