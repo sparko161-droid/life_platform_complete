@@ -1,0 +1,213 @@
+import type { Finding } from "./finding.js";
+
+/**
+ * Phase 1 adversarial assessment (P1-021).
+ *
+ * BLK-P1-013's acceptance criterion: "Adversarial cases cover family
+ * isolation, authorization/IDOR, privilege escalation, replay, races,
+ * media access, reward manipulation and information disclosure; every
+ * finding has severity and retest result." test/adversarial.test.ts
+ * actually runs each exploit attempt against the real domain-types
+ * package (not a mock) and asserts its outcome matches what is recorded
+ * here -- this file cannot silently drift from what the code really does,
+ * because a regression test fails the moment it does.
+ *
+ * BLOCKED findings are verified controls, kept in the record because a
+ * red-team assessment that only reports failures looks unfinished and
+ * invites the next reviewer to re-attempt the same exploit from scratch.
+ * ACCEPTED_RISK findings are real, currently-unenforced gaps: the pure
+ * domain layer (no I/O, no persisted Family/session available to check
+ * against by design -- see docs/product/actors-and-permissions.md) defers
+ * actor authorization to an application/API layer that does not exist yet
+ * (BLK-P1-007 is open). Each is disclosed with a named remediation owner
+ * rather than silently accepted, and `retestResult: NOT_RETESTED` records
+ * honestly that there is nothing yet to retest against.
+ */
+export const FINDINGS: readonly Finding[] = [
+  {
+    id: "RT-001",
+    category: "FAMILY_ISOLATION",
+    severity: "INFO",
+    title: "Cross-family media evidence access is rejected",
+    exploitAttempt: "authorizeEvidenceAccess() called with a requestingFamilyId that does not own the evidence.",
+    actualOutcome: "Throws MediaDomainError(FAMILY_ISOLATION_VIOLATION); no evidence data is returned.",
+    status: "BLOCKED",
+    retestResult: "PASS",
+    reference: "test/adversarial.test.ts: 'FAMILY_ISOLATION: cross-family evidence access is rejected'",
+  },
+  {
+    id: "RT-002",
+    category: "AUTHORIZATION_IDOR",
+    severity: "HIGH",
+    title: "verifyTask does not check the approving actor is a family member",
+    exploitAttempt: "verifyTask() called with an actorId that belongs to no membership of the assignment's family at all (an arbitrary string).",
+    actualOutcome: "Succeeds -- the state transition and event are produced exactly as if a legitimate parent had called it. task-service.ts only validates the assignment's *status*, never the actor's family membership or capability (contrast with family-service.ts's requireCapability, which does check real ParentMembership records).",
+    status: "ACCEPTED_RISK",
+    remediation: "The application/API layer (BLK-P1-007) must load the real Family aggregate and verify actorId is an ACTIVE parent member with base access (or the literal 'system' verification-engine actor) before calling verifyTask/beginVerification/publishTemplate/archiveTemplate. This is a hard requirement for that layer's design, not an optional hardening pass.",
+    remediationOwner: "backend-lead (owns BLK-P1-007)",
+    retestResult: "NOT_RETESTED",
+    reference: "test/adversarial.test.ts: 'AUTHORIZATION_IDOR: verifyTask accepts an actor with no family membership'",
+  },
+  {
+    id: "RT-003",
+    category: "PRIVILEGE_ESCALATION",
+    severity: "CRITICAL",
+    title: "A child can self-approve their own submitted task",
+    exploitAttempt: "verifyTask() called with outcome APPROVED and actorId set to the same child who submitted the task being approved.",
+    actualOutcome: "Succeeds -- verifyTask has no notion of actor role at all; VerifyTaskCommand.actorId is typed as a bare `string` specifically to also allow the literal 'system' verification-engine actor, so nothing distinguishes a parent from the submitting child. Self-approval completely defeats the PARENT_APPROVAL verification strategy.",
+    status: "ACCEPTED_RISK",
+    remediation: "Same fix as RT-002 (actor-membership check at the application layer) is necessary but not sufficient here: the check must also confirm the actor's *role* is parent (or the system verification engine), not merely family membership -- a child is a family member too.",
+    remediationOwner: "backend-lead (owns BLK-P1-007)",
+    retestResult: "NOT_RETESTED",
+    reference: "test/adversarial.test.ts: 'PRIVILEGE_ESCALATION: a child can self-approve their own submitted task'",
+  },
+  {
+    id: "RT-004",
+    category: "PRIVILEGE_ESCALATION",
+    severity: "INFO",
+    title: "A non-owner parent cannot revoke another parent's membership",
+    exploitAttempt: "revokeParent() called by a parent membership without isFamilyOwner and without an override capability.",
+    actualOutcome: "Throws FamilyDomainError(REVOKE_PARENT_NOT_OWNER) (requireCapability checks the real ParentMembership record).",
+    status: "BLOCKED",
+    retestResult: "PASS",
+    reference: "test/adversarial.test.ts: 'PRIVILEGE_ESCALATION: a non-owner parent cannot revoke another parent'",
+  },
+  {
+    id: "RT-005",
+    category: "REWARD_MANIPULATION",
+    severity: "HIGH",
+    title: "confirmRedemption does not check the confirming actor is a family member",
+    exploitAttempt: "confirmRedemption() called with an arbitrary actorId unrelated to the reward's family.",
+    actualOutcome: "Succeeds -- reward-service.ts's activateReward/confirmRedemption/cancelRedemption/expireReward/cancelReward all take `actorId: ParentId` (a compile-time brand only, zero runtime membership check) and never receive a Family aggregate to check against, the same pattern as RT-002.",
+    status: "ACCEPTED_RISK",
+    remediation: "The application layer must verify actorId is an ACTIVE parent member of reward.familyId (and, for confirm/cancel, holds MONEY_REWARDS capability where the reward type requires it) before calling any reward-catalog mutation.",
+    remediationOwner: "game-engine-lead (owns P1-006/reward-service.ts consumers)",
+    retestResult: "NOT_RETESTED",
+    reference: "test/adversarial.test.ts: 'REWARD_MANIPULATION: confirmRedemption accepts an actor with no family membership'",
+  },
+  {
+    id: "RT-006",
+    category: "REWARD_MANIPULATION",
+    severity: "INFO",
+    title: "Negative-amount reward grants are rejected",
+    exploitAttempt: "grantTaskReward() called with a negative xpAmount.",
+    actualOutcome: "Throws RewardDomainError before any ledger entry is constructed.",
+    status: "BLOCKED",
+    retestResult: "PASS",
+    reference: "test/adversarial.test.ts: 'REWARD_MANIPULATION: a negative-amount reward grant is rejected'",
+  },
+  {
+    id: "RT-007",
+    category: "REWARD_MANIPULATION",
+    severity: "INFO",
+    title: "A reward grant cannot be doubled by replaying its source event",
+    exploitAttempt: "grantTaskReward() called twice with the same sourceTaskAssignmentId (simulating an at-least-once event redelivery).",
+    actualOutcome: "Second call returns duplicate:true and posts no new ledger entry; computeBalance is unchanged.",
+    status: "BLOCKED",
+    retestResult: "PASS",
+    reference: "test/adversarial.test.ts: 'REWARD_MANIPULATION: replaying a reward grant does not double the balance'",
+  },
+  {
+    id: "RT-008",
+    category: "REPLAY",
+    severity: "INFO",
+    title: "An already-SUBMITTED task cannot be re-submitted",
+    exploitAttempt: "submitTask() called a second time on an assignment already in SUBMITTED status.",
+    actualOutcome: "Throws TaskDomainError(SUBMIT_TASK_WRONG_STATUS); no second TaskCompletion record is created.",
+    status: "BLOCKED",
+    retestResult: "PASS",
+    reference: "test/adversarial.test.ts: 'REPLAY: re-submitting an already-SUBMITTED task is rejected'",
+  },
+  {
+    id: "RT-009",
+    category: "REPLAY",
+    severity: "INFO",
+    title: "A redemption cannot be confirmed twice for double reward effect",
+    exploitAttempt: "confirmRedemption() called twice with the same idempotencyKey against the same REDEEMING reward.",
+    actualOutcome: "Second call's ledger write returns duplicate:true with no new events; only the first call's ledger entry exists.",
+    status: "BLOCKED",
+    retestResult: "PASS",
+    reference: "test/adversarial.test.ts: 'REPLAY: confirming a redemption twice does not double-post the ledger'",
+  },
+  {
+    id: "RT-010",
+    category: "RACE_CONDITION",
+    severity: "MEDIUM",
+    title: "Optimistic-version checking is a mechanism, not an enforced control, until a persistence layer exists",
+    exploitAttempt: "Two parents read the same assignment snapshot and both attempt to approve it; checkAssignmentVersion is available to detect this, but nothing forces a caller to invoke it.",
+    actualOutcome: "checkAssignmentVersion correctly throws StaleVersionError when a caller passes a stale submitted version against a bumped current version (packages/domain-types/src/concurrency.ts) -- but verifyTask itself does not call it, and there is no database with a unique-version constraint yet (BLK-P1-007 is open) to make the check unavoidable. Today, two concurrent callers that skip the check would both succeed.",
+    status: "ACCEPTED_RISK",
+    remediation: "The persistence layer must call checkAssignmentVersion (or an equivalent DB-level optimistic-lock constraint) inside the same transaction as the read, per concurrency.ts's own module docstring usage example. Track against BLK-P1-007.",
+    remediationOwner: "backend-lead / devops-lead (own BLK-P1-007)",
+    retestResult: "NOT_RETESTED",
+    reference: "test/adversarial.test.ts: 'RACE_CONDITION: version check is available but not self-enforcing'",
+  },
+  {
+    id: "RT-011",
+    category: "RACE_CONDITION",
+    severity: "INFO",
+    title: "beginVerification cannot be entered twice for the same submission",
+    exploitAttempt: "beginVerification() called a second time on an assignment already in VERIFYING status (simulating two concurrent verifiers).",
+    actualOutcome: "Throws TaskDomainError(BEGIN_VERIFICATION_INVALID_TRANSITION).",
+    status: "BLOCKED",
+    retestResult: "PASS",
+    reference: "test/adversarial.test.ts: 'RACE_CONDITION: beginVerification rejects a second concurrent entry'",
+  },
+  {
+    id: "RT-012",
+    category: "MEDIA_ACCESS",
+    severity: "INFO",
+    title: "Oversized media uploads are rejected before evidence is registered",
+    exploitAttempt: "registerEvidence() called with a PHOTO sizeBytes above UPLOAD_MAX_BYTES.PHOTO.",
+    actualOutcome: "Throws MediaDomainError(FILE_TOO_LARGE); no MediaEvidence record is created.",
+    status: "BLOCKED",
+    retestResult: "PASS",
+    reference: "test/adversarial.test.ts: 'MEDIA_ACCESS: an oversized upload is rejected'",
+  },
+  {
+    id: "RT-013",
+    category: "MEDIA_ACCESS",
+    severity: "INFO",
+    title: "Disallowed content types are rejected before evidence is registered",
+    exploitAttempt: "registerEvidence() called with contentType 'application/x-msdownload' for a PHOTO upload.",
+    actualOutcome: "Throws MediaDomainError(CONTENT_TYPE_NOT_PERMITTED).",
+    status: "BLOCKED",
+    retestResult: "PASS",
+    reference: "test/adversarial.test.ts: 'MEDIA_ACCESS: a disallowed content type is rejected'",
+  },
+  {
+    id: "RT-014",
+    category: "INFORMATION_DISCLOSURE",
+    severity: "INFO",
+    title: "MediaEvidence never carries a public URL, only an opaque storage key",
+    exploitAttempt: "Inspect MediaEvidenceSchema's shape for any field that could resolve to a publicly reachable URL.",
+    actualOutcome: "Only storageKey (opaque) is present; no url/publicUrl/downloadLink field exists on the schema.",
+    status: "BLOCKED",
+    retestResult: "PASS",
+    reference: "test/adversarial.test.ts: 'INFORMATION_DISCLOSURE: MediaEvidenceSchema has no public-URL field'",
+  },
+  {
+    id: "RT-015",
+    category: "INFORMATION_DISCLOSURE",
+    severity: "INFO",
+    title: "TASK_SUBMITTED's event payload does not leak the child's raw submission note",
+    exploitAttempt: "submitTask() called with a selfReportNote, then inspect the emitted TASK_SUBMITTED event's payload.",
+    actualOutcome: "Payload contains only taskAssignmentId and taskCompletionId -- selfReportNote is not present, matching docs/architecture/events.md's PII rule ('minimal payload; sensitive content should be fetched through authorized services when necessary').",
+    status: "BLOCKED",
+    retestResult: "PASS",
+    reference: "test/adversarial.test.ts: 'INFORMATION_DISCLOSURE: TASK_SUBMITTED payload excludes the raw submission note'",
+  },
+  {
+    id: "RT-016",
+    category: "AUTHORIZATION_IDOR",
+    severity: "HIGH",
+    title: "assignTask does not check the assigned child belongs to the template's family",
+    exploitAttempt: "assignTask() called with an assignedToChildId from a different family than the template.",
+    actualOutcome: "Succeeds -- assignTask's own docstring already discloses this ('the child and parent are expected to belong to the same family (enforced by the application layer, not here...)'), but nothing in code enforces it, and no test previously exercised the disclosed gap.",
+    status: "ACCEPTED_RISK",
+    remediation: "The application layer must verify assignedToChildId is an ACTIVE ChildProfile of the same Family as the template before calling assignTask -- otherwise a child could be assigned tasks (and see the resulting reward path) for a family they do not belong to.",
+    remediationOwner: "backend-lead (owns BLK-P1-007)",
+    retestResult: "NOT_RETESTED",
+    reference: "test/adversarial.test.ts: 'AUTHORIZATION_IDOR: assignTask accepts a child from a different family'",
+  },
+] as const;
