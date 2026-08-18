@@ -160,13 +160,27 @@ blockers:
       waves -- it gates them.
   - id: BLK-P1-012
     priority: P0
-    status: OPEN
+    status: PARTIALLY_RESOLVED
     title: "Establish versioning/evolution compatibility foundation"
     owners: [architecture-control-lead, backend-lead, devops-lead]
     reviewers: [chief-architect, qa-lead]
     gates: [documentation-agent, performance-scale-agent]
     blocks: [W5, phase-1-exit]
     resolution: "Implement and validate API/domain/event versioning, persisted artifact schema versions, migration compatibility, deprecation policy and controlled rollout rules."
+    note: >-
+      P1-019 (@life/versioning) implements semver compatibility checks
+      (exercised against the real CONTRACT_VERSION), a generic zod
+      schema-compatibility checker (regression-tested against
+      Family/TaskAssignment/Reward schemas), a per-surface breaking/
+      non-breaking rule catalog covering all 6 documented versioned
+      surfaces, a structurally-validated deprecation-notice schema, and a
+      pure feature-flag/controlled-rollout evaluator. Not resolved:
+      persisted artifact schema versions (recorded as DISC-P1-019-1,
+      deferred to when the persistence layer -- BLK-P1-007 -- lands and
+      the real storage shape is known) and the documentation-agent/
+      performance-scale-agent review gates (not yet run). Stays open,
+      narrowed to that remaining scope, and still blocks W5/phase-1-exit
+      until it closes.
   - id: BLK-P1-013
     priority: P0
     status: OPEN
