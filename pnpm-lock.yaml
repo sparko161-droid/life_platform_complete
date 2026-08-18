@@ -8,6 +8,12 @@ importers:
 
   .:
     devDependencies:
+      '@types/js-yaml':
+        specifier: ^4.0.9
+        version: 4.0.9
+      js-yaml:
+        specifier: ^4.3.1
+        version: 4.3.1
       knip:
         specifier: ^5.63.1
         version: 5.88.1(@types/node@22.20.1)(typescript@5.9.3)

@@ -22,14 +22,20 @@
     "task-registry": "pnpm --filter @life/tools-task-registry run dev",
     "contracts:validate": "pnpm --filter @life/tools-task-registry run dev -- contracts validate",
     "docs:check": "node scripts/check-docs-graph.mjs",
+    "dashboard": "node scripts/dashboard-server.mjs",
     "quality:dead-code": "knip"
   },
   "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
+    "js-yaml": "^4.3.1",
     "knip": "^5.63.1",
     "prettier": "^3.6.2",
     "typescript": "^5.9.2"
   },
   "pnpm": {
-    "onlyBuiltDependencies": ["esbuild", "protobufjs"]
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "protobufjs"
+    ]
   }
 }
