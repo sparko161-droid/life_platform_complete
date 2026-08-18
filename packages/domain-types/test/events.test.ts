@@ -28,6 +28,23 @@ test("DOMAIN_EVENT_TYPES only covers this contract pack's aggregates, not the fu
   assert.ok(!(DOMAIN_EVENT_TYPES as readonly string[]).includes("FRIENDSHIP_CHANGED"));
 });
 
+test("every vertical-slice required event (docs/architecture/vertical-slice/task-to-reward.md) has a matching type", () => {
+  // TaskStarted, VerificationCompleted, TaskCompleted, TaskRejected,
+  // RewardUnlocked, ProgressUpdated, NotificationRequested.
+  const required = [
+    "TASK_STARTED",
+    "VERIFICATION_COMPLETED",
+    "TASK_COMPLETED",
+    "TASK_REJECTED",
+    "REWARD_UNLOCKED",
+    "PROGRESS_UPDATED",
+    "NOTIFICATION_REQUESTED",
+  ];
+  for (const type of required) {
+    assert.ok((DOMAIN_EVENT_TYPES as readonly string[]).includes(type), `missing required vertical-slice event ${type}`);
+  }
+});
+
 test("childId is optional (not every event is child-scoped)", () => {
   const event = EventEnvelopeSchema.parse({
     eventId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",

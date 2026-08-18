@@ -4,23 +4,24 @@
 **Owner:** AI CTO / DevOps Lead
 **Depends on:** MASTER_SPEC, `docs/engineering/ci-cd.md`
 
-## Why this is not applied yet — two separate blockers
+## Two blockers this had, both now resolved
 
-**Blocker 1 — the plan.** `sparko161-droid/life_platform_complete` is a
-**private** repository owned by a **personal** account (confirmed: the
-unauthenticated REST API returns 404 for it, and the owner's `type` is
-`User`, not `Organization`). On GitHub, protected branches and rulesets are
-free for *public* repositories but a paid feature for *private* ones — a
-personal account needs **GitHub Pro**, an organization needs **Team**. So
-this is not only a credentials problem: on the current plan the settings
-below cannot be created at all, by anyone, including the owner.
+**Blocker 1 — the plan.** `sparko161-droid/life_platform_complete` was a
+**private** repository owned by a **personal** account. On GitHub,
+protected branches and rulesets are free for *public* repositories but a
+paid feature for *private* ones — a personal account needs **GitHub Pro**,
+an organization needs **Team**. So this was not only a credentials
+problem: on the private+Free plan the settings below could not be created
+at all, by anyone, including the owner. Resolved 2026-08-18: the Human
+Architect chose "make public" from the options table below.
 
-**Blocker 2 — credentials.** Even on a plan that allows it, applying the
-rules needs repo-admin auth (a `gh auth login` session or a PAT with
-`repo`/`administration:write`). A coding agent must not be handed that
-token — entering credentials on someone's behalf is out of scope
-regardless of permission — so the commands below are written to be run by
-the Human Architect in their own terminal.
+**Blocker 2 — credentials.** Applying the rules needs repo-admin auth (a
+`gh auth login` session or a PAT with `repo`/`administration:write`). A
+coding agent must not be handed that token — entering credentials on
+someone's behalf is out of scope regardless of permission — so the
+commands below were written to be run by the Human Architect in their own
+terminal, which is what happened: they ran `gh auth login` themselves, and
+the resulting authenticated session applied the settings.
 
 ## Options, cheapest real fix first
 
@@ -139,13 +140,22 @@ git push origin HEAD:main
 
 ## Status
 
-Not applied. Blocked on a **plan decision** (GitHub Pro / make public /
-stay free), which is a Human Architect call — see the options table. The
-credentials half is a second, smaller step once the plan allows it.
+**Applied 2026-08-18.** The Human Architect chose "make public" from the
+options table, then ran `gh auth login` under their own account. The exact
+`gh api` command in this doc was then run and returned the protection
+object back with every setting matching what's specified above.
 
-Stopgaps are live in the meantime (`.githooks/pre-push` +
-`direct-push-alarm`), so the rule is enforced locally and audited in CI even
-though it is not locked server-side. `docs/engineering/phase-0-checklist.md`
-keeps the two related items unchecked deliberately: a client-side hook is
-honestly not the same thing as branch protection, and marking them done
-would misrepresent the state of the repo.
+Verified for real, not just by trusting the API response: a genuine direct
+push to `main` (a throwaway empty commit) was rejected by GitHub with
+`GH006: Protected branch update failed for refs/heads/main. Changes must be
+made through a pull request. 2 of 2 required status checks are expected.`
+— exactly the "Verification" section below predicted.
+
+`.githooks/pre-push` and the `direct-push-alarm` CI job are now redundant
+(server-side protection makes both stopgaps unnecessary) but were left in
+place rather than removed in the same change that applied protection —
+removing a safety mechanism and proving its replacement works should not
+happen in one uninspected step. Safe to remove in a follow-up.
+
+`docs/engineering/phase-0-checklist.md`'s two related items are now
+checked.

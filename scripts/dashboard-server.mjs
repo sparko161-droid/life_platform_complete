@@ -1,27 +1,39 @@
 #!/usr/bin/env node
 // Persistent local dashboard server for tasks/registry.yaml.
 //
-// `pnpm run dashboard` (or `node scripts/dashboard-server.mjs`) serves
-// scripts/dashboard/index.html on a fixed local port, with the registry
-// data fetched live from tasks/registry.yaml on every request (never
-// baked into the HTML, unlike the one-off Artifact snapshot) and pushed to
-// the browser over Server-Sent Events the moment the file changes -- so
-// running any `task-registry` command that mutates the registry updates
-// the open dashboard tab within a second, no manual refresh.
+// `pnpm run dashboard` serves the task board and a separate control view:
+//   /                    task board (scripts/dashboard/index.html)
+//   /control.html        Phase/Wave/Architecture Control (P1-020, reconciled
+//                         from agent/phase-1-execution-governance)
+//   /api/registry.json    raw task registry
+//   /api/control.json     task counts + phase/wave gate status + admission
+//                         violations + open blockers
+//   /events                live registry-change SSE (also fires on the
+//                         three phase-1-*.yaml control files)
 //
 // Deliberately plain `node:http` + `fs.watch`, no framework and no new
 // runtime dependency beyond `js-yaml` (already a root devDependency) --
 // this is a single-user local tool, not a service.
+//
+// /api/control.json reuses `readyAdmissionProblems()` from
+// tools/task-registry (built output) rather than re-implementing the
+// admission rules here -- one source of truth for "what makes a READY task
+// valid." Run `pnpm build` (or `pnpm --filter @life/tools-task-registry
+// run build`) at least once before starting this server.
 
 import { createReadStream, existsSync, readFileSync, statSync, watch } from "node:fs";
 import { createServer } from "node:http";
 import { dirname, extname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { load } from "js-yaml";
+import { readyAdmissionProblems } from "../tools/task-registry/dist/schema.js";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const dashboardDir = resolve(repoRoot, "scripts/dashboard");
 const registryPath = resolve(repoRoot, "tasks/registry.yaml");
+const phaseStatusPath = resolve(repoRoot, "tasks/phase-1-status.yaml");
+const blockersPath = resolve(repoRoot, "tasks/phase-1-blockers.yaml");
+const matrixPath = resolve(repoRoot, "tasks/phase-1-participant-matrix.yaml");
 const PORT = Number(process.env.DASHBOARD_PORT || 4747);
 
 const MIME = {
@@ -30,9 +42,44 @@ const MIME = {
   ".json": "application/json; charset=utf-8",
 };
 
-function readRegistryAsJSON() {
-  const doc = load(readFileSync(registryPath, "utf8"));
-  return JSON.stringify(doc);
+function readYaml(path) {
+  return load(readFileSync(path, "utf8"));
+}
+
+function readRegistry() {
+  return readYaml(registryPath);
+}
+
+function readControl() {
+  const registry = readRegistry();
+  const phaseStatus = readYaml(phaseStatusPath);
+  const blockersDoc = readYaml(blockersPath);
+  const tasks = registry.tasks ?? [];
+
+  const blocked = tasks.filter((t) => String(t.status).endsWith("_BLOCKED"));
+  const reviewStatuses = new Set(["REVIEW", "QA", "SECURITY", "ACCEPTANCE"]);
+  const review = tasks.filter((t) => reviewStatuses.has(t.status));
+  const done = tasks.filter((t) => t.status === "DONE");
+
+  // Single source of truth: the same readyAdmissionProblems() task-registry
+  // itself runs in `validate`/`claim`, not a re-implementation with its own
+  // (possibly drifted) rules.
+  const violations = [];
+  for (const t of tasks) {
+    if (t.status !== "READY") continue;
+    for (const message of readyAdmissionProblems(t)) {
+      violations.push({ id: t.id, type: "ADMISSION", message });
+    }
+  }
+
+  return {
+    registryVersion: registry.version,
+    tasks: { total: tasks.length, done: done.length, review: review.length, blocked: blocked.length },
+    phase: phaseStatus.phase,
+    waves: phaseStatus.waves ?? [],
+    blockers: (blockersDoc.blockers ?? []).filter((b) => b.status === "OPEN"),
+    violations,
+  };
 }
 
 // SSE clients currently connected. A Set, not a single value, because
@@ -76,12 +123,22 @@ const server = createServer((req, res) => {
 
   if (url.pathname === "/api/registry.json") {
     try {
-      const json = readRegistryAsJSON();
       res.writeHead(200, { "Content-Type": MIME[".json"], "Cache-Control": "no-store" });
-      res.end(json);
+      res.end(JSON.stringify(readRegistry()));
     } catch (err) {
       res.writeHead(500, { "Content-Type": "text/plain" });
       res.end(`Failed to read tasks/registry.yaml: ${err instanceof Error ? err.message : String(err)}`);
+    }
+    return;
+  }
+
+  if (url.pathname === "/api/control.json") {
+    try {
+      res.writeHead(200, { "Content-Type": MIME[".json"], "Cache-Control": "no-store" });
+      res.end(JSON.stringify(readControl()));
+    } catch (err) {
+      res.writeHead(500, { "Content-Type": "text/plain" });
+      res.end(`Failed to read control-plane state: ${err instanceof Error ? err.message : String(err)}`);
     }
     return;
   }
@@ -117,9 +174,12 @@ const server = createServer((req, res) => {
   serveStatic(req, res, resolved);
 });
 
-watch(registryPath, { persistent: true }, onRegistryFileEvent);
+for (const watchedPath of [registryPath, phaseStatusPath, blockersPath, matrixPath]) {
+  watch(watchedPath, { persistent: true }, onRegistryFileEvent);
+}
 
 server.listen(PORT, "127.0.0.1", () => {
   console.log(`Dashboard: http://localhost:${PORT}/`);
-  console.log(`Watching: ${registryPath}`);
+  console.log(`Control:   http://localhost:${PORT}/control.html`);
+  console.log(`Watching:  ${registryPath}, ${phaseStatusPath}, ${blockersPath}, ${matrixPath}`);
 });
