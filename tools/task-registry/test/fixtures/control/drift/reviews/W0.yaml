@@ -5,7 +5,7 @@ scope: W0
 reviewed_range: "fixture"
 primary_reviewer: fixture-reviewer
 architecture_control_lead: fixture-architecture-control
-tasks: [P0-001, P1-001]
+tasks: [P0-001, __NOT_DONE_TASK_ID__]
 evidence:
   - area: contracts
     status: PASS

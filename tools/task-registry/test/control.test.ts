@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadRegistry } from "../src/registry.js";
@@ -28,12 +30,42 @@ test("a complete, consistent review artifact passes", () => {
 });
 
 test("drift fails: a PASS review scoping a task that is not DONE", () => {
-  const problems = validate("drift");
+  // The fixture's placeholder task is a token, not a hardcoded id: the
+  // original version of this test hardcoded P1-001, which was true only
+  // until Phase 1 progress made it DONE (exactly the drift this test
+  // exists to catch, ironically -- a fixture asserting against real task
+  // statuses must not itself go stale as those statuses change). A
+  // non-DONE task is resolved from the real registry at test time and
+  // substituted into a temp copy of the fixture instead.
+  const notDoneTask = taskRegistry.tasks.find((t) => t.status !== "DONE");
+  assert.ok(notDoneTask, "expected at least one non-DONE task in the real registry to build this fixture against");
+
+  const tempDir = mktempReviewsDir();
+  const template = readFileSync(resolve(fixtures, "drift/reviews/W0.yaml"), "utf8");
+  writeFileSync(
+    resolve(tempDir, "W0.yaml"),
+    template.replace(/__NOT_DONE_TASK_ID__/gu, notDoneTask!.id),
+    "utf8",
+  );
+
+  const problems = validateControlPlane({
+    reviewsDir: tempDir,
+    phaseStatusPath: resolve(fixtures, "phase-status.yaml"),
+    blockersPath: resolve(fixtures, "blockers-clean.yaml"),
+    taskRegistry,
+  });
+  const expected = new RegExp(`decision is PASS but scoped task ${notDoneTask!.id} is ${notDoneTask!.status}`, "u");
   assert.ok(
-    problems.some((p) => /decision is PASS but scoped task P1-001 is PLANNED/u.test(p)),
+    problems.some((p) => expected.test(p)),
     `expected drift to be caught, got: ${problems.join("; ")}`,
   );
 });
+
+function mktempReviewsDir(): string {
+  const dir = mkdtempSync(resolve(tmpdir(), "control-drift-"));
+  mkdirSync(dir, { recursive: true });
+  return dir;
+}
 
 test("missing evidence fails: unaccounted areas, and a REWORK area under a PASS decision", () => {
   const problems = validate("missing-evidence");
