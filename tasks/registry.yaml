@@ -1528,13 +1528,13 @@ tasks:
       - discovery_id: DISC-P1-019-1
         source_task: P1-019
         type: MISSING_REQUIREMENT
-        finding: 'Persisted aggregates (Family/TaskTemplate/TaskAssignment/Reward) carry only an optimistic-concurrency `version` counter (packages/domain-types), not a schema-shape/migration version -- docs/architecture/versioning-and-compatibility.md''s "Persisted task/rule/reward artifacts when their interpretation can change" surface has no version field to migrate against yet.'
-        why_it_matters: "Rule 2 (\"Existing persisted authoritative data must remain interpretable through a documented version/migration path\") cannot be satisfied for a field that does not exist. Retrofitting a schemaVersion field touches every construction site across family-service.ts/task-service.ts/reward-service.ts and has no persistence layer to serialize/migrate against yet (BLK-P1-007 is open) -- adding it speculatively now, before the shape it needs to protect against is even known, risks guessing wrong and needing to change it again."
+        finding: Persisted aggregates (Family/TaskTemplate/TaskAssignment/Reward) carry only an optimistic-concurrency `version` counter (packages/domain-types), not a schema-shape/migration version -- docs/architecture/versioning-and-compatibility.md's "Persisted task/rule/reward artifacts when their interpretation can change" surface has no version field to migrate against yet.
+        why_it_matters: Rule 2 ("Existing persisted authoritative data must remain interpretable through a documented version/migration path") cannot be satisfied for a field that does not exist. Retrofitting a schemaVersion field touches every construction site across family-service.ts/task-service.ts/reward-service.ts and has no persistence layer to serialize/migrate against yet (BLK-P1-007 is open) -- adding it speculatively now, before the shape it needs to protect against is even known, risks guessing wrong and needing to change it again.
         affected_domains: []
         architecture_impact: null
         security_impact: null
         ux_impact: null
-        recommended_solution: "Add a `schemaVersion` field to each persisted aggregate schema when the persistence layer (BLK-P1-007) lands, informed by whatever the real storage shape turns out to need."
+        recommended_solution: Add a `schemaVersion` field to each persisted aggregate schema when the persistence layer (BLK-P1-007) lands, informed by whatever the real storage shape turns out to need.
         alternatives: []
         priority: MEDIUM
         blocking: false
@@ -1578,7 +1578,7 @@ tasks:
     phase: 1
     title: Independent Security Red Team capability and Phase 1 assessment
     primary: security-red-team
-    status: PLANNED
+    status: DONE
     deps: []
     deps_contract:
       - P0-008
@@ -1593,7 +1593,35 @@ tasks:
       - qa-lead
       - chief-architect
       - child-safety-lead
-    discovery_links: []
+    discovery_links:
+      - discovery_id: DISC-P1-021-1
+        source_task: P1-021
+        type: MISSING_REQUIREMENT
+        finding: 'Confirmed by exploit, not just inspection: verifyTask, assignTask, activateReward, confirmRedemption, cancelRedemption, expireReward and cancelReward accept any actorId string with no check that it names an ACTIVE parent member of the relevant family, let alone the right role -- a child can self-approve their own submitted task by passing their own childId as verifyTask''s actorId (packages/security-red-team findings RT-002, RT-003, RT-005, RT-016).'
+        why_it_matters: 'RT-003 (child self-approval) is CRITICAL severity: it fully defeats the PARENT_APPROVAL verification strategy with zero elevated access needed. The domain layer is pure by design (no Family aggregate available to check against) and family-service.ts''s own requireCapability shows the correct pattern already exists elsewhere in this same package -- task-service.ts and reward-service.ts just do not apply it. This is a hard requirement for whichever task builds the application/API layer (BLK-P1-007), not optional hardening.'
+        affected_domains: []
+        architecture_impact: null
+        security_impact: "CRITICAL: unauthenticated/wrong-role self-approval and cross-actor reward confirmation are exploitable the moment a real API layer exists, unless it independently adds the missing checks."
+        ux_impact: null
+        recommended_solution: "The application layer must load the real Family aggregate and verify actorId is an ACTIVE parent member with base access (or 'system' for the Verification Engine) -- and, for verifyTask specifically, that the actor's role is parent/system, not merely family membership -- before calling any of the listed functions."
+        alternatives: []
+        priority: HIGH
+        blocking: false
+        proposed_task: null
+      - discovery_id: DISC-P1-021-2
+        source_task: P1-021
+        type: MISSING_REQUIREMENT
+        finding: "checkAssignmentVersion (packages/domain-types/src/concurrency.ts) correctly detects a stale version when a caller invokes it, but verifyTask/beginVerification never call it themselves -- two concurrent approvals against the same in-memory snapshot both succeed today (packages/security-red-team finding RT-010)."
+        why_it_matters: "The mechanism concurrency.ts documents (call checkVersion inside the same DB transaction as the read) requires a persistence layer that does not exist yet (BLK-P1-007 open); until then the optimistic-concurrency control is unenforced, not merely untested."
+        affected_domains: []
+        architecture_impact: null
+        security_impact: null
+        ux_impact: null
+        recommended_solution: "The persistence layer must call checkAssignmentVersion (or an equivalent DB unique-version constraint) inside the same transaction as the read, per concurrency.ts's own usage example."
+        alternatives: []
+        priority: MEDIUM
+        blocking: false
+        proposed_task: null
     blocked_reason: null
     human_decisions: []
     origin_discovery: null

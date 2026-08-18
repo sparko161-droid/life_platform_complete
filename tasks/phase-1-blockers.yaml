@@ -111,6 +111,18 @@ blockers:
     reviewers: [chief-architect, security-engineering]
     blocks: [P1-014, P1-015, P1-016, P1-017]
     resolution: "Add migrations, repositories/application services, API handlers, authorization and transaction boundaries for the vertical slice."
+    note: >-
+      P1-021's adversarial assessment (packages/security-red-team) confirmed
+      by exploit, not just inspection, that this layer must independently
+      enforce actor authorization (family membership + role) before calling
+      verifyTask/assignTask/activateReward/confirmRedemption/cancelRedemption/
+      expireReward/cancelReward -- the domain layer intentionally does not
+      (DISC-P1-021-1; RT-002/RT-003/RT-005/RT-016 in packages/security-red-team/src/findings.ts,
+      RT-003 is CRITICAL: a child can self-approve their own task today) -- and
+      must call checkAssignmentVersion (or an equivalent DB constraint) inside
+      the same transaction as the read to make optimistic concurrency real
+      rather than advisory (DISC-P1-021-2; RT-010). Both are acceptance
+      criteria for this blocker's resolution, not optional hardening.
   - id: BLK-P1-008
     priority: P0
     status: OPEN
@@ -183,13 +195,26 @@ blockers:
       until it closes.
   - id: BLK-P1-013
     priority: P0
-    status: OPEN
+    status: PARTIALLY_RESOLVED
     title: "Independent Security Red Team capability"
     owners: [security-red-team]
     reviewers: [security-engineering, child-safety-lead]
     gates: [qa-lead, chief-architect]
     blocks: [W3, W4, W7, W8, phase-1-exit]
     resolution: "Build adversarial cases and execute/redrive attacks against authorization, family isolation, replay, races, media access, reward manipulation and information disclosure; require retest after fixes."
+    note: >-
+      P1-021 built the capability: packages/security-red-team runs 16 real
+      exploit attempts against the live domain-types package (not mocks),
+      covering all 8 required categories, each backed by a Finding with
+      severity and retestResult. 12 are BLOCKED (verified controls,
+      retested PASS); 4 are ACCEPTED_RISK (real, disclosed gaps -- see
+      DISC-P1-021-1/2 on P1-021 and BLK-P1-007's note) with
+      retestResult=NOT_RETESTED because there is no application/persistence
+      layer yet to retest against. Stays open, narrowed: the capability
+      exists and W3/W4/W7/W8/phase-1-exit no longer need to wait on it
+      being *built*, but "require retest after fixes" cannot close until
+      BLK-P1-007 lands and the 4 ACCEPTED_RISK findings are retested
+      against the real implementation.
   - id: BLK-P1-014
     priority: P1
     status: OPEN
