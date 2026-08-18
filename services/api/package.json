@@ -13,6 +13,6 @@
   "devDependencies": {
     "node-pg-migrate": "^9.0.0",
     "pg": "^8.13.1",
-    "typescript": "^5.9.2"
+    "typescript": "^7.0.2"
   }
 }
