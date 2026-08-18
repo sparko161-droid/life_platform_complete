@@ -1,5 +1,35 @@
 # Planning Change Log
 
+## 0.17 (contracts/registry.yaml — catch up six shipped domain-service groups)
+
+`task-registry contracts validate` runs in CI (`pnpm run contracts:validate`,
+wired into `.github/workflows/ci.yml`), but this branch never opened a pull
+request until now -- CI only triggers on `pull_request`/`push` to `main`, so
+nothing had actually run it since P1-002A. Every domain-service file added
+since (`family-service.ts` P1-001, `task-service.ts` P1-002A,
+`media-service.ts` P1-005, `reward-service.ts` P1-006, `idempotency.ts`
+P1-008, `concurrency.ts` P1-015) shipped without a matching contract group,
+and `family.ts`/`events.ts` gained exports (`InvitationToken*`,
+`FAMILY_EVENT_TYPES`, `TASK_EVENT_TYPES`) their existing groups never
+listed. None of this is a new shape change -- every export already exists
+in code merged and gated `DONE` long before this entry. This is pure
+registry catch-up:
+
+- Six new FROZEN groups at version `0.1.0`: `family_service`,
+  `task_service`, `media_service`, `reward_service`, `idempotency`,
+  `concurrency`, each `defines.domain_types` pointing at its real file with
+  every actual export listed.
+- `family` group: added `INVITATION_STATUSES`, `InvitationStatus`,
+  `InvitationTokenSchema`, `InvitationToken` (shipped with P1-001).
+  Version stays `0.2.0` -- the shape didn't change, the registry's
+  bookkeeping was just incomplete.
+- `events` group: added `FAMILY_EVENT_TYPES`/`FamilyEventType`
+  (P1-001), `TASK_EVENT_TYPES`/`TaskEventType` (P1-002A). Version stays
+  `0.3.0` for the same reason.
+
+`contract_pack_version` stays `0.2.0` -- no schema shape changed as part of
+this entry, only what the registry indexes.
+
 ## 0.16 (P1-014 — record corrected to the scope actually delivered)
 
 Raised in 0.12 and decided by the Human Architect: where a record does not
