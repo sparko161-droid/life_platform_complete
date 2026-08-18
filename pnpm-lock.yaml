@@ -220,8 +220,8 @@ importers:
   tools/task-registry:
     dependencies:
       commander:
-        specifier: ^12.1.0
-        version: 12.1.0
+        specifier: ^15.0.0
+        version: 15.0.0
       js-yaml:
         specifier: ^5.3.0
         version: 5.3.0
@@ -940,9 +940,9 @@ packages:
   colorette@1.4.0:
     resolution: {integrity: sha512-Y2oEozpomLn7Q3HFP7dpww7AtMJplbM9lGZP6RDfHqmbeRjiwRg4n6VM6j4KLmRke85uWEI7JqF17f3pqdRA0g==}
 
-  commander@12.1.0:
-    resolution: {integrity: sha512-Vw8qHK3bZM9y/P10u3Vib8o/DdkvA2OtPtZvD871QKjy74Wj1WSKFILMPRPSdUSx5RFK1arlJzEtA4PkFgnbuA==}
-    engines: {node: '>=18'}
+  commander@15.0.0:
+    resolution: {integrity: sha512-z67u4ZhzCL/Tydu1lJARtEZYWbWaN7oYLHbsuzocr6y4N6WZAagG3RQ4FW61V1/0+jImpj293XfrcYnd1qxtPg==}
+    engines: {node: '>=22.12.0'}
 
   debug@4.4.3:
     resolution: {integrity: sha512-RGwwWnwQvkVfavKVt22FGLw+xYSdzARwm0ru6DhTVA3umU5hZc28V3kO4stgYryrTlLpuvgI9GiijltAjNbcqA==}
@@ -1952,7 +1952,7 @@ snapshots:
 
   colorette@1.4.0: {}
 
-  commander@12.1.0: {}
+  commander@15.0.0: {}
 
   debug@4.4.3(supports-color@10.2.2):
     dependencies:
