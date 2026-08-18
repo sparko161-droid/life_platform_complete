@@ -10,6 +10,7 @@ export * from "./ids.js";
 export * from "./classification.js";
 export * from "./events.js";
 export * from "./family.js";
+export * from "./family-service.js";
 export * from "./verification.js";
 export * from "./media.js";
 export * from "./task.js";

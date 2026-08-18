@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { ChildId, FamilyId, ParentId } from "./ids.js";
+import { ChildId, FamilyId, InvitationTokenId, ParentId } from "./ids.js";
 import type { ClassificationMap } from "./classification.js";
 
 /**
@@ -136,3 +136,25 @@ export const FAMILY_CLASSIFICATION: ClassificationMap<
   version: "FAMILY",
   createdAt: "FAMILY",
 };
+
+/**
+ * Second-parent invitation token (P1-001). Carries the capability grant
+ * that will be applied when the invitee accepts. The token is a one-time
+ * secret; its `id` is used as the URL-safe bearer token in the invite
+ * link. Expiry at 48 h is a product decision from family-lifecycle.md's
+ * acceptance flow; it is enforced by the service, not this schema.
+ */
+export const INVITATION_STATUSES = ["PENDING", "ACCEPTED", "EXPIRED", "REVOKED"] as const;
+export type InvitationStatus = (typeof INVITATION_STATUSES)[number];
+
+export const InvitationTokenSchema = z.object({
+  tokenId: InvitationTokenId,
+  familyId: FamilyId,
+  inviteeId: ParentId,
+  capabilities: z.array(z.enum(PARENT_CAPABILITIES)),
+  status: z.enum(INVITATION_STATUSES),
+  createdAt: z.string().datetime(),
+  expiresAt: z.string().datetime(),
+  acceptedAt: z.string().datetime().optional(),
+});
+export type InvitationToken = z.infer<typeof InvitationTokenSchema>;

@@ -38,7 +38,22 @@ export type EventEnvelope = z.infer<typeof EventEnvelopeSchema>;
  * "TaskStarted -> VerificationCompleted -> TaskCompleted -> RewardUnlocked
  * -> ProgressUpdated -> NotificationRequested"), not Phase 4+ social scope.
  */
+/**
+ * Family lifecycle events added by P1-001. "Every membership mutation
+ * produces an audit event" (docs/product/family-lifecycle.md). These were
+ * flagged as a gap in the P0-009 family.ts comment; they are resolved here.
+ */
+export const FAMILY_EVENT_TYPES = [
+  "FAMILY_CREATED",
+  "CHILD_ADDED",
+  "PARENT_INVITED",
+  "PARENT_INVITATION_ACCEPTED",
+  "PARENT_MEMBERSHIP_REVOKED",
+] as const;
+export type FamilyEventType = (typeof FAMILY_EVENT_TYPES)[number];
+
 export const DOMAIN_EVENT_TYPES = [
+  ...FAMILY_EVENT_TYPES,
   "TASK_ASSIGNED",
   "TASK_STARTED",
   "TASK_COMPLETED",
