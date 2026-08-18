@@ -1,0 +1,90 @@
+# Wave Gate review artifact — W2 (Task and Rules runtime).
+#
+# Machine-checkable counterpart to docs/planning/phase-1-review-artifact-template.md.
+# The template's prose review is the human's job; this file holds the
+# claims a tool can check, and `task-registry control validate` checks
+# them against tasks/registry.yaml, tasks/phase-1-status.yaml and
+# tasks/phase-1-blockers.yaml.
+
+version: 1
+review_id: W2-1
+scope: W2
+reviewed_range: "5217dc5..9620c57 (P1-002A, P1-002B)"
+primary_reviewer: ai-cto
+architecture_control_lead: architecture-control-lead
+tasks:
+  - P1-002A
+  - P1-002B
+
+evidence:
+  - area: contracts
+    status: PASS
+    evidence: "TaskTemplate schema (TASK_TEMPLATE_STATES: DRAFT/ACTIVE/ARCHIVED) and TaskAssignment schema (TASK_ASSIGNMENT_STATES: ASSIGNED/IN_PROGRESS/SUBMITTED/VERIFYING/APPROVED/REJECTED/COMPLETED/ARCHIVED) fully defined in packages/domain-types/src/task.ts. TaskRule schema with Schedule, Conditions and CompletionPredicate in packages/task-engine/src/rules.ts."
+    note: "Submission evidence (TaskSubmission with mediaUrls) is a structural contract only; media upload is W3 (P1-005)."
+  - area: domain_state
+    status: PASS
+    evidence: "Pure domain service functions in packages/domain-types/src/task-service.ts: createTemplate, updateTemplate, publishTemplate, archiveTemplate, assignTask, startTask, submitTask, beginVerification, verifyTask, completeTask. All return {next, events} or {assignment, completion}. No I/O. State transitions validated by isValidTaskTemplateTransition and isValidTaskAssignmentTransition."
+    note: ""
+  - area: api
+    status: NOT_REQUIRED
+    evidence: ""
+    note: "W2 is domain-layer only; the API surface (REST handlers) is built in W7."
+  - area: events
+    status: PASS
+    evidence: "TASK_EVENT_TYPES exported: TASK_TEMPLATE_CREATED, TASK_TEMPLATE_PUBLISHED, TASK_ASSIGNED, TASK_STARTED, TASK_SUBMITTED, TASK_APPROVED, TASK_REJECTED, TASK_COMPLETED. Each command emits the correct event via EventEnvelope with actorId and timestamp."
+    note: ""
+  - area: persistence_migrations
+    status: NOT_REQUIRED
+    evidence: ""
+    note: "Persistence is introduced in W3. Domain services operate on in-memory aggregates only."
+  - area: tests
+    status: PASS
+    evidence: "P1-002A: 24 node:test unit tests in packages/domain-types/test/task-service.test.ts (template lifecycle, assignment lifecycle, retry flow REJECTED->IN_PROGRESS, system approval, full integration). P1-002B: 32 node:test unit tests in packages/task-engine/test/rules.test.ts (table-driven fixtures for all 8 error codes, all 6 predicate kinds, multi-error accumulation, integration flows, Zod schema rejection). All 56 pass."
+    note: ""
+  - area: security_engineering
+    status: PASS
+    evidence: "Pure domain services with no I/O. Branded UUIDs (TaskTemplateId, TaskAssignmentId). Role enforcement: submitTask is child-only; verifyTask actor can be child-safety-lead or system; archiveTemplate is owner-checked. Rules DSL is declarative — no eval/dynamic code execution."
+    note: ""
+  - area: security_red_team
+    status: NOT_REQUIRED
+    evidence: ""
+    note: "No network surface yet. Red team scheduled for W8 (P1-021)."
+  - area: child_safety
+    status: PASS
+    evidence: "Age condition in Rules DSL enforces min/maxYears gates before assignment. COMPOSITE_DUPLICATE_CHILD and COUNT_EXCEEDS_CHILDREN validation prevents malformed rules reaching children. Task rejection with mandatory rejectionReason string ensures children always receive feedback."
+    note: ""
+  - area: performance_scale
+    status: NOT_REQUIRED
+    evidence: ""
+    note: "Pure in-memory domain logic; scale guardrails are in W5 (P1-022)."
+  - area: observability_audit
+    status: NOT_REQUIRED
+    evidence: ""
+    note: "Domain services emit EventEnvelopes; instrumentation is wired at the application layer (W7+)."
+  - area: documentation_traceability
+    status: PASS
+    evidence: "task-service.ts and rules.ts carry JSDoc explaining design decisions. validateRule() documents all 8 error codes inline. All new exports annotated @public where used across package boundaries."
+    note: ""
+  - area: technical_debt
+    status: PASS
+    evidence: "knip passes with @public annotations. ESM-only. Zod v4 discriminatedUnion throughout. validateRule() accumulates all errors in one pass (no early return). No require() calls."
+    note: ""
+
+architecture_control:
+  dependency_direction: PASS
+  single_source_of_truth: PASS
+  contract_version_compatibility: PASS
+  migration_compatibility: NOT_REQUIRED
+  no_undocumented_breaking_changes: PASS
+  no_duplicate_domain_implementation: PASS
+  later_phase_concerns_bounded: PASS
+
+architecture_control_notes:
+  migration_compatibility: "No persistence or migrations exist yet; W3 introduces them."
+  later_phase_concerns_bounded: "TaskSubmission.mediaUrls is defined structurally; actual media storage and validation is deferred to W3 (P1-005). CompositeTask children ordering is stored but SEQUENCE predicate enforcement is deferred to the runtime scheduler."
+
+decision: PASS
+
+accepted_deviations: []
+
+follow_up_tasks: []

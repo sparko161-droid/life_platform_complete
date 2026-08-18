@@ -38,31 +38,31 @@ waves:
   - id: W1
     name: Identity, Family and persistence foundation
     priority: P1
-    status: BLOCKED
+    status: DONE
     owner: backend-lead
     architecture_control: architecture-control-lead
-    contract_gate: NOT_READY
-    implementation_gate: NOT_READY
-    qa_gate: NOT_READY
-    security_gate: NOT_READY
-    adversarial_gate: NOT_READY
-    scale_gate: NOT_READY
-    documentation_gate: NOT_READY
-    exit: BLOCKED
+    contract_gate: PASS
+    implementation_gate: PASS
+    qa_gate: PASS
+    security_gate: PASS
+    adversarial_gate: NOT_REQUIRED
+    scale_gate: NOT_REQUIRED
+    documentation_gate: PASS
+    exit: PASS
   - id: W2
     name: Task and Rules runtime
     priority: P1
-    status: BLOCKED
+    status: DONE
     owner: backend-lead
     architecture_control: architecture-control-lead
-    contract_gate: NOT_READY
-    implementation_gate: NOT_READY
-    qa_gate: NOT_READY
-    security_gate: NOT_READY
-    adversarial_gate: NOT_READY
-    scale_gate: NOT_READY
-    documentation_gate: NOT_READY
-    exit: BLOCKED
+    contract_gate: PASS
+    implementation_gate: PASS
+    qa_gate: PASS
+    security_gate: PASS
+    adversarial_gate: NOT_REQUIRED
+    scale_gate: NOT_REQUIRED
+    documentation_gate: PASS
+    exit: PASS
   - id: W3
     name: Evidence, Verification and Idempotency
     priority: P1
