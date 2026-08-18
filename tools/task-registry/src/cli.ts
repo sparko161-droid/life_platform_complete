@@ -435,6 +435,32 @@ program
   });
 
 program
+  .command("gate <id>")
+  .description("record one gate result, moving the task one step along REVIEW -> QA -> SECURITY -> ACCEPTANCE")
+  .requiredOption("--to <status>", "QA, SECURITY, ACCEPTANCE or REWORK")
+  .requiredOption("--by <role>", "who passed the gate")
+  .option("--note <note>", "what was checked")
+  .action(async (id: string, cmdOpts, cmd) => {
+    const path = registryPath(cmd.optsWithGlobals());
+    await withRegistryLock(path, () => {
+      const registry = loadRegistry(path);
+      const task = findTask(registry, id);
+
+      // One step at a time, through the same TRANSITIONS table everything
+      // else uses. The gates existed in docs/ai-team/task-lifecycle.md and
+      // in the state machine, but no verb walked them, so a task could
+      // only ever reach DONE by editing the registry by hand -- which is
+      // exactly the kind of unrecorded state change the lifecycle exists
+      // to prevent.
+      const updated = transition(task, cmdOpts.to as TaskState);
+      saveRegistry(path, replaceTask(registry, updated));
+      console.log(
+        `${id}: ${task.status} -> ${cmdOpts.to} (gate passed by ${cmdOpts.by}${cmdOpts.note ? `: ${cmdOpts.note}` : ""})`,
+      );
+    });
+  });
+
+program
   .command("close <id>")
   .description("close a task (default: -> DONE)")
   .option("--status <status>", "DONE or NEW_TASK", "DONE")
