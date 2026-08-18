@@ -625,7 +625,7 @@ tasks:
     phase: 1
     title: Russian-only UI localization lint and forbidden-term checks
     primary: uiux-lead
-    status: PLANNED
+    status: DONE
     deps: []
     deps_contract:
       - P1-009
