@@ -487,7 +487,7 @@ tasks:
     phase: 1
     title: Completion/verification/reward idempotency rules and fixtures
     primary: backend-lead
-    status: PLANNED
+    status: IN_PROGRESS
     deps: []
     deps_contract:
       - P0-009
