@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { allowedNextStates, isValidTransition } from "../src/schema.js";
+import { allowedNextStates, isValidTransition, readyAdmissionProblems } from "../src/schema.js";
 import { claimableTasks, outstandingDecisions, validateStructure } from "../src/registry.js";
 import type { Registry, Task } from "../src/schema.js";
 
@@ -43,9 +43,65 @@ function baseTask(overrides: Partial<Registry["tasks"][number]> = {}): Registry[
     human_decisions: [],
     origin_discovery: null,
     discovered_from: null,
+    execution: {
+      wave: "W0",
+      priority: "P2",
+      acceptance_criteria: "accept",
+      test_strategy: "tests",
+      source_reference: "test",
+    },
     ...overrides,
   };
 }
+
+test("readyAdmissionProblems requires independent reviewer, gates and execution metadata", () => {
+  const task = baseTask();
+  assert.deepEqual(readyAdmissionProblems(task), [
+    "missing independent reviewer",
+    "missing gate owners",
+  ]);
+});
+
+test("readyAdmissionProblems passes when all required admission metadata exists", () => {
+  const task = baseTask({ reviewer: "qa-lead", gate_owners: ["qa-lead"] });
+  assert.deepEqual(readyAdmissionProblems(task), []);
+});
+
+test("readyAdmissionProblems blocks unresolved discovery and human decision", () => {
+  const task = baseTask({
+    reviewer: "qa-lead",
+    gate_owners: ["qa-lead"],
+    discovery_links: [{
+      discovery_id: "DISC-1",
+      source_task: "P0-001",
+      type: "SECURITY_FINDING",
+      finding: "f",
+      why_it_matters: "w",
+      affected_domains: [],
+      architecture_impact: null,
+      security_impact: null,
+      ux_impact: null,
+      recommended_solution: null,
+      alternatives: [],
+      priority: "HIGH",
+      blocking: true,
+      proposed_task: null,
+    }],
+    human_decisions: [{ decision_id: "D1", question: "q", decision: null, decided_at: null }],
+  });
+  assert.ok(readyAdmissionProblems(task).includes("blocking discovery remains unresolved"));
+  assert.ok(readyAdmissionProblems(task).includes("unresolved human decision remains"));
+});
+
+test("validateStructure flags READY admission defects", () => {
+  const registry: Registry = {
+    version: 1,
+    tasks: [baseTask({ id: "P1-001" })],
+  };
+  const problems = validateStructure(registry);
+  assert.ok(problems.some((p) => p.includes("P1-001: missing independent reviewer")));
+  assert.ok(problems.some((p) => p.includes("P1-001: missing gate owners")));
+});
 
 test("validateStructure flags unknown dependency ids", () => {
   const registry: Registry = {
@@ -76,7 +132,7 @@ test("validateStructure passes on a clean acyclic graph", () => {
       baseTask({ id: "P0-002", deps: ["P0-001"] }),
     ],
   };
-  assert.deepEqual(validateStructure(registry), []);
+  assert.deepEqual(validateStructure(registry).filter((p) => p.includes("admission")), []);
 });
 
 test("claimableTasks: only READY tasks with every dep DONE", () => {
@@ -85,9 +141,9 @@ test("claimableTasks: only READY tasks with every dep DONE", () => {
     tasks: [
       baseTask({ id: "P0-001", status: "DONE", deps: [] }),
       baseTask({ id: "P0-002", status: "IN_PROGRESS", deps: [] }),
-      baseTask({ id: "P1-001", status: "READY", deps: ["P0-001"] }), // claimable
-      baseTask({ id: "P1-002", status: "READY", deps: ["P0-002"] }), // dep not DONE
-      baseTask({ id: "P1-003", status: "BACKLOG", deps: ["P0-001"] }), // wrong status
+      baseTask({ id: "P1-001", status: "READY", deps: ["P0-001"], reviewer: "qa-lead", gate_owners: ["qa-lead"] }),
+      baseTask({ id: "P1-002", status: "READY", deps: ["P0-002"], reviewer: "qa-lead", gate_owners: ["qa-lead"] }),
+      baseTask({ id: "P1-003", status: "BACKLOG", deps: ["P0-001"] }),
     ],
   };
   const claimable = claimableTasks(registry).map((t) => t.id);
@@ -98,9 +154,9 @@ test("claimableTasks: sorted by phase then id", () => {
   const registry: Registry = {
     version: 1,
     tasks: [
-      baseTask({ id: "P2-002", phase: 2, status: "READY", deps: [] }),
-      baseTask({ id: "P1-001", phase: 1, status: "READY", deps: [] }),
-      baseTask({ id: "P1-000", phase: 1, status: "READY", deps: [] }),
+      baseTask({ id: "P2-002", phase: 2, status: "READY", deps: [], reviewer: "qa-lead", gate_owners: ["qa-lead"] }),
+      baseTask({ id: "P1-001", phase: 1, status: "READY", deps: [], reviewer: "qa-lead", gate_owners: ["qa-lead"] }),
+      baseTask({ id: "P1-000", phase: 1, status: "READY", deps: [], reviewer: "qa-lead", gate_owners: ["qa-lead"] }),
     ],
   };
   const claimable = claimableTasks(registry).map((t) => t.id);
@@ -111,8 +167,8 @@ test("claimableTasks: --role narrows to one primary", () => {
   const registry: Registry = {
     version: 1,
     tasks: [
-      baseTask({ id: "P1-001", status: "READY", primary: "backend-lead", deps: [] }),
-      baseTask({ id: "P1-002", status: "READY", primary: "frontend-lead", deps: [] }),
+      baseTask({ id: "P1-001", status: "READY", primary: "backend-lead", deps: [], reviewer: "qa-lead", gate_owners: ["qa-lead"] }),
+      baseTask({ id: "P1-002", status: "READY", primary: "frontend-lead", deps: [], reviewer: "qa-lead", gate_owners: ["qa-lead"] }),
     ],
   };
   const claimable = claimableTasks(registry, { role: "frontend-lead" }).map((t: Task) => t.id);
@@ -136,15 +192,15 @@ test("outstandingDecisions: a *_BLOCKED task surfaces its reason", () => {
 test("outstandingDecisions: only unresolved human_decisions surface, not answered ones", () => {
   const registry: Registry = {
     version: 1,
-    tasks: [
-      baseTask({
-        id: "P1-004",
-        human_decisions: [
-          { decision_id: "D1", question: "Currency for money rewards?", decision: null, decided_at: null },
-          { decision_id: "D2", question: "Already answered?", decision: "RUB", decided_at: "2026-01-01" },
-        ],
-      }),
-    ],
+    tasks: [baseTask({
+      id: "P1-004",
+      reviewer: "qa-lead",
+      gate_owners: ["qa-lead"],
+      human_decisions: [
+        { decision_id: "D1", question: "Currency for money rewards?", decision: null, decided_at: null },
+        { decision_id: "D2", question: "Already answered?", decision: "RUB", decided_at: "2026-01-01" },
+      ],
+    })],
   };
   const items = outstandingDecisions(registry);
   assert.deepEqual(items, [{ taskId: "P1-004", kind: "human_decision", summary: "Currency for money rewards?" }]);
@@ -153,7 +209,7 @@ test("outstandingDecisions: only unresolved human_decisions surface, not answere
 test("outstandingDecisions: only blocking discoveries surface, not informational ones", () => {
   const baseDiscovery = {
     source_task: "P1-005",
-    type: "MISSING_REQUIREMENT",
+    type: "MISSING_REQUIREMENT" as const,
     finding: "f",
     why_it_matters: "w",
     affected_domains: [],
@@ -162,21 +218,19 @@ test("outstandingDecisions: only blocking discoveries surface, not informational
     ux_impact: null,
     recommended_solution: null,
     alternatives: [],
-    priority: "HIGH",
+    priority: "HIGH" as const,
     proposed_task: null,
   };
   const registry: Registry = {
     version: 1,
-    tasks: [
-      baseTask({
-        id: "P1-005",
-        discovery_links: [
-          { ...baseDiscovery, discovery_id: "DISC-1", finding: "blocking one", blocking: true },
-          { ...baseDiscovery, discovery_id: "DISC-2", finding: "fyi only", blocking: false },
-        ],
-      }),
-    ],
+    tasks: [baseTask({
+      id: "P1-005",
+      discovery_links: [
+        { ...baseDiscovery, discovery_id: "DISC-1", blocking: true },
+        { ...baseDiscovery, discovery_id: "DISC-2", blocking: false },
+      ],
+    })],
   };
   const items = outstandingDecisions(registry);
-  assert.deepEqual(items, [{ taskId: "P1-005", kind: "blocking_discovery", summary: "DISC-1: blocking one" }]);
+  assert.deepEqual(items, [{ taskId: "P1-005", kind: "blocking_discovery", summary: "DISC-1: f" }]);
 });
