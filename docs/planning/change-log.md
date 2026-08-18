@@ -1,5 +1,33 @@
 # Planning Change Log
 
+## 0.7 (P0-011 — AI task orchestration)
+
+- Added `task-registry next [--role][--limit]`: lists tasks claimable right
+  now (`READY` with every dependency `DONE`), sorted by phase then id.
+  Filter logic lives in `registry.ts`'s `claimableTasks()`, unit-tested
+  independent of the CLI.
+- Made every mutating `task-registry` command (`claim`, `handoff`, `block`,
+  `unblock`, `reassign`, `add-discovery`, `create-child-task`, `close`)
+  mutually exclusive via a real advisory file lock
+  (`tools/task-registry/src/lock.ts`). Reproduced the race this fixes for
+  real first: two concurrent `claim` calls on the same task both "succeeded"
+  against an unlocked registry. Re-ran the same race after the fix — one
+  succeeds, the other correctly fails with the single-primary-executor
+  error.
+- Found and fixed two more real bugs while building that lock, both
+  documented in `docs/implementations/phase-0-ai-orchestration.md`: (1) the
+  lock's own retry loop could busy-spin past its timeout instead of ever
+  throwing, if a removal didn't immediately take effect; (2) Node's
+  recursive `rmSync` silently fails to remove a directory under this repo's
+  Cyrillic-containing path (`...\Работа\...`) on this machine's Node
+  build — bisected with a bare, CLI-independent script — fixed by using
+  `unlinkSync`+`rmdirSync` directly instead of the recursive helper.
+- Also closed a process gap found while starting P0-010 (recorded there in
+  0.6, restated here since it's what made P0-011 claimable at all): P0-001
+  through P0-009 were merged to `main` but had never been walked through
+  the `REVIEW -> QA -> SECURITY -> ACCEPTANCE -> DONE` gate sequence in
+  `tasks/registry.yaml`.
+
 ## 0.6 (P0-010 — contract registry)
 
 - Added `contracts/registry.yaml`: one entry per contract group (family,

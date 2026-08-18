@@ -86,3 +86,20 @@ export function validateStructure(registry: Registry): string[] {
 
   return problems;
 }
+
+/**
+ * Tasks an agent could `claim` right now: READY, with every dependency
+ * DONE, optionally narrowed to one role. Sorted by phase then id so an
+ * orchestrator (or a human) picking "what's next" gets a stable order
+ * instead of registry file order (P0-011).
+ */
+export function claimableTasks(registry: Registry, opts: { role?: string } = {}): Task[] {
+  const byId = new Map(registry.tasks.map((t) => [t.id, t]));
+  return registry.tasks
+    .filter((t) => {
+      if (t.status !== "READY") return false;
+      if (opts.role && t.primary !== opts.role) return false;
+      return t.deps.every((depId) => byId.get(depId)?.status === "DONE");
+    })
+    .sort((a, b) => a.phase - b.phase || a.id.localeCompare(b.id));
+}

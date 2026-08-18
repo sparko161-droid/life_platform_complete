@@ -182,12 +182,14 @@ tasks:
     phase: 0
     title: AI task orchestration and agent claim/handoff workflow
     primary: ai-cto
-    status: READY
+    status: DONE
     deps:
       - P0-003
       - P0-004
-    reviewer: null
-    gate_owners: []
+    reviewer: chief-architect
+    gate_owners:
+      - qa-lead
+      - security-child-safety
     discovery_links: []
     blocked_reason: null
     human_decisions: []

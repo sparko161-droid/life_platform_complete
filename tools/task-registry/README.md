@@ -22,6 +22,8 @@ pnpm dev -- <command> [options]
 ## Commands
 
 - `list [--status S] [--phase N] [--primary role]`
+- `next [--role role] [--limit N]` — tasks claimable right now (`READY`
+  with every dependency `DONE`), sorted by phase then id (P0-011)
 - `validate` — schema + unknown-dependency + cycle checks
 - `claim <id> --agent <role>` — refuses if a dependency isn't `DONE`, or the
   task is already `IN_PROGRESS` under another agent (single-primary-executor
@@ -53,6 +55,14 @@ pnpm dev -- <command> [options]
 
 All commands accept `-r, --registry <path>` to point at a different YAML
 file (used by tests / dry runs against a scratch copy).
+
+Every command that mutates the registry (`claim`, `handoff`, `block`,
+`unblock`, `reassign`, `add-discovery`, `create-child-task`, `close`)
+serializes through a real file lock
+(`tools/task-registry/src/lock.ts`, P0-011) so two agents running commands
+against the same `tasks/registry.yaml` at the same time can't both "win" a
+claim on the same task. `list`/`next`/`validate`/`contracts validate` are
+read-only and don't take the lock.
 
 Known limitation: `--files`/`--tests`/`--risks`/`--decisions`/`--next` on
 `handoff` split on every comma, so a single item containing a comma gets

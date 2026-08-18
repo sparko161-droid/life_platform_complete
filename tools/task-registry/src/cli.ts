@@ -3,6 +3,7 @@ import { Command } from "commander";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import {
+  claimableTasks,
   findTask,
   loadRegistry,
   replaceTask,
@@ -13,6 +14,7 @@ import { allowedNextStates, isValidTransition, type Task, type TaskState } from 
 import { renderHandoff } from "./handoff.js";
 import { createWorktree, removeWorktree, repoRoot } from "./worktree.js";
 import { loadContractRegistry, validateContractRegistry } from "./contracts.js";
+import { withRegistryLock } from "./lock.js";
 
 // pnpm --filter runs scripts with cwd set to the package directory, not the
 // repo root the CLI is meant to operate from. pnpm sets INIT_CWD to the
@@ -73,6 +75,28 @@ program
   });
 
 program
+  .command("next")
+  .description("list tasks an agent could claim right now (READY with every dep DONE), sorted by phase then id")
+  .option("--role <role>", "only tasks whose primary matches this role")
+  .option("--limit <n>", "cap the number of results", "20")
+  .action((cmdOpts, cmd) => {
+    const path = registryPath(cmd.optsWithGlobals());
+    const registry = loadRegistry(path);
+
+    const claimable = claimableTasks(registry, { role: cmdOpts.role });
+    const limited = claimable.slice(0, Number(cmdOpts.limit));
+
+    if (limited.length === 0) {
+      console.log("Nothing claimable right now (no READY task has every dependency DONE" + (cmdOpts.role ? ` for role ${cmdOpts.role}` : "") + ").");
+      return;
+    }
+    for (const t of limited) {
+      console.log(`${t.id}\tphase=${t.phase}\t${t.primary}\tdeps=[${t.deps.join(",")}]\t${t.title}`);
+    }
+    console.log(`\n${limited.length} of ${claimable.length} claimable task(s) shown.`);
+  });
+
+program
   .command("validate")
   .description("validate registry structure: schema, unknown deps, cycles")
   .action((_opts, cmd) => {
@@ -92,30 +116,32 @@ program
   .command("claim <id>")
   .description("claim a READY/BACKLOG task as its single primary executor")
   .requiredOption("--agent <role>", "agent/role claiming the task")
-  .action((id: string, cmdOpts, cmd) => {
+  .action(async (id: string, cmdOpts, cmd) => {
     const path = registryPath(cmd.optsWithGlobals());
-    const registry = loadRegistry(path);
-    const task = findTask(registry, id);
+    await withRegistryLock(path, () => {
+      const registry = loadRegistry(path);
+      const task = findTask(registry, id);
 
-    for (const dep of task.deps) {
-      const depTask = findTask(registry, dep);
-      if (depTask.status !== "DONE") {
+      for (const dep of task.deps) {
+        const depTask = findTask(registry, dep);
+        if (depTask.status !== "DONE") {
+          throw new Error(
+            `${id} cannot be claimed: dependency ${dep} is ${depTask.status}, not DONE.`,
+          );
+        }
+      }
+
+      if (task.status === "IN_PROGRESS") {
         throw new Error(
-          `${id} cannot be claimed: dependency ${dep} is ${depTask.status}, not DONE.`,
+          `${id} is already IN_PROGRESS under primary "${task.primary}". ` +
+            `Single-primary-executor rule: reassign or wait for handoff/close first.`,
         );
       }
-    }
 
-    if (task.status === "IN_PROGRESS") {
-      throw new Error(
-        `${id} is already IN_PROGRESS under primary "${task.primary}". ` +
-          `Single-primary-executor rule: reassign or wait for handoff/close first.`,
-      );
-    }
-
-    const claimed = transition({ ...task, primary: cmdOpts.agent }, "IN_PROGRESS");
-    saveRegistry(path, replaceTask(registry, claimed));
-    console.log(`${id} claimed by ${cmdOpts.agent}. status=IN_PROGRESS`);
+      const claimed = transition({ ...task, primary: cmdOpts.agent }, "IN_PROGRESS");
+      saveRegistry(path, replaceTask(registry, claimed));
+      console.log(`${id} claimed by ${cmdOpts.agent}. status=IN_PROGRESS`);
+    });
   });
 
 program
@@ -130,38 +156,40 @@ program
   .option("--risks <items>", "comma-separated known risks")
   .option("--decisions <items>", "comma-separated decisions made")
   .option("--next <items>", "comma-separated follow-up task ids/notes")
-  .action((id: string, cmdOpts, cmd) => {
+  .action(async (id: string, cmdOpts, cmd) => {
     const path = registryPath(cmd.optsWithGlobals());
-    const registry = loadRegistry(path);
-    const task = findTask(registry, id);
-    const split = (v?: string) => (v ? v.split(",").map((s: string) => s.trim()).filter(Boolean) : []);
+    await withRegistryLock(path, () => {
+      const registry = loadRegistry(path);
+      const task = findTask(registry, id);
+      const split = (v?: string) => (v ? v.split(",").map((s: string) => s.trim()).filter(Boolean) : []);
 
-    const updated = transition(
-      {
-        ...task,
-        reviewer: cmdOpts.reviewer,
-        gate_owners: split(cmdOpts.gateOwners),
-      },
-      "REVIEW",
-    );
-    saveRegistry(path, replaceTask(registry, updated));
+      const updated = transition(
+        {
+          ...task,
+          reviewer: cmdOpts.reviewer,
+          gate_owners: split(cmdOpts.gateOwners),
+        },
+        "REVIEW",
+      );
+      saveRegistry(path, replaceTask(registry, updated));
 
-    const report = renderHandoff({
-      task: updated,
-      branch: cmdOpts.branch ?? null,
-      files: split(cmdOpts.files),
-      contracts: split(cmdOpts.contracts),
-      tests: split(cmdOpts.tests),
-      risks: split(cmdOpts.risks),
-      decisions: split(cmdOpts.decisions),
-      nextTasks: split(cmdOpts.next),
+      const report = renderHandoff({
+        task: updated,
+        branch: cmdOpts.branch ?? null,
+        files: split(cmdOpts.files),
+        contracts: split(cmdOpts.contracts),
+        tests: split(cmdOpts.tests),
+        risks: split(cmdOpts.risks),
+        decisions: split(cmdOpts.decisions),
+        nextTasks: split(cmdOpts.next),
+      });
+      const archivePath = handoffArchivePath(path, id);
+      mkdirSync(dirname(archivePath), { recursive: true });
+      writeFileSync(archivePath, report.endsWith("\n") ? report : `${report}\n`, "utf8");
+
+      console.log(report);
+      console.log(`\n(archived to ${archivePath})`);
     });
-    const archivePath = handoffArchivePath(path, id);
-    mkdirSync(dirname(archivePath), { recursive: true });
-    writeFileSync(archivePath, report.endsWith("\n") ? report : `${report}\n`, "utf8");
-
-    console.log(report);
-    console.log(`\n(archived to ${archivePath})`);
   });
 
 program
@@ -169,46 +197,52 @@ program
   .description("mark a task blocked")
   .requiredOption("--type <type>", "architecture|product|security|dependency")
   .requiredOption("--reason <reason>")
-  .action((id: string, cmdOpts, cmd) => {
+  .action(async (id: string, cmdOpts, cmd) => {
     const path = registryPath(cmd.optsWithGlobals());
-    const registry = loadRegistry(path);
-    const task = findTask(registry, id);
-    const stateByType: Record<string, TaskState> = {
-      architecture: "ARCHITECTURE_BLOCKED",
-      product: "PRODUCT_BLOCKED",
-      security: "SECURITY_BLOCKED",
-      dependency: "DEPENDENCY_BLOCKED",
-    };
-    const target = stateByType[cmdOpts.type];
-    if (!target) throw new Error(`Unknown block type: ${cmdOpts.type}`);
-    const updated = transition({ ...task, blocked_reason: cmdOpts.reason }, target);
-    saveRegistry(path, replaceTask(registry, updated));
-    console.log(`${id} blocked: ${target} (${cmdOpts.reason})`);
+    await withRegistryLock(path, () => {
+      const registry = loadRegistry(path);
+      const task = findTask(registry, id);
+      const stateByType: Record<string, TaskState> = {
+        architecture: "ARCHITECTURE_BLOCKED",
+        product: "PRODUCT_BLOCKED",
+        security: "SECURITY_BLOCKED",
+        dependency: "DEPENDENCY_BLOCKED",
+      };
+      const target = stateByType[cmdOpts.type];
+      if (!target) throw new Error(`Unknown block type: ${cmdOpts.type}`);
+      const updated = transition({ ...task, blocked_reason: cmdOpts.reason }, target);
+      saveRegistry(path, replaceTask(registry, updated));
+      console.log(`${id} blocked: ${target} (${cmdOpts.reason})`);
+    });
   });
 
 program
   .command("unblock <id>")
   .description("resume a blocked task")
   .requiredOption("--status <status>", "target state, e.g. IN_PROGRESS or READY")
-  .action((id: string, cmdOpts, cmd) => {
+  .action(async (id: string, cmdOpts, cmd) => {
     const path = registryPath(cmd.optsWithGlobals());
-    const registry = loadRegistry(path);
-    const task = findTask(registry, id);
-    const updated = transition({ ...task, blocked_reason: null }, cmdOpts.status as TaskState);
-    saveRegistry(path, replaceTask(registry, updated));
-    console.log(`${id} unblocked -> ${cmdOpts.status}`);
+    await withRegistryLock(path, () => {
+      const registry = loadRegistry(path);
+      const task = findTask(registry, id);
+      const updated = transition({ ...task, blocked_reason: null }, cmdOpts.status as TaskState);
+      saveRegistry(path, replaceTask(registry, updated));
+      console.log(`${id} unblocked -> ${cmdOpts.status}`);
+    });
   });
 
 program
   .command("reassign <id>")
   .description("change the primary executor without changing status")
   .requiredOption("--agent <role>")
-  .action((id: string, cmdOpts, cmd) => {
+  .action(async (id: string, cmdOpts, cmd) => {
     const path = registryPath(cmd.optsWithGlobals());
-    const registry = loadRegistry(path);
-    const task = findTask(registry, id);
-    saveRegistry(path, replaceTask(registry, { ...task, primary: cmdOpts.agent }));
-    console.log(`${id} reassigned: primary=${cmdOpts.agent}`);
+    await withRegistryLock(path, () => {
+      const registry = loadRegistry(path);
+      const task = findTask(registry, id);
+      saveRegistry(path, replaceTask(registry, { ...task, primary: cmdOpts.agent }));
+      console.log(`${id} reassigned: primary=${cmdOpts.agent}`);
+    });
   });
 
 program
@@ -220,33 +254,35 @@ program
   .requiredOption("--priority <priority>", "LOW|MEDIUM|HIGH|CRITICAL")
   .option("--blocking", "mark the discovery as blocking", false)
   .option("--proposed-task <id>")
-  .action((id: string, cmdOpts, cmd) => {
+  .action(async (id: string, cmdOpts, cmd) => {
     const path = registryPath(cmd.optsWithGlobals());
-    const registry = loadRegistry(path);
-    const task = findTask(registry, id);
-    const discoveryId = `DISC-${task.id}-${task.discovery_links.length + 1}`;
-    const discovery = {
-      discovery_id: discoveryId,
-      source_task: task.id,
-      type: cmdOpts.type,
-      finding: cmdOpts.finding,
-      why_it_matters: cmdOpts.why,
-      affected_domains: [],
-      architecture_impact: null,
-      security_impact: null,
-      ux_impact: null,
-      recommended_solution: null,
-      alternatives: [],
-      priority: cmdOpts.priority,
-      blocking: Boolean(cmdOpts.blocking),
-      proposed_task: cmdOpts.proposedTask ?? null,
-    };
-    const updated = {
-      ...task,
-      discovery_links: [...task.discovery_links, discovery],
-    };
-    saveRegistry(path, replaceTask(registry, updated));
-    console.log(`Discovery ${discoveryId} added to ${id}.`);
+    await withRegistryLock(path, () => {
+      const registry = loadRegistry(path);
+      const task = findTask(registry, id);
+      const discoveryId = `DISC-${task.id}-${task.discovery_links.length + 1}`;
+      const discovery = {
+        discovery_id: discoveryId,
+        source_task: task.id,
+        type: cmdOpts.type,
+        finding: cmdOpts.finding,
+        why_it_matters: cmdOpts.why,
+        affected_domains: [],
+        architecture_impact: null,
+        security_impact: null,
+        ux_impact: null,
+        recommended_solution: null,
+        alternatives: [],
+        priority: cmdOpts.priority,
+        blocking: Boolean(cmdOpts.blocking),
+        proposed_task: cmdOpts.proposedTask ?? null,
+      };
+      const updated = {
+        ...task,
+        discovery_links: [...task.discovery_links, discovery],
+      };
+      saveRegistry(path, replaceTask(registry, updated));
+      console.log(`Discovery ${discoveryId} added to ${id}.`);
+    });
   });
 
 program
@@ -258,54 +294,58 @@ program
   .requiredOption("--primary <role>")
   .requiredOption("--phase <phase>")
   .option("--deps <items>", "comma-separated dependency ids", "")
-  .action((cmdOpts, cmd) => {
+  .action(async (cmdOpts, cmd) => {
     const path = registryPath(cmd.optsWithGlobals());
-    const registry = loadRegistry(path);
+    await withRegistryLock(path, () => {
+      const registry = loadRegistry(path);
 
-    if (registry.tasks.some((t) => t.id === cmdOpts.id)) {
-      throw new Error(`Task ${cmdOpts.id} already exists.`);
-    }
+      if (registry.tasks.some((t) => t.id === cmdOpts.id)) {
+        throw new Error(`Task ${cmdOpts.id} already exists.`);
+      }
 
-    const source = registry.tasks.find((t) =>
-      t.discovery_links.some((d) => d.discovery_id === cmdOpts.fromDiscovery),
-    );
-    if (!source) {
-      throw new Error(`No task holds discovery ${cmdOpts.fromDiscovery}.`);
-    }
+      const source = registry.tasks.find((t) =>
+        t.discovery_links.some((d) => d.discovery_id === cmdOpts.fromDiscovery),
+      );
+      if (!source) {
+        throw new Error(`No task holds discovery ${cmdOpts.fromDiscovery}.`);
+      }
 
-    const newTask: Task = {
-      id: cmdOpts.id,
-      phase: Number(cmdOpts.phase),
-      title: cmdOpts.title,
-      primary: cmdOpts.primary,
-      status: "BACKLOG",
-      deps: cmdOpts.deps ? cmdOpts.deps.split(",").map((s: string) => s.trim()).filter(Boolean) : [],
-      reviewer: null,
-      gate_owners: [],
-      discovery_links: [],
-      blocked_reason: null,
-      human_decisions: [],
-      origin_discovery: cmdOpts.fromDiscovery,
-      discovered_from: source.id,
-    };
+      const newTask: Task = {
+        id: cmdOpts.id,
+        phase: Number(cmdOpts.phase),
+        title: cmdOpts.title,
+        primary: cmdOpts.primary,
+        status: "BACKLOG",
+        deps: cmdOpts.deps ? cmdOpts.deps.split(",").map((s: string) => s.trim()).filter(Boolean) : [],
+        reviewer: null,
+        gate_owners: [],
+        discovery_links: [],
+        blocked_reason: null,
+        human_decisions: [],
+        origin_discovery: cmdOpts.fromDiscovery,
+        discovered_from: source.id,
+      };
 
-    saveRegistry(path, { ...registry, tasks: [...registry.tasks, newTask] });
-    console.log(
-      `${newTask.id} created from ${cmdOpts.fromDiscovery} (discovered_from=${source.id}).`,
-    );
+      saveRegistry(path, { ...registry, tasks: [...registry.tasks, newTask] });
+      console.log(
+        `${newTask.id} created from ${cmdOpts.fromDiscovery} (discovered_from=${source.id}).`,
+      );
+    });
   });
 
 program
   .command("close <id>")
   .description("close a task (default: -> DONE)")
   .option("--status <status>", "DONE or NEW_TASK", "DONE")
-  .action((id: string, cmdOpts, cmd) => {
+  .action(async (id: string, cmdOpts, cmd) => {
     const path = registryPath(cmd.optsWithGlobals());
-    const registry = loadRegistry(path);
-    const task = findTask(registry, id);
-    const updated = transition(task, cmdOpts.status as TaskState);
-    saveRegistry(path, replaceTask(registry, updated));
-    console.log(`${id} closed -> ${cmdOpts.status}`);
+    await withRegistryLock(path, () => {
+      const registry = loadRegistry(path);
+      const task = findTask(registry, id);
+      const updated = transition(task, cmdOpts.status as TaskState);
+      saveRegistry(path, replaceTask(registry, updated));
+      console.log(`${id} closed -> ${cmdOpts.status}`);
+    });
   });
 
 const worktree = program.command("worktree").description("git worktree per task, per AGENTS.md branch naming");
