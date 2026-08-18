@@ -1,6 +1,6 @@
 import { NodeSDK } from "@opentelemetry/sdk-node";
 import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
-import { Resource } from "@opentelemetry/resources";
+import { resourceFromAttributes } from "@opentelemetry/resources";
 import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION } from "@opentelemetry/semantic-conventions";
 
 export interface TracingOptions {
@@ -25,7 +25,7 @@ export function bootstrapTracing(opts: TracingOptions): TracingHandle | null {
   if (!endpoint) return null;
 
   const sdk = new NodeSDK({
-    resource: new Resource({
+    resource: resourceFromAttributes({
       [ATTR_SERVICE_NAME]: opts.serviceName,
       [ATTR_SERVICE_VERSION]: opts.serviceVersion ?? "0.0.0",
     }),

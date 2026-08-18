@@ -3,17 +3,21 @@
   "compilerOptions": {
     "outDir": "dist",
     "rootDir": "src",
-    // @opentelemetry/sdk-logs@0.55.0's own .d.ts (a transitive dependency
-    // of @opentelemetry/sdk-node, not something this package imports
-    // directly) fails to typecheck under the repo-wide
-    // exactOptionalPropertyTypes: true -- its NoopLogRecordProcessor
-    // declares `severityText: string` where the interface it implements
-    // allows `string | undefined`. That's a bug in their .d.ts, not in
-    // this package's code. skipLibCheck is TypeScript's standard,
-    // documented mitigation for exactly this class of problem (published
-    // .d.ts files not fully compatible with a strict flag); scoped to
-    // this package only rather than promoted to tsconfig.base.json,
-    // since it's the only package pulling in the OTel SDK so far.
+    // thread-stream@4.2.0 (pino's internal worker-thread dependency, not
+    // something this package imports directly) ships a .d.ts referencing
+    // `worker_threads.TransferListItem`. @types/node@26 renamed that type
+    // to `Transferable`, so the reference no longer resolves and tsc
+    // reports TS2694 from inside node_modules. That's a published-.d.ts
+    // bug outside our control, and skipLibCheck is TypeScript's standard,
+    // documented mitigation for it. Scoped to this package rather than
+    // promoted to tsconfig.base.json, since it's the only package that
+    // depends on pino so far.
+    //
+    // NOTE: this flag was originally added here for a different reason --
+    // @opentelemetry/sdk-logs@0.55.0's NoopLogRecordProcessor violated
+    // exactOptionalPropertyTypes. That bug is fixed as of the 0.221.0 bump
+    // and is no longer why the flag is needed. Re-check whether the flag
+    // can be dropped once thread-stream ships a .d.ts fix.
     "skipLibCheck": true
   },
   "include": ["src"]
