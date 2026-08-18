@@ -20,7 +20,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
         with:
           version: ${{ env.PNPM_VERSION }}
 
@@ -36,14 +36,24 @@ jobs:
       - name: Lint
         run: pnpm lint
 
+      # Build before typecheck/test, not after: several packages (starting
+      # with packages/ux-contracts importing packages/domain-types)
+      # resolve a sibling workspace package through its package.json
+      # "exports" -> "./dist/...", which only exists once that package has
+      # been built. tsc and tsx's Node ESM resolver both read "exports" the
+      # same way at typecheck/test time, so either step running before
+      # `build` fails with "Cannot find module" for any cross-package
+      # import -- reproduced for real on this exact CI run (P1-014's
+      # merge), masked locally only because a stale dist/ from an earlier
+      # manual build was still on disk.
+      - name: Build
+        run: pnpm build
+
       - name: Typecheck
         run: pnpm typecheck
 
       - name: Unit tests
         run: pnpm test
-
-      - name: Build
-        run: pnpm build
 
       # docs/architecture/api-contracts.md ("Generation pipeline"):
       # fails if services/api/openapi/openapi.yaml changed without
@@ -51,9 +61,31 @@ jobs:
       - name: OpenAPI client is up to date
         run: pnpm --filter @life/api-client run generate:check
 
+      # docs/architecture/contract-registry.md / P0-010: fails if
+      # contracts/registry.yaml drifts from packages/domain-types' real
+      # exports, tasks/registry.yaml's task ids, or change-log.md headings.
+      - name: Contract registry is in sync
+        run: pnpm run contracts:validate
+
+      # docs/implementations/phase-0-ai-orchestration.md's sibling doc,
+      # P0-012: fails if docs/DOCS_GRAPH.md drifts from the real docs/ tree,
+      # or any doc/task file references a task id that doesn't exist.
+      - name: Docs graph and task references are in sync
+        run: pnpm run docs:check
+
   secret-scan:
     name: gitleaks
     runs-on: ubuntu-latest
+    # Dependabot-triggered runs get a read-only GITHUB_TOKEN with no
+    # pull-requests scope by default. Without this, gitleaks-action's own
+    # `pulls.listCommits` call to scope the PR diff 403s with "Resource not
+    # accessible by integration" on every single Dependabot PR -- now a
+    # required check (docs/engineering/branch-protection.md), so that 403
+    # silently blocked every dependency-update PR from ever merging.
+    # Reproduced on all 14 open Dependabot PRs before adding this.
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -71,7 +103,7 @@ jobs:
     continue-on-error: true
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
         with:
           version: ${{ env.PNPM_VERSION }}
       - uses: actions/setup-node@v4
@@ -80,6 +112,48 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm audit --audit-level=high
+
+  direct-push-alarm:
+    name: no direct pushes to main
+    runs-on: ubuntu-latest
+    # Fires only on push events to main. GitHub's own branch protection is
+    # unavailable on this repo's current plan (private repo, personal Free
+    # account -- see docs/engineering/branch-protection.md), so there is no
+    # way to *prevent* a direct push server-side today. This job detects one
+    # after the fact and fails loudly, which surfaces it in the Actions tab
+    # and in the owner's failure email. It is an alarm, not a lock.
+    #
+    # Delete this job once real branch protection is enabled -- the lock makes
+    # the alarm redundant.
+    if: github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - name: Assert the pushed commit is a PR merge
+        run: |
+          sha="${{ github.sha }}"
+          parents=$(git rev-list --parents -n 1 "$sha" | wc -w)
+          # A squash-merge from a PR has 1 parent, same as a direct push, so
+          # parent count alone cannot distinguish them. GitHub sets these two
+          # only for merges it performed itself.
+          msg=$(git log -1 --pretty=%s "$sha")
+          echo "commit: $sha"
+          echo "subject: $msg"
+          echo "parents (incl. self): $parents"
+          if [ "$parents" -ge 3 ]; then
+            echo "::notice::Merge commit -- came through a PR."
+            exit 0
+          fi
+          if echo "$msg" | grep -qE '\(#[0-9]+\)$'; then
+            echo "::notice::Squash-merge from PR $(echo "$msg" | grep -oE '#[0-9]+$') -- fine."
+            exit 0
+          fi
+          echo "::error::Commit $sha landed on main without a PR reference." \
+            "AGENTS.md forbids merging directly into main. If this was" \
+            "intentional (e.g. applying branch protection), note it in the" \
+            "commit message; otherwise revert and reland via a PR."
+          exit 1
 
   quality-gate-baseline:
     name: knip (dead code / unused exports)
@@ -96,7 +170,7 @@ jobs:
     continue-on-error: true
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
         with:
           version: ${{ env.PNPM_VERSION }}
       - uses: actions/setup-node@v4

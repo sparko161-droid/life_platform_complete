@@ -24,6 +24,15 @@ export type EventEnvelope = z.infer<typeof EventEnvelopeSchema>;
  * Subset of docs/architecture/events.md's "Initial events" relevant to
  * this contract pack's aggregates (Family/Task/Verification/Reward).
  * Social/messenger/game events are out of scope here (Phase 4+).
+ *
+ * PROGRESS_UPDATED and NOTIFICATION_REQUESTED (added by P1-014) are the
+ * last two of docs/architecture/vertical-slice/task-to-reward.md's
+ * "Required events" (TaskStarted, VerificationCompleted, TaskCompleted,
+ * TaskRejected, RewardUnlocked, ProgressUpdated, NotificationRequested) --
+ * the other five were already covered. Both are genuinely part of this
+ * vertical slice's event path (docs/architecture/vertical-slice/api-and-events.md:
+ * "TaskStarted -> VerificationCompleted -> TaskCompleted -> RewardUnlocked
+ * -> ProgressUpdated -> NotificationRequested"), not Phase 4+ social scope.
  */
 export const DOMAIN_EVENT_TYPES = [
   "TASK_ASSIGNED",
@@ -37,5 +46,7 @@ export const DOMAIN_EVENT_TYPES = [
   "MONEY_LEDGER_POSTED",
   "REWARD_UNLOCKED",
   "REWARD_REDEEMED",
+  "PROGRESS_UPDATED",
+  "NOTIFICATION_REQUESTED",
 ] as const;
 export type DomainEventType = (typeof DOMAIN_EVENT_TYPES)[number];

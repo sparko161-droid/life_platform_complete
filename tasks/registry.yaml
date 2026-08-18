@@ -4,7 +4,7 @@ tasks:
     phase: 0
     title: Protect main and configure CI gates
     primary: devops-lead
-    status: REVIEW
+    status: DONE
     deps: []
     reviewer: chief-architect
     gate_owners:
@@ -15,11 +15,17 @@ tasks:
     human_decisions: []
     origin_discovery: null
     discovered_from: null
+    execution:
+      wave: UNASSIGNED
+      priority: P2
+      acceptance_criteria: ''
+      test_strategy: ''
+      source_reference: ''
   - id: P0-002
     phase: 0
     title: Provision local dev stack and health checks
     primary: devops-lead
-    status: REVIEW
+    status: DONE
     deps: []
     reviewer: chief-architect
     gate_owners:
@@ -29,11 +35,17 @@ tasks:
     human_decisions: []
     origin_discovery: null
     discovered_from: null
+    execution:
+      wave: UNASSIGNED
+      priority: P2
+      acceptance_criteria: ''
+      test_strategy: ''
+      source_reference: ''
   - id: P0-003
     phase: 0
     title: Implement task registry lifecycle and dependency fields
     primary: ai-cto
-    status: REVIEW
+    status: DONE
     deps: []
     reviewer: chief-architect
     gate_owners:
@@ -58,11 +70,17 @@ tasks:
     human_decisions: []
     origin_discovery: null
     discovered_from: null
+    execution:
+      wave: UNASSIGNED
+      priority: P2
+      acceptance_criteria: ''
+      test_strategy: ''
+      source_reference: ''
   - id: P0-004
     phase: 0
     title: Implement agent worktree and handoff conventions
     primary: ai-cto
-    status: REVIEW
+    status: DONE
     deps:
       - P0-003
     reviewer: chief-architect
@@ -73,11 +91,17 @@ tasks:
     human_decisions: []
     origin_discovery: null
     discovered_from: null
+    execution:
+      wave: UNASSIGNED
+      priority: P2
+      acceptance_criteria: ''
+      test_strategy: ''
+      source_reference: ''
   - id: P0-005
     phase: 0
     title: Define OpenAPI and typed client generation path
     primary: backend-lead
-    status: REVIEW
+    status: DONE
     deps: []
     reviewer: chief-architect
     gate_owners:
@@ -87,11 +111,17 @@ tasks:
     human_decisions: []
     origin_discovery: null
     discovered_from: null
+    execution:
+      wave: UNASSIGNED
+      priority: P2
+      acceptance_criteria: ''
+      test_strategy: ''
+      source_reference: ''
   - id: P0-006
     phase: 0
     title: Create synthetic family fixtures and seed data
     primary: qa-lead
-    status: REVIEW
+    status: DONE
     deps:
       - P0-005
     reviewer: chief-architect
@@ -102,11 +132,17 @@ tasks:
     human_decisions: []
     origin_discovery: null
     discovered_from: null
+    execution:
+      wave: UNASSIGNED
+      priority: P2
+      acceptance_criteria: ''
+      test_strategy: ''
+      source_reference: ''
   - id: P0-007
     phase: 0
     title: Baseline observability and error reporting
     primary: devops-lead
-    status: REVIEW
+    status: DONE
     deps:
       - P0-002
     reviewer: chief-architect
@@ -117,11 +153,17 @@ tasks:
     human_decisions: []
     origin_discovery: null
     discovered_from: null
+    execution:
+      wave: UNASSIGNED
+      priority: P2
+      acceptance_criteria: ''
+      test_strategy: ''
+      source_reference: ''
   - id: P0-008
     phase: 0
     title: Establish security baseline and secrets policy
     primary: security-child-safety
-    status: REVIEW
+    status: DONE
     deps: []
     reviewer: chief-architect
     gate_owners:
@@ -131,11 +173,17 @@ tasks:
     human_decisions: []
     origin_discovery: null
     discovered_from: null
+    execution:
+      wave: UNASSIGNED
+      priority: P2
+      acceptance_criteria: ''
+      test_strategy: ''
+      source_reference: ''
   - id: P0-009
     phase: 0
     title: Create Phase 1 contract pack
     primary: chief-architect
-    status: REVIEW
+    status: DONE
     deps:
       - P0-005
       - P0-008
@@ -162,49 +210,79 @@ tasks:
     human_decisions: []
     origin_discovery: null
     discovered_from: null
+    execution:
+      wave: UNASSIGNED
+      priority: P2
+      acceptance_criteria: ''
+      test_strategy: ''
+      source_reference: ''
   - id: P0-010
     phase: 0
     title: Versioned contract registry and handoff artifacts
     primary: chief-architect
-    status: READY
+    status: DONE
     deps:
       - P0-009
-    reviewer: null
-    gate_owners: []
+    reviewer: ai-cto
+    gate_owners:
+      - qa-lead
+      - security-child-safety
     discovery_links: []
     blocked_reason: null
     human_decisions: []
     origin_discovery: null
     discovered_from: null
+    execution:
+      wave: UNASSIGNED
+      priority: P2
+      acceptance_criteria: ''
+      test_strategy: ''
+      source_reference: ''
   - id: P0-011
     phase: 0
     title: AI task orchestration and agent claim/handoff workflow
     primary: ai-cto
-    status: READY
+    status: DONE
     deps:
       - P0-003
       - P0-004
-    reviewer: null
-    gate_owners: []
+    reviewer: chief-architect
+    gate_owners:
+      - qa-lead
+      - security-child-safety
     discovery_links: []
     blocked_reason: null
     human_decisions: []
     origin_discovery: null
     discovered_from: null
+    execution:
+      wave: UNASSIGNED
+      priority: P2
+      acceptance_criteria: ''
+      test_strategy: ''
+      source_reference: ''
   - id: P0-012
     phase: 0
     title: Automated docs/task traceability checks
     primary: documentation-agent
-    status: READY
+    status: DONE
     deps:
       - P0-010
-    reviewer: null
-    gate_owners: []
+    reviewer: chief-architect
+    gate_owners:
+      - qa-lead
+      - security-child-safety
     discovery_links: []
     blocked_reason: null
     human_decisions: []
     origin_discovery: null
     discovered_from: null
+    execution:
+      wave: UNASSIGNED
+      priority: P2
+      acceptance_criteria: ''
+      test_strategy: ''
+      source_reference: ''
   - id: P1-001
     phase: 1
     title: Family lifecycle and second-parent invitation
@@ -219,28 +297,19 @@ tasks:
     human_decisions: []
     origin_discovery: null
     discovered_from: null
-  - id: P1-002
-    phase: 1
-    title: Task template, assignment and Rules DSL
-    primary: backend-lead
-    status: PLANNED
-    deps:
-      - P0-009
-      - P0-010
-    reviewer: null
-    gate_owners: []
-    discovery_links: []
-    blocked_reason: null
-    human_decisions: []
-    origin_discovery: null
-    discovered_from: null
+    execution:
+      wave: UNASSIGNED
+      priority: P2
+      acceptance_criteria: ''
+      test_strategy: ''
+      source_reference: ''
   - id: P1-003
     phase: 1
     title: Parent task builder UX
     primary: frontend-lead
     status: PLANNED
     deps:
-      - P1-002
+      - P1-002B
       - P1-009
     reviewer: null
     gate_owners: []
@@ -249,13 +318,19 @@ tasks:
     human_decisions: []
     origin_discovery: null
     discovered_from: null
+    execution:
+      wave: UNASSIGNED
+      priority: P2
+      acceptance_criteria: ''
+      test_strategy: ''
+      source_reference: ''
   - id: P1-004
     phase: 1
     title: Child today/tasks UX
     primary: frontend-lead
     status: PLANNED
     deps:
-      - P1-002
+      - P1-002B
       - P1-009
     reviewer: null
     gate_owners: []
@@ -264,6 +339,12 @@ tasks:
     human_decisions: []
     origin_discovery: null
     discovered_from: null
+    execution:
+      wave: UNASSIGNED
+      priority: P2
+      acceptance_criteria: ''
+      test_strategy: ''
+      source_reference: ''
   - id: P1-005
     phase: 1
     title: Media evidence storage and upload policy
@@ -279,6 +360,12 @@ tasks:
     human_decisions: []
     origin_discovery: null
     discovered_from: null
+    execution:
+      wave: UNASSIGNED
+      priority: P2
+      acceptance_criteria: ''
+      test_strategy: ''
+      source_reference: ''
   - id: P1-006
     phase: 1
     title: Reward ledger and configurable N-day rewards
@@ -293,6 +380,12 @@ tasks:
     human_decisions: []
     origin_discovery: null
     discovered_from: null
+    execution:
+      wave: UNASSIGNED
+      priority: P2
+      acceptance_criteria: ''
+      test_strategy: ''
+      source_reference: ''
   - id: P1-007
     phase: 1
     title: End-to-end family vertical slice
@@ -300,7 +393,7 @@ tasks:
     status: PLANNED
     deps:
       - P1-001
-      - P1-002
+      - P1-002B
       - P1-003
       - P1-004
       - P1-005
@@ -316,13 +409,19 @@ tasks:
     human_decisions: []
     origin_discovery: null
     discovered_from: null
+    execution:
+      wave: UNASSIGNED
+      priority: P2
+      acceptance_criteria: ''
+      test_strategy: ''
+      source_reference: ''
   - id: P1-008
     phase: 1
     title: Completion/verification/reward idempotency rules and fixtures
     primary: backend-lead
     status: PLANNED
     deps:
-      - P1-002
+      - P1-002B
       - P1-006
     reviewer: null
     gate_owners: []
@@ -331,28 +430,71 @@ tasks:
     human_decisions: []
     origin_discovery: null
     discovered_from: null
+    execution:
+      wave: UNASSIGNED
+      priority: P2
+      acceptance_criteria: ''
+      test_strategy: ''
+      source_reference: ''
   - id: P1-009
     phase: 1
     title: UI architecture, screen map and state/API contracts
     primary: uiux-lead
-    status: READY
+    status: DONE
     deps:
       - P0-005
       - P0-009
-    reviewer: null
-    gate_owners: []
-    discovery_links: []
+    reviewer: chief-architect
+    gate_owners:
+      - qa-lead
+      - frontend-lead
+      - backend-lead
+    discovery_links:
+      - discovery_id: DISC-P1-009-1
+        source_task: P1-009
+        type: ARCHITECTURE_GAP
+        finding: 'docs/ux/screens/ has two ID schemes for overlapping screens: a template-conformant tier (C-TODAY, P-DASH, ...) this task''s contracts source from, and an earlier lighter numbered tier 01-17 (UX-CHI-02, UX-PAR-04, ...) covering more screens in less depth'
+        why_it_matters: Whoever implements a screen could reference the wrong tier's ID in code/tests/analytics, and the two tiers can silently drift against each other since nothing cross-checks them
+        affected_domains: []
+        architecture_impact: null
+        security_impact: null
+        ux_impact: null
+        recommended_solution: null
+        alternatives: []
+        priority: MEDIUM
+        blocking: false
+        proposed_task: Reconcile or explicitly two-tier the screen doc set (README/DOCS_GRAPH note, or merge numbered-only screens up to template conformance)
+      - discovery_id: DISC-P1-009-2
+        source_task: P1-009
+        type: MISSING_REQUIREMENT
+        finding: packages/domain-types/package.json had no main/types/exports fields, so no workspace package could actually import it despite P0-009/P0-010/P0-011 all treating it as the frozen Phase 1 contract source -- nothing had tried importing it as a real dependency until this task
+        why_it_matters: Every downstream Phase 1 task that needs to import @life/domain-types (this one, P1-001, P1-002, P1-005, P1-006) would have hit the identical TS2307 module-not-found error on first use
+        affected_domains: []
+        architecture_impact: null
+        security_impact: null
+        ux_impact: null
+        recommended_solution: null
+        alternatives: []
+        priority: HIGH
+        blocking: true
+        proposed_task: null
     blocked_reason: null
     human_decisions: []
     origin_discovery: null
     discovered_from: null
+    execution:
+      wave: UNASSIGNED
+      priority: P2
+      acceptance_criteria: ''
+      test_strategy: ''
+      source_reference: ''
   - id: P1-010
     phase: 1
     title: Parent/child core navigation and API wiring
     primary: frontend-lead
     status: PLANNED
     deps:
-      - P1-002
+      - P1-002B
       - P1-009
     reviewer: null
     gate_owners: []
@@ -361,6 +503,12 @@ tasks:
     human_decisions: []
     origin_discovery: null
     discovered_from: null
+    execution:
+      wave: UNASSIGNED
+      priority: P2
+      acceptance_criteria: ''
+      test_strategy: ''
+      source_reference: ''
   - id: P1-011
     phase: 1
     title: Core screen E2E journeys and interaction traceability
@@ -377,6 +525,12 @@ tasks:
     human_decisions: []
     origin_discovery: null
     discovered_from: null
+    execution:
+      wave: UNASSIGNED
+      priority: P2
+      acceptance_criteria: ''
+      test_strategy: ''
+      source_reference: ''
   - id: P1-012
     phase: 1
     title: Russian-only UI localization lint and forbidden-term checks
@@ -391,6 +545,12 @@ tasks:
     human_decisions: []
     origin_discovery: null
     discovered_from: null
+    execution:
+      wave: UNASSIGNED
+      priority: P2
+      acceptance_criteria: ''
+      test_strategy: ''
+      source_reference: ''
   - id: P1-013
     phase: 1
     title: Finalize core screen contracts and action/API traceability
@@ -399,28 +559,60 @@ tasks:
     deps:
       - P1-009
       - P0-005
-    reviewer: null
-    gate_owners: []
+    reviewer: chief-architect
+    gate_owners:
+      - frontend-lead
+      - backend-lead
+      - qa-lead
     discovery_links: []
     blocked_reason: null
     human_decisions: []
     origin_discovery: null
     discovered_from: null
+    execution:
+      wave: W0
+      priority: P0
+      acceptance_criteria: One canonical screen-ID system, complete action catalog and authoritative API mapping for the Phase 1 slice.
+      test_strategy: Contract mapping validation and traceability fixtures.
+      source_reference: packages/ux-contracts (P1-009), DISC-P1-009-1
   - id: P1-014
     phase: 1
     title: Implement first task-to-reward vertical slice contract and event path
     primary: chief-architect
-    status: READY
+    status: DONE
     deps:
       - P0-009
       - P0-010
-    reviewer: null
-    gate_owners: []
-    discovery_links: []
+    reviewer: ai-cto
+    gate_owners:
+      - qa-lead
+      - security-child-safety
+      - backend-lead
+    discovery_links:
+      - discovery_id: DISC-P1-014-1
+        source_task: P1-014
+        type: MISSING_REQUIREMENT
+        finding: 'packages/domain-types''s DOMAIN_EVENT_TYPES was missing two of docs/architecture/vertical-slice/task-to-reward.md''s seven Required events: PROGRESS_UPDATED and NOTIFICATION_REQUESTED.'
+        why_it_matters: phase-1.md's Contract gate requires the event path frozen before parallel streams consume it; five-of-seven required events silently 'passing' would have let downstream Progression/Notification work start against an incomplete contract.
+        affected_domains: []
+        architecture_impact: null
+        security_impact: null
+        ux_impact: null
+        recommended_solution: null
+        alternatives: []
+        priority: MEDIUM
+        blocking: false
+        proposed_task: null
     blocked_reason: null
     human_decisions: []
     origin_discovery: null
     discovered_from: null
+    execution:
+      wave: UNASSIGNED
+      priority: P2
+      acceptance_criteria: ''
+      test_strategy: ''
+      source_reference: ''
   - id: P1-015
     phase: 1
     title: Implement vertical slice state, idempotency and conflict fixtures
@@ -436,6 +628,12 @@ tasks:
     human_decisions: []
     origin_discovery: null
     discovered_from: null
+    execution:
+      wave: UNASSIGNED
+      priority: P2
+      acceptance_criteria: ''
+      test_strategy: ''
+      source_reference: ''
   - id: P1-016
     phase: 1
     title: Implement vertical slice API/client wiring and recovery states
@@ -451,6 +649,12 @@ tasks:
     human_decisions: []
     origin_discovery: null
     discovered_from: null
+    execution:
+      wave: UNASSIGNED
+      priority: P2
+      acceptance_criteria: ''
+      test_strategy: ''
+      source_reference: ''
   - id: P1-017
     phase: 1
     title: Execute vertical slice QA/security/journey gates
@@ -466,6 +670,12 @@ tasks:
     human_decisions: []
     origin_discovery: null
     discovered_from: null
+    execution:
+      wave: UNASSIGNED
+      priority: P2
+      acceptance_criteria: ''
+      test_strategy: ''
+      source_reference: ''
   - id: P1-018
     phase: 1
     title: Verify vertical slice against source-of-truth and lifecycle rules
@@ -481,6 +691,12 @@ tasks:
     human_decisions: []
     origin_discovery: null
     discovered_from: null
+    execution:
+      wave: UNASSIGNED
+      priority: P2
+      acceptance_criteria: ''
+      test_strategy: ''
+      source_reference: ''
   - id: P2-001
     phase: 2
     title: XP/coins/progression and streak engine
@@ -496,6 +712,12 @@ tasks:
     human_decisions: []
     origin_discovery: null
     discovered_from: null
+    execution:
+      wave: UNASSIGNED
+      priority: P2
+      acceptance_criteria: ''
+      test_strategy: ''
+      source_reference: ''
   - id: P2-002
     phase: 2
     title: Quest/scenario engine
@@ -510,6 +732,12 @@ tasks:
     human_decisions: []
     origin_discovery: null
     discovered_from: null
+    execution:
+      wave: UNASSIGNED
+      priority: P2
+      acceptance_criteria: ''
+      test_strategy: ''
+      source_reference: ''
   - id: P2-003
     phase: 2
     title: Child PWA game shell and daily mission board
@@ -526,6 +754,12 @@ tasks:
     human_decisions: []
     origin_discovery: null
     discovered_from: null
+    execution:
+      wave: UNASSIGNED
+      priority: P2
+      acceptance_criteria: ''
+      test_strategy: ''
+      source_reference: ''
   - id: P2-004
     phase: 2
     title: Competition/personal-best mechanics
@@ -540,6 +774,12 @@ tasks:
     human_decisions: []
     origin_discovery: null
     discovered_from: null
+    execution:
+      wave: UNASSIGNED
+      priority: P2
+      acceptance_criteria: ''
+      test_strategy: ''
+      source_reference: ''
   - id: P2-005
     phase: 2
     title: Reward redemption, expiry and conflict rules
@@ -555,13 +795,19 @@ tasks:
     human_decisions: []
     origin_discovery: null
     discovered_from: null
+    execution:
+      wave: UNASSIGNED
+      priority: P2
+      acceptance_criteria: ''
+      test_strategy: ''
+      source_reference: ''
   - id: P2-006
     phase: 2
     title: Age-aware daily-load policy and anti-grind limits
     primary: child-experience-lead
     status: PLANNED
     deps:
-      - P1-002
+      - P1-002B
       - P2-001
     reviewer: null
     gate_owners: []
@@ -570,6 +816,12 @@ tasks:
     human_decisions: []
     origin_discovery: null
     discovered_from: null
+    execution:
+      wave: UNASSIGNED
+      priority: P2
+      acceptance_criteria: ''
+      test_strategy: ''
+      source_reference: ''
   - id: P3-001
     phase: 3
     title: Flutter Android/iOS shell and capability matrix
@@ -584,6 +836,12 @@ tasks:
     human_decisions: []
     origin_discovery: null
     discovered_from: null
+    execution:
+      wave: UNASSIGNED
+      priority: P2
+      acceptance_criteria: ''
+      test_strategy: ''
+      source_reference: ''
   - id: P3-002
     phase: 3
     title: Pose provider and live skeleton overlay
@@ -598,6 +856,12 @@ tasks:
     human_decisions: []
     origin_discovery: null
     discovered_from: null
+    execution:
+      wave: UNASSIGNED
+      priority: P2
+      acceptance_criteria: ''
+      test_strategy: ''
+      source_reference: ''
   - id: P3-003
     phase: 3
     title: Deterministic squat verification and fixtures
@@ -612,6 +876,12 @@ tasks:
     human_decisions: []
     origin_discovery: null
     discovered_from: null
+    execution:
+      wave: UNASSIGNED
+      priority: P2
+      acceptance_criteria: ''
+      test_strategy: ''
+      source_reference: ''
   - id: P3-004
     phase: 3
     title: Offline queue and device/push foundation
@@ -626,6 +896,12 @@ tasks:
     human_decisions: []
     origin_discovery: null
     discovered_from: null
+    execution:
+      wave: UNASSIGNED
+      priority: P2
+      acceptance_criteria: ''
+      test_strategy: ''
+      source_reference: ''
   - id: P4-001
     phase: 4
     title: Parent friendship and interests
@@ -640,6 +916,12 @@ tasks:
     human_decisions: []
     origin_discovery: null
     discovered_from: null
+    execution:
+      wave: UNASSIGNED
+      priority: P2
+      acceptance_criteria: ''
+      test_strategy: ''
+      source_reference: ''
   - id: P4-002
     phase: 4
     title: Child friendship consent graph
@@ -654,6 +936,12 @@ tasks:
     human_decisions: []
     origin_discovery: null
     discovered_from: null
+    execution:
+      wave: UNASSIGNED
+      priority: P2
+      acceptance_criteria: ''
+      test_strategy: ''
+      source_reference: ''
   - id: P4-003
     phase: 4
     title: Messenger text/voice/circle and spelling assistance
@@ -669,6 +957,12 @@ tasks:
     human_decisions: []
     origin_discovery: null
     discovered_from: null
+    execution:
+      wave: UNASSIGNED
+      priority: P2
+      acceptance_criteria: ''
+      test_strategy: ''
+      source_reference: ''
   - id: P4-004
     phase: 4
     title: Moderation/report/block and parent visibility policy
@@ -683,6 +977,12 @@ tasks:
     human_decisions: []
     origin_discovery: null
     discovered_from: null
+    execution:
+      wave: UNASSIGNED
+      priority: P2
+      acceptance_criteria: ''
+      test_strategy: ''
+      source_reference: ''
   - id: P4-005
     phase: 4
     title: Family challenges and cooperative interactions
@@ -698,6 +998,12 @@ tasks:
     human_decisions: []
     origin_discovery: null
     discovered_from: null
+    execution:
+      wave: UNASSIGNED
+      priority: P2
+      acceptance_criteria: ''
+      test_strategy: ''
+      source_reference: ''
   - id: P4-006
     phase: 4
     title: Full conversation lifecycle and protected-read state machine
@@ -713,6 +1019,12 @@ tasks:
     human_decisions: []
     origin_discovery: null
     discovered_from: null
+    execution:
+      wave: UNASSIGNED
+      priority: P2
+      acceptance_criteria: ''
+      test_strategy: ''
+      source_reference: ''
   - id: P4-007
     phase: 4
     title: Challenge settlement, dispute and cancellation rules
@@ -727,6 +1039,12 @@ tasks:
     human_decisions: []
     origin_discovery: null
     discovered_from: null
+    execution:
+      wave: UNASSIGNED
+      priority: P2
+      acceptance_criteria: ''
+      test_strategy: ''
+      source_reference: ''
   - id: P5-001
     phase: 5
     title: AI Gateway and typed tool policy
@@ -741,6 +1059,12 @@ tasks:
     human_decisions: []
     origin_discovery: null
     discovered_from: null
+    execution:
+      wave: UNASSIGNED
+      priority: P2
+      acceptance_criteria: ''
+      test_strategy: ''
+      source_reference: ''
   - id: P5-002
     phase: 5
     title: Knowledge Base and Development Profile
@@ -755,13 +1079,19 @@ tasks:
     human_decisions: []
     origin_discovery: null
     discovered_from: null
+    execution:
+      wave: UNASSIGNED
+      priority: P2
+      acceptance_criteria: ''
+      test_strategy: ''
+      source_reference: ''
   - id: P5-003
     phase: 5
     title: AI task-plan generation with parent approval
     primary: ai-ml-lead
     status: PLANNED
     deps:
-      - P1-002
+      - P1-002B
       - P5-001
       - P5-002
     reviewer: null
@@ -771,6 +1101,12 @@ tasks:
     human_decisions: []
     origin_discovery: null
     discovered_from: null
+    execution:
+      wave: UNASSIGNED
+      priority: P2
+      acceptance_criteria: ''
+      test_strategy: ''
+      source_reference: ''
   - id: P5-004
     phase: 5
     title: Safe AI avatar lifecycle
@@ -785,6 +1121,12 @@ tasks:
     human_decisions: []
     origin_discovery: null
     discovered_from: null
+    execution:
+      wave: UNASSIGNED
+      priority: P2
+      acceptance_criteria: ''
+      test_strategy: ''
+      source_reference: ''
   - id: P5-005
     phase: 5
     title: Alice task status/learning integration
@@ -800,6 +1142,12 @@ tasks:
     human_decisions: []
     origin_discovery: null
     discovered_from: null
+    execution:
+      wave: UNASSIGNED
+      priority: P2
+      acceptance_criteria: ''
+      test_strategy: ''
+      source_reference: ''
   - id: P5-006
     phase: 5
     title: Telegram/MAX Mini App adapters
@@ -814,6 +1162,12 @@ tasks:
     human_decisions: []
     origin_discovery: null
     discovered_from: null
+    execution:
+      wave: UNASSIGNED
+      priority: P2
+      acceptance_criteria: ''
+      test_strategy: ''
+      source_reference: ''
   - id: P5-007
     phase: 5
     title: Learning evidence provenance and recommendation explainability
@@ -828,6 +1182,12 @@ tasks:
     human_decisions: []
     origin_discovery: null
     discovered_from: null
+    execution:
+      wave: UNASSIGNED
+      priority: P2
+      acceptance_criteria: ''
+      test_strategy: ''
+      source_reference: ''
   - id: P6-001
     phase: 6
     title: Cooperative game session protocol
@@ -843,13 +1203,19 @@ tasks:
     human_decisions: []
     origin_discovery: null
     discovered_from: null
+    execution:
+      wave: UNASSIGNED
+      priority: P2
+      acceptance_criteria: ''
+      test_strategy: ''
+      source_reference: ''
   - id: P6-002
     phase: 6
     title: Case/template catalog and moderation
     primary: content-marketplace-lead
     status: PLANNED
     deps:
-      - P1-002
+      - P1-002B
       - P4-004
     reviewer: null
     gate_owners: []
@@ -858,6 +1224,12 @@ tasks:
     human_decisions: []
     origin_discovery: null
     discovered_from: null
+    execution:
+      wave: UNASSIGNED
+      priority: P2
+      acceptance_criteria: ''
+      test_strategy: ''
+      source_reference: ''
   - id: P6-003
     phase: 6
     title: Family case application and analytics
@@ -872,6 +1244,12 @@ tasks:
     human_decisions: []
     origin_discovery: null
     discovered_from: null
+    execution:
+      wave: UNASSIGNED
+      priority: P2
+      acceptance_criteria: ''
+      test_strategy: ''
+      source_reference: ''
   - id: P6-004
     phase: 6
     title: Marketplace ranking, abuse and recommendation policy
@@ -887,3 +1265,190 @@ tasks:
     human_decisions: []
     origin_discovery: null
     discovered_from: null
+    execution:
+      wave: UNASSIGNED
+      priority: P2
+      acceptance_criteria: ''
+      test_strategy: ''
+      source_reference: ''
+  - id: P1-002A
+    phase: 1
+    title: Task template and lifecycle core
+    primary: backend-lead
+    status: PLANNED
+    deps:
+      - P0-009
+      - P0-010
+      - P1-001
+    reviewer: chief-architect
+    gate_owners:
+      - qa-lead
+      - security-engineering
+    discovery_links: []
+    blocked_reason: null
+    human_decisions: []
+    origin_discovery: null
+    discovered_from: P1-002
+    execution:
+      wave: W2
+      priority: P1
+      acceptance_criteria: Create/update/publish task template, assign child and enforce lifecycle transitions.
+      test_strategy: State-machine unit tests, integration tests and unauthorized mutation tests.
+      source_reference: tasks/phase-1-participant-matrix.yaml (BLK-P1-005 split of P1-002)
+  - id: P1-002B
+    phase: 1
+    title: Rules DSL, scheduling and composite task model
+    primary: backend-lead
+    status: PLANNED
+    deps:
+      - P0-009
+      - P0-010
+      - P1-002A
+    reviewer: chief-architect
+    gate_owners:
+      - qa-lead
+      - child-safety-lead
+    discovery_links: []
+    blocked_reason: null
+    human_decisions: []
+    origin_discovery: null
+    discovered_from: P1-002
+    execution:
+      wave: W2
+      priority: P1
+      acceptance_criteria: Validate rules deterministically, support required schedule/recurrence/composite semantics and reject invalid rules.
+      test_strategy: Property/table-driven rule tests and invalid-rule regression fixtures.
+      source_reference: tasks/phase-1-participant-matrix.yaml (BLK-P1-005 split of P1-002)
+  - id: P1-019
+    phase: 1
+    title: Evolution, versioning and compatibility foundation
+    primary: architecture-control-lead
+    status: PLANNED
+    deps:
+      - P0-009
+      - P0-010
+      - P1-001
+      - P1-002A
+      - P1-014
+    reviewer: chief-architect
+    gate_owners:
+      - qa-lead
+      - documentation-agent
+      - performance-scale-agent
+    discovery_links: []
+    blocked_reason: null
+    human_decisions: []
+    origin_discovery: null
+    discovered_from: null
+    execution:
+      wave: W5
+      priority: P1
+      acceptance_criteria: API/domain/event versioning, persisted artifact schema strategy, migrations, deprecation and controlled rollout rules are documented, implemented where required and verified by compatibility checks.
+      test_strategy: Backward-compatibility fixtures, migration tests and contract compatibility checks.
+      source_reference: tasks/phase-1-control-tasks.yaml
+  - id: P1-020
+    phase: 1
+    title: Wave Gate and Phase Architecture Control implementation
+    primary: architecture-control-lead
+    status: PLANNED
+    deps:
+      - P0-010
+    reviewer: chief-architect
+    gate_owners:
+      - qa-lead
+      - documentation-agent
+      - ai-cto
+    discovery_links: []
+    blocked_reason: null
+    human_decisions: []
+    origin_discovery: null
+    discovered_from: null
+    execution:
+      wave: W0
+      priority: P0
+      acceptance_criteria: Versioned Wave Gate and Phase Architecture Control artifacts exist, define PASS/REWORK/BLOCKED and are linked to phase/wave status.
+      test_strategy: Control-plane fixture with intentional drift and missing evidence that must fail validation.
+      source_reference: tasks/phase-1-control-tasks.yaml
+  - id: P1-021
+    phase: 1
+    title: Independent Security Red Team capability and Phase 1 assessment
+    primary: security-red-team
+    status: PLANNED
+    deps:
+      - P0-008
+      - P0-009
+      - P1-001
+      - P1-005
+      - P1-008
+      - P1-014
+    reviewer: security-engineering
+    gate_owners:
+      - qa-lead
+      - chief-architect
+      - child-safety-lead
+    discovery_links: []
+    blocked_reason: null
+    human_decisions: []
+    origin_discovery: null
+    discovered_from: null
+    execution:
+      wave: W3
+      priority: P0
+      acceptance_criteria: Adversarial cases cover family isolation, authorization/IDOR, privilege escalation, replay, races, media access, reward manipulation and information disclosure; every finding has severity and retest result.
+      test_strategy: Automated and manual exploit fixtures against a disposable Phase 1 environment.
+      source_reference: tasks/phase-1-control-tasks.yaml
+  - id: P1-022
+    phase: 1
+    title: Performance and scale guardrails
+    primary: performance-scale-agent
+    status: PLANNED
+    deps:
+      - P0-009
+      - P1-001
+      - P1-002A
+      - P1-006
+    reviewer: chief-architect
+    gate_owners:
+      - qa-lead
+      - architecture-control-lead
+    discovery_links: []
+    blocked_reason: null
+    human_decisions: []
+    origin_discovery: null
+    discovered_from: null
+    execution:
+      wave: W5
+      priority: P1
+      acceptance_criteria: Critical queries are bounded and indexed, no obvious N+1 exists on the critical journey, pagination is used for unbounded history, media avoids primary DB paths and concurrency hotspots are recorded.
+      test_strategy: Targeted query/benchmark fixtures and representative synthetic family/task history.
+      source_reference: tasks/phase-1-control-tasks.yaml
+  - id: P1-023
+    phase: 1
+    title: Phase 1 evidence package and final acceptance dossier
+    primary: documentation-agent
+    status: PLANNED
+    deps:
+      - P1-020
+      - P1-007
+      - P1-011
+      - P1-017
+      - P1-018
+      - P1-019
+      - P1-021
+      - P1-022
+    reviewer: architecture-control-lead
+    gate_owners:
+      - qa-lead
+      - ai-cto
+      - chief-architect
+    discovery_links: []
+    blocked_reason: null
+    human_decisions: []
+    origin_discovery: null
+    discovered_from: null
+    execution:
+      wave: W8
+      priority: P0
+      acceptance_criteria: Complete evidence package exists and every mandatory Phase 1 outcome is PASS or has an explicit Human Architect exception with owner, mitigation and revisit condition.
+      test_strategy: Evidence completeness/traceability check plus clean-room reproduction of the acceptance package index.
+      source_reference: tasks/phase-1-control-tasks.yaml

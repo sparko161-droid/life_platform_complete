@@ -1,0 +1,78 @@
+version: 1
+phase: 1
+source_of_truth: docs/planning/phase-1-execution-plan.md
+status: PLANNED
+
+rules:
+  these_are_phase_execution_tasks: true
+  register_before_ready: true
+  every_task_requires_primary_reviewer_gate_owners: true
+  every_task_requires_acceptance_and_test_strategy: true
+  discovery_or_requirement_source_required: true
+  phase_exit_tasks_are_gate_only: true
+
+tasks:
+  P1-019:
+    title: "Evolution, versioning and compatibility foundation"
+    wave: W5
+    priority: P1
+    primary: architecture-control-lead
+    reviewer: chief-architect
+    gate_owners: [qa-lead, documentation-agent, performance-scale-agent]
+    participants: [architecture-control-lead, chief-architect, backend-lead, devops-lead, qa-lead, documentation-agent, performance-scale-agent]
+    deps_contract: [P0-009, P0-010]
+    deps_implementation: [P1-001, P1-002A, P1-014]
+    acceptance: "API/domain/event versioning, persisted artifact schema strategy, migrations, deprecation and controlled rollout rules are documented, implemented where required and verified by compatibility checks."
+    test_strategy: "Backward-compatibility fixtures, migration tests and contract compatibility checks."
+
+  P1-020:
+    title: "Wave Gate and Phase Architecture Control implementation"
+    wave: W0
+    priority: P0
+    primary: architecture-control-lead
+    reviewer: chief-architect
+    gate_owners: [qa-lead, documentation-agent, ai-cto]
+    participants: [architecture-control-lead, chief-architect, qa-lead, documentation-agent, ai-cto, code-quality-agent]
+    deps_contract: [P0-010]
+    deps_implementation: []
+    acceptance: "Versioned Wave Gate and Phase Architecture Control artifacts exist, define PASS/REWORK/BLOCKED and are linked to phase/wave status."
+    test_strategy: "Control-plane fixture with intentional drift and missing evidence that must fail validation."
+
+  P1-021:
+    title: "Independent Security Red Team capability and Phase 1 assessment"
+    wave: W3
+    priority: P0
+    primary: security-red-team
+    reviewer: security-engineering
+    gate_owners: [qa-lead, chief-architect, child-safety-lead]
+    participants: [security-red-team, security-engineering, child-safety-lead, qa-lead, chief-architect, backend-lead]
+    deps_contract: [P0-008, P0-009]
+    deps_implementation: [P1-001, P1-005, P1-008, P1-014]
+    acceptance: "Adversarial cases cover family isolation, authorization/IDOR, privilege escalation, replay, races, media access, reward manipulation and information disclosure; every finding has severity and retest result."
+    test_strategy: "Automated and manual exploit fixtures against a disposable Phase 1 environment."
+
+  P1-022:
+    title: "Performance and scale guardrails"
+    wave: W5
+    priority: P1
+    primary: performance-scale-agent
+    reviewer: chief-architect
+    gate_owners: [qa-lead, architecture-control-lead]
+    participants: [performance-scale-agent, backend-lead, chief-architect, qa-lead, architecture-control-lead, devops-lead]
+    deps_contract: [P0-009]
+    deps_implementation: [P1-001, P1-002A, P1-006]
+    acceptance: "Critical queries are bounded and indexed, no obvious N+1 exists on the critical journey, pagination is used for unbounded history, media avoids primary DB paths and concurrency hotspots are recorded."
+    test_strategy: "Targeted query/benchmark fixtures and representative synthetic family/task history."
+
+  P1-023:
+    title: "Phase 1 evidence package and final acceptance dossier"
+    wave: W8
+    priority: P0
+    primary: documentation-agent
+    reviewer: architecture-control-lead
+    gate_owners: [qa-lead, ai-cto, chief-architect]
+    participants: [documentation-agent, architecture-control-lead, qa-lead, ai-cto, chief-architect, security-engineering, security-red-team, performance-scale-agent, journey-agent]
+    deps_contract: [P1-020]
+    deps_implementation: [P1-007, P1-011, P1-017, P1-018, P1-019, P1-021, P1-022]
+    acceptance: "Complete evidence package exists and every mandatory Phase 1 outcome is PASS or has an explicit Human Architect exception with owner, mitigation and revisit condition."
+    test_strategy: "Evidence completeness/traceability check plus clean-room reproduction of the acceptance package index."
