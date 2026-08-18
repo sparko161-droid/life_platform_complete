@@ -1,5 +1,43 @@
 # Planning Change Log
 
+## 0.9 (P1-009 — UI architecture, screen map and state/API contracts)
+
+- New `packages/ux-contracts`: typed screen map (nine screens with a
+  template-conformant `docs/ux/screens/*.md` contract), a UI-action →
+  operation catalog scoped to those screens, and UI-state mappings for
+  task assignment and reward status. This is Phase 1's "Contract gate"
+  freeze point (`docs/planning/phases/phase-1.md`) for the vertical
+  slice's UI-facing contracts.
+- Wrote the missing `docs/ux/screens/parent-approvals.md` (`P-APPROVALS`)
+  at the template-conformant tier — Phase 1's exit criterion requires
+  "parent can approve" and no deep contract existed for that screen
+  before this task, only the lighter `docs/ux/screens/10-parent-approvals.md`.
+- `task-state.ts`/`reward-state.ts` disclose three real mismatches between
+  `docs/ux/state-contracts.md`'s UI state machine and the backend
+  `TaskAssignmentStatus`/`RewardStatus` enums (`packages/domain-types`)
+  rather than pretending a 1:1 rename: `NOT_STARTED` has no assignment
+  equivalent (`ASSIGNED`); UI `FAILED` isn't a real assignment status
+  (derived from a `REJECTED` assignment plus its `VerificationResult`);
+  UI `REWARD_PENDING` is client-synthesized from an `APPROVED` assignment
+  with no `RewardLedgerEntry` yet, not a backend status of its own.
+- Found and fixed a real bug while building this: `packages/domain-types`'s
+  `package.json` had no `main`/`types`/`exports` fields, so no package
+  could actually import it as a workspace dependency — nothing had tried
+  until this task. Every other Phase 1 task that imports it
+  (P1-001/P1-002/P1-005/P1-006) would have hit the same failure.
+- Recorded two discoveries on P1-009 rather than silently resolving them:
+  the domain-types gap above (`DISC-P1-009-2`), and a real inconsistency
+  between two `docs/ux/screens/` ID schemes for overlapping screens
+  (`DISC-P1-009-1`) — this task's contracts source from the
+  template-conformant tier and leave the older numbered tier as-is rather
+  than deleting content a human wrote without confirming intent.
+- `contracts/registry.yaml` gets a `ux_contracts` group; validating it
+  needed relaxing `task-registry contracts validate`'s FROZEN-group rule
+  slightly — `defines.domain_types` is now required only when a group
+  actually claims exports from a file there, since this group's frozen
+  artifact is a separate package, not a `packages/domain-types/src/*.ts`
+  file.
+
 ## 0.8 (P0-012 — docs/task traceability, Phase 0 complete)
 
 - Added `scripts/check-docs-graph.mjs` (`pnpm run docs:check`, CI-wired):

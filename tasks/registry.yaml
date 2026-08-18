@@ -341,13 +341,44 @@ tasks:
     phase: 1
     title: UI architecture, screen map and state/API contracts
     primary: uiux-lead
-    status: READY
+    status: DONE
     deps:
       - P0-005
       - P0-009
-    reviewer: null
-    gate_owners: []
-    discovery_links: []
+    reviewer: chief-architect
+    gate_owners:
+      - qa-lead
+      - frontend-lead
+      - backend-lead
+    discovery_links:
+      - discovery_id: DISC-P1-009-1
+        source_task: P1-009
+        type: ARCHITECTURE_GAP
+        finding: 'docs/ux/screens/ has two ID schemes for overlapping screens: a template-conformant tier (C-TODAY, P-DASH, ...) this task''s contracts source from, and an earlier lighter numbered tier 01-17 (UX-CHI-02, UX-PAR-04, ...) covering more screens in less depth'
+        why_it_matters: Whoever implements a screen could reference the wrong tier's ID in code/tests/analytics, and the two tiers can silently drift against each other since nothing cross-checks them
+        affected_domains: []
+        architecture_impact: null
+        security_impact: null
+        ux_impact: null
+        recommended_solution: null
+        alternatives: []
+        priority: MEDIUM
+        blocking: false
+        proposed_task: Reconcile or explicitly two-tier the screen doc set (README/DOCS_GRAPH note, or merge numbered-only screens up to template conformance)
+      - discovery_id: DISC-P1-009-2
+        source_task: P1-009
+        type: MISSING_REQUIREMENT
+        finding: packages/domain-types/package.json had no main/types/exports fields, so no workspace package could actually import it despite P0-009/P0-010/P0-011 all treating it as the frozen Phase 1 contract source -- nothing had tried importing it as a real dependency until this task
+        why_it_matters: Every downstream Phase 1 task that needs to import @life/domain-types (this one, P1-001, P1-002, P1-005, P1-006) would have hit the identical TS2307 module-not-found error on first use
+        affected_domains: []
+        architecture_impact: null
+        security_impact: null
+        ux_impact: null
+        recommended_solution: null
+        alternatives: []
+        priority: HIGH
+        blocking: true
+        proposed_task: null
     blocked_reason: null
     human_decisions: []
     origin_discovery: null

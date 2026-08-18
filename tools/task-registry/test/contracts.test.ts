@@ -201,3 +201,54 @@ test("a PLANNED group with no domain_types file is not an error", () => {
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+test("a FROZEN group with no exports doesn't need defines.domain_types (its artifact can live in a separate package)", () => {
+  const root = fixtureRoot();
+  try {
+    const contracts: ContractRegistry = {
+      version: 1,
+      contract_pack_version: "0.1.0",
+      groups: [
+        {
+          name: "ux_contracts",
+          status: "FROZEN",
+          version: "0.1.0",
+          owner: "uiux-lead",
+          defines: { domain_types: null, exports: [], openapi_schemas: [] },
+          consumed_by: [],
+          changelog_ref: null,
+          open_decisions: [],
+        },
+      ],
+    };
+    const problems = validateContractRegistry(contracts, {
+      repoRoot: root,
+      taskRegistry: fixtureTaskRegistry(),
+      changelogPath: join(root, "docs/planning/change-log.md"),
+      domainTypesSrcDir: "packages/domain-types/src",
+      orphanScanExclude: [],
+    });
+    assert.ok(!problems.some((p) => p.includes("ux_contracts:")));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("a FROZEN group WITH exports but no defines.domain_types is flagged", () => {
+  const root = fixtureRoot();
+  try {
+    const contracts = fixtureContracts({
+      defines: { domain_types: null, exports: ["Something"], openapi_schemas: [] },
+    });
+    const problems = validateContractRegistry(contracts, {
+      repoRoot: root,
+      taskRegistry: fixtureTaskRegistry(),
+      changelogPath: join(root, "docs/planning/change-log.md"),
+      domainTypesSrcDir: "packages/domain-types/src",
+      orphanScanExclude: [],
+    });
+    assert.ok(problems.some((p) => p.includes("must set defines.domain_types")));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});

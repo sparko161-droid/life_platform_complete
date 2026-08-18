@@ -71,9 +71,14 @@ export function validateContractRegistry(
   for (const group of contracts.groups) {
     if (group.status === "FROZEN") {
       if (!group.version) problems.push(`${group.name}: FROZEN group must have a version`);
-      if (!group.defines.domain_types) {
-        problems.push(`${group.name}: FROZEN group must set defines.domain_types`);
-      } else {
+      // domain_types is required only when the group actually claims
+      // exports from it -- a FROZEN group whose artifact lives outside
+      // packages/domain-types entirely (e.g. a separate package) has
+      // nothing to point a file-existence/export check at, and forcing
+      // one would just mean pointing it at an unrelated file.
+      if (group.defines.exports.length > 0 && !group.defines.domain_types) {
+        problems.push(`${group.name}: FROZEN group with exports must set defines.domain_types`);
+      } else if (group.defines.domain_types) {
         const filePath = resolve(opts.repoRoot, group.defines.domain_types);
         if (!existsSync(filePath)) {
           problems.push(`${group.name}: defines.domain_types file not found: ${group.defines.domain_types}`);
