@@ -1,4 +1,4 @@
-version: 9
+version: 10
 tasks:
   - id: P0-001
     phase: 0
@@ -317,19 +317,22 @@ tasks:
       - P0-009
       - P0-010
     deps_implementation: []
-    reviewer: null
-    gate_owners: []
+    reviewer: chief-architect
+    gate_owners:
+      - qa-lead
+      - security-engineering
+      - child-safety-lead
     discovery_links: []
     blocked_reason: null
     human_decisions: []
     origin_discovery: null
     discovered_from: null
     execution:
-      wave: UNASSIGNED
-      priority: P2
-      acceptance_criteria: ''
-      test_strategy: ''
-      source_reference: ''
+      wave: W1
+      priority: P1
+      acceptance_criteria: Create family, add child, invite/accept second parent, enforce membership and authorization, persist lifecycle and audit evidence.
+      test_strategy: Domain, integration, negative authorization and family-isolation tests.
+      source_reference: tasks/phase-1-participant-matrix.yaml
   - id: P1-003
     phase: 1
     title: Parent task builder UX
@@ -342,19 +345,21 @@ tasks:
       - P1-002A
       - P1-002B
       - P1-009
-    reviewer: null
-    gate_owners: []
+    reviewer: uiux-lead
+    gate_owners:
+      - qa-lead
+      - child-experience-lead
     discovery_links: []
     blocked_reason: null
     human_decisions: []
     origin_discovery: null
     discovered_from: null
     execution:
-      wave: UNASSIGNED
-      priority: P2
-      acceptance_criteria: ''
-      test_strategy: ''
-      source_reference: ''
+      wave: W6
+      priority: P1
+      acceptance_criteria: Parent can create/edit/publish a task through the UI with validation and recovery states.
+      test_strategy: Component, interaction and journey tests.
+      source_reference: tasks/phase-1-participant-matrix.yaml
   - id: P1-004
     phase: 1
     title: Child today/tasks UX
@@ -367,19 +372,22 @@ tasks:
       - P1-002A
       - P1-002B
       - P1-009
-    reviewer: null
-    gate_owners: []
+    reviewer: uiux-lead
+    gate_owners:
+      - qa-lead
+      - child-experience-lead
+      - child-safety-lead
     discovery_links: []
     blocked_reason: null
     human_decisions: []
     origin_discovery: null
     discovered_from: null
     execution:
-      wave: UNASSIGNED
-      priority: P2
-      acceptance_criteria: ''
-      test_strategy: ''
-      source_reference: ''
+      wave: W6
+      priority: P1
+      acceptance_criteria: Child sees assigned tasks, opens a task, starts an attempt and sees deterministic state/recovery feedback.
+      test_strategy: Journey tests, accessibility checks and negative/recovery states.
+      source_reference: tasks/phase-1-participant-matrix.yaml
   - id: P1-005
     phase: 1
     title: Media evidence storage and upload policy
@@ -391,19 +399,22 @@ tasks:
       - P0-009
     deps_implementation:
       - P1-001
-    reviewer: null
-    gate_owners: []
+    reviewer: security-engineering
+    gate_owners:
+      - qa-lead
+      - child-safety-lead
+      - performance-scale-agent
     discovery_links: []
     blocked_reason: null
     human_decisions: []
     origin_discovery: null
     discovered_from: null
     execution:
-      wave: UNASSIGNED
-      priority: P2
-      acceptance_criteria: ''
-      test_strategy: ''
-      source_reference: ''
+      wave: W3
+      priority: P1
+      acceptance_criteria: Store/retrieve permitted evidence, enforce family isolation, retention/classification and safe upload limits.
+      test_strategy: Upload-limit, access-control, retention and storage integration tests.
+      source_reference: tasks/phase-1-participant-matrix.yaml
   - id: P1-006
     phase: 1
     title: Reward ledger and configurable N-day rewards
@@ -415,19 +426,21 @@ tasks:
       - P0-010
     deps_implementation:
       - P1-001
-    reviewer: null
-    gate_owners: []
+    reviewer: backend-lead
+    gate_owners:
+      - qa-lead
+      - security-engineering
     discovery_links: []
     blocked_reason: null
     human_decisions: []
     origin_discovery: null
     discovered_from: null
     execution:
-      wave: UNASSIGNED
-      priority: P2
-      acceptance_criteria: ''
-      test_strategy: ''
-      source_reference: ''
+      wave: W4
+      priority: P1
+      acceptance_criteria: Append-only reward ledger, deterministic reward calculation, exactly-once source reward identity and audit trail.
+      test_strategy: Ledger invariants, duplicate-write, replay and reward calculation tests.
+      source_reference: tasks/phase-1-participant-matrix.yaml
   - id: P1-007
     phase: 1
     title: End-to-end family vertical slice
@@ -450,19 +463,26 @@ tasks:
       - P1-004
       - P1-009
       - P1-010
-    reviewer: null
-    gate_owners: []
+    reviewer: architecture-control-lead
+    gate_owners:
+      - chief-architect
+      - security-engineering
+      - child-safety-lead
+      - security-red-team
+      - performance-scale-agent
+      - documentation-agent
+      - ai-cto
     discovery_links: []
     blocked_reason: null
     human_decisions: []
     origin_discovery: null
     discovered_from: null
     execution:
-      wave: UNASSIGNED
-      priority: P2
-      acceptance_criteria: ''
-      test_strategy: ''
-      source_reference: ''
+      wave: W7
+      priority: P0
+      acceptance_criteria: Complete the full parent/child task/proof/approval/reward/audit journey without manual DB edits.
+      test_strategy: Clean-room E2E, retry/race, security and evidence reproducibility.
+      source_reference: tasks/phase-1-participant-matrix.yaml
   - id: P1-008
     phase: 1
     title: Completion/verification/reward idempotency rules and fixtures
@@ -475,19 +495,22 @@ tasks:
       - P1-002A
       - P1-006
       - P1-002B
-    reviewer: null
-    gate_owners: []
+    reviewer: chief-architect
+    gate_owners:
+      - qa-lead
+      - security-engineering
+      - security-red-team
     discovery_links: []
     blocked_reason: null
     human_decisions: []
     origin_discovery: null
     discovered_from: null
     execution:
-      wave: UNASSIGNED
-      priority: P2
-      acceptance_criteria: ''
-      test_strategy: ''
-      source_reference: ''
+      wave: W3
+      priority: P1
+      acceptance_criteria: Duplicate completion, duplicate verification and duplicate reward requests resolve deterministically without double effects.
+      test_strategy: Concurrency, retry, replay and idempotency fixtures.
+      source_reference: tasks/phase-1-participant-matrix.yaml
   - id: P1-009
     phase: 1
     title: UI architecture, screen map and state/API contracts
@@ -537,11 +560,11 @@ tasks:
     origin_discovery: null
     discovered_from: null
     execution:
-      wave: UNASSIGNED
-      priority: P2
-      acceptance_criteria: ''
-      test_strategy: ''
-      source_reference: ''
+      wave: W0
+      priority: P0
+      acceptance_criteria: Contract baseline remains frozen and screen/action/state IDs are canonical.
+      test_strategy: Contract package unit tests and traceability validation.
+      source_reference: tasks/phase-1-participant-matrix.yaml
   - id: P1-010
     phase: 1
     title: Parent/child core navigation and API wiring
@@ -555,19 +578,22 @@ tasks:
       - P1-002A
       - P1-002B
       - P1-009
-    reviewer: null
-    gate_owners: []
+    reviewer: backend-lead
+    gate_owners:
+      - qa-lead
+      - security-engineering
+      - child-safety-lead
     discovery_links: []
     blocked_reason: null
     human_decisions: []
     origin_discovery: null
     discovered_from: null
     execution:
-      wave: UNASSIGNED
-      priority: P2
-      acceptance_criteria: ''
-      test_strategy: ''
-      source_reference: ''
+      wave: W6
+      priority: P1
+      acceptance_criteria: Core screens call real API operations and preserve auth, state and recovery semantics.
+      test_strategy: Client/API integration and negative authorization tests.
+      source_reference: tasks/phase-1-participant-matrix.yaml
   - id: P1-011
     phase: 1
     title: Core screen E2E journeys and interaction traceability
@@ -579,19 +605,22 @@ tasks:
     deps_implementation:
       - P1-010
       - P1-016
-    reviewer: null
-    gate_owners: []
+    reviewer: qa-lead
+    gate_owners:
+      - uiux-lead
+      - security-engineering
+      - child-safety-lead
     discovery_links: []
     blocked_reason: null
     human_decisions: []
     origin_discovery: null
     discovered_from: null
     execution:
-      wave: UNASSIGNED
+      wave: W7
       priority: P2
-      acceptance_criteria: ''
-      test_strategy: ''
-      source_reference: ''
+      acceptance_criteria: Critical UI actions map to domain/API operations and the journey is executable in automation.
+      test_strategy: Automated journey tests with interaction traceability checks.
+      source_reference: tasks/phase-1-participant-matrix.yaml
   - id: P1-012
     phase: 1
     title: Russian-only UI localization lint and forbidden-term checks
@@ -601,19 +630,21 @@ tasks:
     deps_contract:
       - P1-009
     deps_implementation: []
-    reviewer: null
-    gate_owners: []
+    reviewer: documentation-agent
+    gate_owners:
+      - qa-lead
+      - child-experience-lead
     discovery_links: []
     blocked_reason: null
     human_decisions: []
     origin_discovery: null
     discovered_from: null
     execution:
-      wave: UNASSIGNED
+      wave: W6
       priority: P2
-      acceptance_criteria: ''
-      test_strategy: ''
-      source_reference: ''
+      acceptance_criteria: Required Russian-only UI scope is mechanically checked in CI.
+      test_strategy: Static lint fixtures with forbidden-term regression cases.
+      source_reference: tasks/phase-1-participant-matrix.yaml
   - id: P1-013
     phase: 1
     title: Finalize core screen contracts and action/API traceability
@@ -675,11 +706,11 @@ tasks:
     origin_discovery: null
     discovered_from: null
     execution:
-      wave: UNASSIGNED
-      priority: P2
-      acceptance_criteria: ''
-      test_strategy: ''
-      source_reference: ''
+      wave: W4
+      priority: P1
+      acceptance_criteria: Task completion/verification/approval produces the correct reward event and ledger entry exactly once.
+      test_strategy: Application integration, event replay and duplicate reward tests.
+      source_reference: tasks/phase-1-participant-matrix.yaml
   - id: P1-015
     phase: 1
     title: Implement vertical slice state, idempotency and conflict fixtures
@@ -691,19 +722,22 @@ tasks:
     deps_implementation:
       - P1-008
       - P1-014
-    reviewer: null
-    gate_owners: []
+    reviewer: qa-lead
+    gate_owners:
+      - chief-architect
+      - security-engineering
+      - security-red-team
     discovery_links: []
     blocked_reason: null
     human_decisions: []
     origin_discovery: null
     discovered_from: null
     execution:
-      wave: UNASSIGNED
-      priority: P2
-      acceptance_criteria: ''
-      test_strategy: ''
-      source_reference: ''
+      wave: W3
+      priority: P1
+      acceptance_criteria: Race/retry/conflict fixtures prove state transitions and exactly-once behavior.
+      test_strategy: Deterministic concurrent request fixtures and stale-version conflict tests.
+      source_reference: tasks/phase-1-participant-matrix.yaml
   - id: P1-016
     phase: 1
     title: Implement vertical slice API/client wiring and recovery states
@@ -715,19 +749,22 @@ tasks:
     deps_implementation:
       - P1-014
       - P1-015
-    reviewer: null
-    gate_owners: []
+    reviewer: backend-lead
+    gate_owners:
+      - qa-lead
+      - security-engineering
+      - child-safety-lead
     discovery_links: []
     blocked_reason: null
     human_decisions: []
     origin_discovery: null
     discovered_from: null
     execution:
-      wave: UNASSIGNED
-      priority: P2
-      acceptance_criteria: ''
-      test_strategy: ''
-      source_reference: ''
+      wave: W6
+      priority: P1
+      acceptance_criteria: UI executes the real vertical slice and handles loading, retry, conflict and rejected-proof states.
+      test_strategy: E2E UI/API integration and recovery-path tests.
+      source_reference: tasks/phase-1-participant-matrix.yaml
   - id: P1-017
     phase: 1
     title: Execute vertical slice QA/security/journey gates
@@ -739,19 +776,26 @@ tasks:
     deps_implementation:
       - P1-015
       - P1-016
-    reviewer: null
-    gate_owners: []
+    reviewer: security-engineering
+    gate_owners:
+      - chief-architect
+      - architecture-control-lead
+      - security-red-team
+      - child-safety-lead
+      - journey-agent
+      - documentation-agent
+      - ai-cto
     discovery_links: []
     blocked_reason: null
     human_decisions: []
     origin_discovery: null
     discovered_from: null
     execution:
-      wave: UNASSIGNED
-      priority: P2
-      acceptance_criteria: ''
-      test_strategy: ''
-      source_reference: ''
+      wave: W8
+      priority: P0
+      acceptance_criteria: All Phase 1 release gates pass with reproducible evidence.
+      test_strategy: Full gate execution and clean-room evidence reproduction.
+      source_reference: tasks/phase-1-participant-matrix.yaml
   - id: P1-018
     phase: 1
     title: Verify vertical slice against source-of-truth and lifecycle rules
@@ -763,19 +807,23 @@ tasks:
     deps_implementation:
       - P1-015
       - P1-016
-    reviewer: null
-    gate_owners: []
+    reviewer: architecture-control-lead
+    gate_owners:
+      - qa-lead
+      - security-engineering
+      - child-safety-lead
+      - documentation-agent
     discovery_links: []
     blocked_reason: null
     human_decisions: []
     origin_discovery: null
     discovered_from: null
     execution:
-      wave: UNASSIGNED
-      priority: P2
-      acceptance_criteria: ''
-      test_strategy: ''
-      source_reference: ''
+      wave: W8
+      priority: P0
+      acceptance_criteria: Implementation is revalidated against authoritative contracts, lifecycle rules, task registry and evidence graph.
+      test_strategy: Architecture drift, contract compatibility and documentation graph checks.
+      source_reference: tasks/phase-1-participant-matrix.yaml
   - id: P2-001
     phase: 2
     title: XP/coins/progression and streak engine
@@ -1537,7 +1585,7 @@ tasks:
     origin_discovery: null
     discovered_from: null
     execution:
-      wave: W3
+      wave: W8
       priority: P0
       acceptance_criteria: Adversarial cases cover family isolation, authorization/IDOR, privilege escalation, replay, races, media access, reward manipulation and information disclosure; every finding has severity and retest result.
       test_strategy: Automated and manual exploit fixtures against a disposable Phase 1 environment.

@@ -1,5 +1,38 @@
 # Planning Change Log
 
+## 0.13 (W0 — Phase 1 admission metadata completed)
+
+"Execute Phase 1 by priority" had no ordering to execute: 18 of the 24
+Phase 1 tasks sat at `wave: UNASSIGNED` / `priority: P2` (the schema
+defaults) with no reviewer, gate owners, acceptance criteria or test
+strategy, even though `tasks/phase-1-participant-matrix.yaml` had all of
+it. None of them could reach READY, because `readyAdmissionProblems()`
+rejects exactly those gaps.
+
+Registry migrated 9 -> 10 from the matrix. Every Phase 1 task now carries
+wave, priority, primary, reviewer, gate owners, acceptance criteria, test
+strategy and a source reference. Waves: W0 3, W1 1, W2 2, W3 3, W4 2,
+W5 2, W6 5, W7 2, W8 4.
+
+Three conflicts between the governance files had to be decided rather
+than copied:
+
+- **`P1-021` wave: W3 or W8?** `tasks/phase-1-control-tasks.yaml` said
+  W3, the participant matrix said W8, and the registry had followed the
+  former. `docs/planning/phase-1-execution-plan.md` lists "Security Red
+  Team adversarial assessment and retest" under W8 and, separately,
+  allows "red-team test design before runtime code is complete" to run in
+  parallel earlier. The assessment is therefore W8; the control-tasks
+  file was corrected to match, so all three sources now agree.
+- **`P1-009` priority was `DONE`** in the matrix -- a status written into
+  a priority field. Set to P0 from the execution plan's own "W0 ... P0 /
+  BLOCKING" wave definition, and fixed in the matrix.
+- **`P1-014` ownership was not overwritten.** The matrix plans
+  `primary: backend-lead, reviewer: chief-architect`; the registry records
+  `chief-architect` / `ai-cto`, who actually did and reviewed the work.
+  A finished task's ownership is a historical record, not a plan, so the
+  record stands and the divergence is noted here instead.
+
 ## 0.12 (BLK-P1-003 — contract vs implementation dependencies)
 
 Closes the last W0 governance gap that existed only on paper:

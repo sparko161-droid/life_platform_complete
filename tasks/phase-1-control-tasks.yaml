@@ -40,7 +40,7 @@ tasks:
 
   P1-021:
     title: "Independent Security Red Team capability and Phase 1 assessment"
-    wave: W3
+    wave: W8
     priority: P0
     primary: security-red-team
     reviewer: security-engineering

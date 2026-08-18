@@ -177,7 +177,7 @@ tasks:
 
   P1-009:
     title: "UI architecture, screen map and state/API contracts"
-    priority: DONE
+    priority: P0
     wave: W0
     primary: uiux-lead
     reviewer: chief-architect
