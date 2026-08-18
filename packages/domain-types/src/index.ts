@@ -14,5 +14,6 @@ export * from "./family-service.js";
 export * from "./task-service.js";
 export * from "./verification.js";
 export * from "./media.js";
+export * from "./media-service.js";
 export * from "./task.js";
 export * from "./reward.js";

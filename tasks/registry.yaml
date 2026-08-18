@@ -392,7 +392,7 @@ tasks:
     phase: 1
     title: Media evidence storage and upload policy
     primary: backend-lead
-    status: PLANNED
+    status: IN_PROGRESS
     deps: []
     deps_contract:
       - P0-002
