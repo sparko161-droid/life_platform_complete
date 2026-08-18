@@ -140,13 +140,24 @@ blockers:
     resolution: "Do not mark Phase 1 DONE until QA, security, child safety, adversarial security, scale, architecture control, journey and documentation evidence all pass."
   - id: BLK-P1-011
     priority: P0
-    status: OPEN
+    status: RESOLVED
     title: "Establish Architecture Control Plane and wave-level review artifacts"
     owners: [architecture-control-lead, chief-architect]
     reviewers: [ai-cto, documentation-agent]
     gates: [qa-lead]
-    blocks: [W0-W8, phase-1-exit]
+    blocks: [phase-1-exit]
     resolution: "Create independent Wave Gates, Phase Architecture Control Gate and versioned review artifacts that compare code/contracts/events/database/tests/docs as one system."
+    note: >-
+      The artifacts are files with a schema, not a convention:
+      `tasks/reviews/W<N>.yaml`, validated by `pnpm run control:validate`
+      (wired into CI). A wave that claims an exit must have an artifact
+      that decided PASS; an artifact that claims PASS cannot be
+      contradicted by task status or by a blocker that is still OPEN;
+      every evidence area from the template must be accounted for.
+      Fixtures with deliberate drift and missing evidence assert the
+      validator actually fails. `blocks` narrowed from W0-W8 to
+      phase-1-exit: the mechanism now exists, so it no longer blocks the
+      waves -- it gates them.
   - id: BLK-P1-012
     priority: P0
     status: OPEN

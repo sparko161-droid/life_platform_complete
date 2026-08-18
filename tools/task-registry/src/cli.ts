@@ -15,6 +15,7 @@ import {
 import {
   allowedNextStates,
   integrationProblems,
+  readyAdmissionProblems,
   isValidTransition,
   type Task,
   type TaskState,
@@ -22,6 +23,7 @@ import {
 import { renderHandoff } from "./handoff.js";
 import { createWorktree, removeWorktree, repoRoot } from "./worktree.js";
 import { loadContractRegistry, validateContractRegistry } from "./contracts.js";
+import { validateControlPlane } from "./control.js";
 import { withRegistryLock } from "./lock.js";
 
 // pnpm --filter runs scripts with cwd set to the package directory, not the
@@ -151,6 +153,31 @@ program
       return;
     }
     console.log(`Registry OK: ${registry.tasks.length} tasks, schema + graph valid.`);
+  });
+
+program
+  .command("admit <id>")
+  .description("admit a task to READY, enforcing docs/governance/task-admission.md")
+  .action(async (id: string, _cmdOpts, cmd) => {
+    const path = registryPath(cmd.optsWithGlobals());
+    await withRegistryLock(path, () => {
+      const registry = loadRegistry(path);
+      const task = findTask(registry, id);
+
+      // The admission rules are checked *before* the transition, so a task
+      // can never sit at READY in a state readyAdmissionProblems() would
+      // reject -- which is what `validate` and the dashboard both assume.
+      const problems = readyAdmissionProblems(task);
+      if (problems.length > 0) {
+        throw new Error(
+          `${id} cannot be admitted to READY:\n  - ${problems.join("\n  - ")}`,
+        );
+      }
+
+      const admitted = transition(task, "READY");
+      saveRegistry(path, replaceTask(registry, admitted));
+      console.log(`${id} admitted: ${task.status} -> READY`);
+    });
   });
 
 program
@@ -488,6 +515,36 @@ contracts
     console.log(
       `Contract registry OK: ${contractRegistry.groups.length} group(s), pack version ${contractRegistry.contract_pack_version}.`,
     );
+  });
+
+const control = program
+  .command("control")
+  .description("Wave Gate / Architecture Control review artifacts (P1-020)");
+
+control
+  .command("validate")
+  .description("check tasks/reviews/*.yaml against wave status, task status and open blockers")
+  .option("--reviews <dir>", "directory holding review artifacts", "tasks/reviews")
+  .option("--phase-status <path>", "phase/wave status file", "tasks/phase-1-status.yaml")
+  .option("--blockers <path>", "blockers file", "tasks/phase-1-blockers.yaml")
+  .action(async (cmdOpts, cmd) => {
+    const root = await repoRoot();
+    const taskRegistry = loadRegistry(registryPath(cmd.optsWithGlobals()));
+
+    const problems = validateControlPlane({
+      reviewsDir: resolve(root, cmdOpts.reviews),
+      phaseStatusPath: resolve(root, cmdOpts.phaseStatus),
+      blockersPath: resolve(root, cmdOpts.blockers),
+      taskRegistry,
+    });
+
+    if (problems.length > 0) {
+      console.error("Control-plane validation FAILED:");
+      for (const p of problems) console.error(`  - ${p}`);
+      process.exitCode = 1;
+      return;
+    }
+    console.log("Control plane OK: review artifacts agree with wave status, task status and open blockers.");
   });
 
 program.parseAsync(process.argv).catch((err) => {

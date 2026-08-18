@@ -21,6 +21,7 @@
     "check": "pnpm lint && pnpm typecheck && pnpm test",
     "task-registry": "pnpm --filter @life/tools-task-registry run dev",
     "contracts:validate": "pnpm --filter @life/tools-task-registry run dev -- contracts validate",
+    "control:validate": "pnpm --filter @life/tools-task-registry run dev -- control validate",
     "docs:check": "node scripts/check-docs-graph.mjs",
     "dashboard": "node scripts/dashboard-server.mjs",
     "quality:dead-code": "knip"

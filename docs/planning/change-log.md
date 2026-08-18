@@ -1,5 +1,44 @@
 # Planning Change Log
 
+## 0.15 (P1-020 / BLK-P1-011 — Wave Gates that can actually fail)
+
+`docs/governance/wave-gate.md` already required "a versioned review
+artifact records the result and follow-ups", and the artifact template
+already existed. Neither was checkable. A wave could be marked `exit: PASS`
+in `tasks/phase-1-status.yaml` with no review behind it at all, and a
+review could claim a PASS while the tasks it scoped were still `PLANNED`.
+Both directions are now closed.
+
+- `tools/task-registry/src/control.ts`: schema for `tasks/reviews/W<N>.yaml`
+  plus `validateControlPlane()`. A wave claiming an exit must have an
+  artifact that decided PASS; an artifact claiming PASS must not be
+  contradicted by task status or by a blocker that is still OPEN; every
+  evidence area from the template must be accounted for; a PASS may not
+  sit on top of a REWORK/BLOCKED area or architecture-control check.
+- `task-registry control validate` + `pnpm run control:validate`, wired
+  into CI next to `contracts:validate` and `docs:check`.
+- Fixtures with deliberate drift (a PASS scoping a PLANNED task), missing
+  evidence areas, an open blocker, and a wave with no artifact -- each
+  asserted to fail. A validator nobody has watched fail is a validator
+  nobody should trust.
+- `NOT_REQUIRED` added as an architecture-control verdict. W0 has no
+  migrations; answering PASS for a check nobody performed is the precise
+  failure the artifact exists to prevent. It costs a mandatory note.
+- New `task-registry admit <id>`: PLANNED -> READY, refusing any task
+  `readyAdmissionProblems()` rejects. The rules existed and `validate`
+  reported violations after the fact, but nothing enforced them at the
+  moment of admission, and no CLI verb performed the transition at all.
+
+`tasks/reviews/W0.yaml` is the first real artifact, and it decides
+**REWORK**, not PASS: P1-013 and P1-020 are in REVIEW rather than DONE,
+the independent Architecture Control review has not happened, and the
+technical-debt area is REWORK (knip failures that pre-date this work, and
+`handoff`'s comma-splitting of prose options). `control validate` would
+have rejected a PASS anyway.
+
+Verified: lint, typecheck, build, test (51 task-registry, 22 ux-contracts),
+docs:check, contracts validate, registry validate, control validate.
+
 ## 0.14 (P1-013 / BLK-P1-001 — one canonical screen identity)
 
 Two screen-ID schemes had been coexisting since P1-009 recorded the

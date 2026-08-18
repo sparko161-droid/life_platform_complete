@@ -1539,7 +1539,7 @@ tasks:
     phase: 1
     title: Wave Gate and Phase Architecture Control implementation
     primary: architecture-control-lead
-    status: PLANNED
+    status: REVIEW
     deps: []
     deps_contract:
       - P0-010

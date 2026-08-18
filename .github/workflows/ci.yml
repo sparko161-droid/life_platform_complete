@@ -73,6 +73,12 @@ jobs:
       - name: Docs graph and task references are in sync
         run: pnpm run docs:check
 
+      # docs/governance/wave-gate.md / P1-020: fails if a wave claims an
+      # exit it has no review artifact for, or a review artifact claims a
+      # PASS the task registry or the open blockers contradict.
+      - name: Wave Gate / Architecture Control artifacts are in sync
+        run: pnpm run control:validate
+
   secret-scan:
     name: gitleaks
     runs-on: ubuntu-latest

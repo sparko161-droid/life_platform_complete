@@ -1,0 +1,72 @@
+# Fixture review artifact -- not a real review.
+version: 1
+review_id: FIX-W0-1
+scope: W0
+reviewed_range: "fixture"
+primary_reviewer: fixture-reviewer
+architecture_control_lead: fixture-architecture-control
+tasks: [P0-001, P1-001]
+evidence:
+  - area: contracts
+    status: PASS
+    evidence: "fixture evidence"
+    note: ""
+  - area: domain_state
+    status: PASS
+    evidence: "fixture evidence"
+    note: ""
+  - area: api
+    status: PASS
+    evidence: "fixture evidence"
+    note: ""
+  - area: events
+    status: PASS
+    evidence: "fixture evidence"
+    note: ""
+  - area: persistence_migrations
+    status: PASS
+    evidence: "fixture evidence"
+    note: ""
+  - area: tests
+    status: PASS
+    evidence: "fixture evidence"
+    note: ""
+  - area: security_engineering
+    status: PASS
+    evidence: "fixture evidence"
+    note: ""
+  - area: security_red_team
+    status: PASS
+    evidence: "fixture evidence"
+    note: ""
+  - area: child_safety
+    status: PASS
+    evidence: "fixture evidence"
+    note: ""
+  - area: performance_scale
+    status: PASS
+    evidence: "fixture evidence"
+    note: ""
+  - area: observability_audit
+    status: PASS
+    evidence: "fixture evidence"
+    note: ""
+  - area: documentation_traceability
+    status: PASS
+    evidence: "fixture evidence"
+    note: ""
+  - area: technical_debt
+    status: PASS
+    evidence: "fixture evidence"
+    note: ""
+architecture_control:
+  dependency_direction: PASS
+  single_source_of_truth: PASS
+  contract_version_compatibility: PASS
+  migration_compatibility: PASS
+  no_undocumented_breaking_changes: PASS
+  no_duplicate_domain_implementation: PASS
+  later_phase_concerns_bounded: PASS
+decision: PASS
+accepted_deviations: []
+follow_up_tasks: []

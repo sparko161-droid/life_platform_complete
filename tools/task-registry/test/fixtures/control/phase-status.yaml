@@ -1,0 +1,11 @@
+# Fixture: one wave claiming to be finished, one still running.
+version: 1
+waves:
+  - id: W0
+    name: Fixture wave that claims completion
+    status: DONE
+    exit: PASS
+  - id: W1
+    name: Fixture wave still running
+    status: IN_PROGRESS
+    exit: BLOCKED
