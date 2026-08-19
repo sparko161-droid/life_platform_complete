@@ -96,22 +96,39 @@ blockers:
       again.
   - id: BLK-P1-006
     priority: P0
-    status: OPEN
+    status: RESOLVED
     title: "Start real Phase 1 runtime implementation"
     owners: [backend-lead]
     reviewers: [chief-architect]
     gates: [qa-lead, security-engineering, child-safety-lead]
-    blocks: [P1-007, P1-010, P1-016, P1-017, P1-018]
+    blocks: []
     resolution: "Implement Family, Task, persistence, verification, reward and application-service runtime instead of placeholder entrypoints."
+    note: >-
+      services/api/src/index.ts is no longer a placeholder. P1-024
+      (schema/migrations), P1-025 (repository layer with authorization
+      and transaction boundaries), P1-026 (NestJS app, session auth and
+      every openapi.yaml operation) and P1-028 (publishTaskTemplate)
+      together deliver the Family/Task/verification/reward
+      application-service runtime this blocker asked for, verified in CI
+      against a real Postgres rather than asserted. Verification is
+      currently parent-approval and self-report/counter/timer proof;
+      media-backed strategies still have no HTTP surface, tracked as
+      DISC-P1-027-1 rather than folded in silently.
   - id: BLK-P1-007
     priority: P0
-    status: PARTIALLY_RESOLVED
+    status: RESOLVED
     title: "Implement transactional persistence and real API path"
     owners: [backend-lead, devops-lead]
     reviewers: [chief-architect, security-engineering]
-    blocks: [P1-016, P1-017]
+    blocks: []
     resolution: "Add migrations, repositories/application services, API handlers, authorization and transaction boundaries for the vertical slice."
     note: >-
+      Closed by P1-026 (session/auth + every openapi.yaml handler),
+      P1-028 (publishTaskTemplate, which made the chain reachable at all)
+      and P1-027 (the E2E slice, proven against real Postgres in CI).
+      Every clause of the resolution text now has running code behind it.
+      Original note follows.
+
       P1-024 added migrations (real Postgres schema, migrate up/down/up
       verified in CI). P1-025 added the repository/application-service
       layer with the authorization and transaction-boundary requirements
@@ -137,13 +154,29 @@ blockers:
     resolution: "Create retry/race/conflict fixtures and enforce unique source reward identity plus deterministic state transitions."
   - id: BLK-P1-009
     priority: P0
-    status: OPEN
+    status: PARTIALLY_RESOLVED
     title: "Implement the first true family vertical slice"
     owners: [backend-lead, frontend-lead]
     reviewers: [chief-architect, qa-lead]
     gates: [security-engineering, child-safety-lead, security-red-team, journey-agent, documentation-agent]
     blocks: [P1-007, P1-017, P1-018]
     resolution: "Parent creates task -> child receives -> child completes -> proof -> parent approval -> reward ledger -> audit, with no manual DB intervention."
+    note: >-
+      The server-side journey is done and proven: P1-027's
+      services/api/test/vertical-slice.e2e.test.ts runs parent creates
+      task -> child receives -> child completes -> proof -> parent
+      approval -> reward ledger over real HTTP against real Postgres,
+      asserting the database row at every step, and its query helper
+      mechanically refuses any statement that is not a SELECT -- so "with
+      no manual DB intervention" is enforced by the test, not claimed by
+      it. The rejection invariant ("rejected proof never grants the task
+      reward") is covered too. Stays open, narrowed to three things this
+      blocker's own text names that are not done: (1) the frontend half
+      -- `frontend-lead` is a listed owner and no UI consumes any of this
+      yet (P1-010/P1-016); (2) "audit" -- domain services build
+      EventEnvelopes but nothing persists an audit trail; (3) media-backed
+      proof has no HTTP surface at all (DISC-P1-027-1), so "proof" is
+      proven only as a self-report note.
   - id: BLK-P1-010
     priority: P0
     status: OPEN

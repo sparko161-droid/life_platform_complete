@@ -1792,7 +1792,7 @@ tasks:
     phase: 1
     title: Vertical-slice end-to-end against the real stack
     primary: qa-lead
-    status: IN_PROGRESS
+    status: DONE
     deps: []
     deps_contract:
       - P1-013
@@ -1803,7 +1803,22 @@ tasks:
       - security-engineering
       - child-safety-lead
       - journey-agent
-    discovery_links: []
+    discovery_links:
+      - discovery_id: DISC-P1-027-1
+        source_task: P1-027
+        type: MISSING_REQUIREMENT
+        finding: 'There is no media upload operation anywhere in services/api/openapi/openapi.yaml. P1-005 built the MediaEvidence domain layer (registerEvidence, upload policy, retention, family isolation) and P1-024 persists a media_evidence table, but nothing exposes either over HTTP, and TaskCompletion.mediaEvidenceId can therefore only ever be supplied by a client that already has an id no endpoint can mint.'
+        why_it_matters: 'Four of the ten verification strategies (PHOTO_PROOF, VIDEO_PROOF, AUDIO_PROOF, CAMERA_EXERCISE) depend on media evidence, so "proof" in the vertical slice is currently only provable in its weakest form -- a self-report note. P1-027''s own acceptance criterion names the journey rather than media, so this is not a gap in this task, but any Phase 1 claim that photo/video proof works end to end would be false today.'
+        affected_domains: []
+        architecture_impact: null
+        security_impact: 'docs/security/privacy.md requires signed/authorized access and never a public URL; the upload/download path is exactly where that gets enforced or lost, so it should not be added casually late.'
+        ux_impact: 'C-CAMERA and the PHOTO_PROOF path in docs/ux/screens/child-task-detail.md have no backend to call.'
+        recommended_solution: 'Add upload-intent + evidence-registration operations (e.g. POST /media/upload-intent returning a short-lived signed PUT target, then POST /media/evidence to register the stored object) wired to packages/domain-types'' registerEvidence/validateUploadPolicy, plus a signed-read operation. Storage-key-only, never a public URL.'
+        alternatives:
+          - 'Accept raw bytes through the API and store them server-side -- rejected: docs/architecture/data-architecture.md puts objects in S3-compatible storage with the DB holding only metadata and keys, and docs/architecture/phase-1-scale-guardrails.md SG-004 explicitly verifies media never lands in the primary DB path.'
+        priority: HIGH
+        blocking: false
+        proposed_task: null
     blocked_reason: null
     human_decisions: []
     origin_discovery: null
