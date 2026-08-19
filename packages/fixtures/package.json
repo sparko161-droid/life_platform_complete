@@ -8,9 +8,11 @@
     "typecheck": "tsc --noEmit",
     "test": "node --import tsx --test ./test/*.test.ts",
     "build": "tsc -p tsconfig.json",
-    "seed": "node scripts/seed.mjs"
+    "seed": "node scripts/seed.mjs",
+    "seed:domain": "node scripts/seed-domain.mjs"
   },
   "dependencies": {
+    "@life/domain-types": "workspace:*",
     "pg": "^8.13.1"
   },
   "devDependencies": {

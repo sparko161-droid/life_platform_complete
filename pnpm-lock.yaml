@@ -84,6 +84,9 @@ importers:
 
   packages/fixtures:
     dependencies:
+      '@life/domain-types':
+        specifier: workspace:*
+        version: link:../domain-types
       pg:
         specifier: ^8.13.1
         version: 8.23.0
