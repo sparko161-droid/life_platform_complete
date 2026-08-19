@@ -1884,3 +1884,86 @@ tasks:
       acceptance_criteria: services/api/openapi/openapi.yaml carries a publishTaskTemplate operation (DRAFT -> ACTIVE), packages/api-client's generated types are regenerated and committed in the same change, and a matching TaskController handler exists so the full parent-creates-task -> assign -> child-completes -> approve -> reward chain is reachable through the real HTTP surface. Additive-only -- no existing operation or schema changes shape.
       test_strategy: e2e test extending services/api/test/http.e2e.test.ts to publish then assign through HTTP (the step DISC-P1-026-1 blocked), plus the existing generate:check CI gate proving the client was regenerated.
       source_reference: discovery:DISC-P1-026-1
+  - id: P1-033
+    phase: 1
+    title: Legal obligation register and data inventory
+    primary: legal-counsel-lead
+    status: BACKLOG
+    deps: []
+    deps_contract: []
+    deps_implementation: []
+    reviewer: ai-cto
+    gate_owners:
+      - child-safety-lead
+      - privacy-engineering-lead
+    discovery_links: []
+    blocked_reason: null
+    human_decisions:
+      - decision_id: HD-P1-033-1
+        question: 'Which markets does Phase 1 actually target? docs/security/legal-ru.md scopes the RU launch, but the obligation set (152-ФЗ vs GDPR vs COPPA-class rules) depends entirely on this and must not be guessed.'
+        decision: null
+        decided_at: null
+      - decision_id: HD-P1-033-2
+        question: 'Is qualified external counsel engaged, and on what timeline? docs/security/legal-ru.md requires legal review before public launch; this task prepares that review and consumes its output, it cannot replace it.'
+        decision: null
+        decided_at: null
+    origin_discovery: null
+    discovered_from: null
+    execution:
+      wave: UNASSIGNED
+      priority: P1
+      acceptance_criteria: 'A written obligation register exists listing every legal obligation the platform is subject to, each with: the source rule, the affected data or flow traced to a real entity in packages/domain-types, an owner, and a status of SATISFIED / OPEN / NEEDS_EXTERNAL_COUNSEL. A data inventory maps every persisted field to a processing purpose and retention rule. No entry claims compliance -- that is external counsel''s call per docs/security/legal-ru.md.'
+      test_strategy: 'Traceability check: every CHILD_PRIVATE and SENSITIVE field in packages/domain-types'' classification maps appears in the inventory, and every obligation names a real owner. Mechanical, like the other registers in this repo -- prose alone is not the deliverable.'
+      source_reference: docs/security/legal-ru.md
+  - id: P1-034
+    phase: 1
+    title: Consent and parental-rights model
+    primary: legal-counsel-lead
+    status: BACKLOG
+    deps: []
+    deps_contract:
+      - P0-009
+    deps_implementation: []
+    reviewer: child-safety-lead
+    gate_owners:
+      - privacy-engineering-lead
+      - chief-architect
+    discovery_links: []
+    blocked_reason: null
+    human_decisions:
+      - decision_id: HD-P1-034-1
+        question: 'What is the minimum age for a child profile, and what parental consent is required to create one? ChildProfileSchema currently accepts birthYear 2000-2030 with no consent gate at all.'
+        decision: null
+        decided_at: null
+    origin_discovery: null
+    discovered_from: null
+    execution:
+      wave: UNASSIGNED
+      priority: P1
+      acceptance_criteria: 'The consent model docs/product/family-lifecycle.md already promises ("The invitee must authenticate, accept and complete required consent/verification") is specified: what consent is captured, from whom, when, how it is recorded, how it is withdrawn, and what the product must stop doing on withdrawal. Parental rights (access, correction, deletion, export on behalf of a child) are specified as flows, not aspirations.'
+      test_strategy: 'Each consent state and parental right maps to a named enforcement point in the codebase or is explicitly listed as not-yet-enforced with an owning task -- the same standard DISC records are held to.'
+      source_reference: docs/product/family-lifecycle.md
+  - id: P1-035
+    phase: 1
+    title: Retention, deletion and export mechanisms
+    primary: privacy-engineering-lead
+    status: BACKLOG
+    deps: []
+    deps_contract: []
+    deps_implementation:
+      - P1-024
+    reviewer: legal-counsel-lead
+    gate_owners:
+      - security-engineering
+      - child-safety-lead
+    discovery_links: []
+    blocked_reason: null
+    human_decisions: []
+    origin_discovery: null
+    discovered_from: null
+    execution:
+      wave: UNASSIGNED
+      priority: P1
+      acceptance_criteria: 'Data-subject export and deletion actually work against the real schema, and retention is enforced by code rather than described. Specifically: MediaEvidence''s DEFAULT_RETENTION_DAYS/retentionExpiresAt (P1-005) has an expiry path that runs -- today the field is written and nothing ever acts on it -- and deletion honours the append-only reward ledger (docs/architecture/data-architecture.md) rather than violating it.'
+      test_strategy: 'Integration tests against real Postgres: seed a family, run export and assert every classified field is present; run deletion and assert removal or documented tombstoning; advance time past a retention window and assert expiry actually fires.'
+      source_reference: docs/security/privacy.md

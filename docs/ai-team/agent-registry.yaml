@@ -1,4 +1,4 @@
-version: 3
+version: 4
 roles:
   - id: ai-cto
     reports_to: human-architect
@@ -68,6 +68,12 @@ roles:
     reports_to: chief-architect
   - id: devops-lead
     reports_to: ai-cto
+  - id: legal-counsel-lead
+    reports_to: ai-cto
+    primary_gate: legal
+  - id: privacy-engineering-lead
+    reports_to: ai-cto
+    primary_gate: privacy
 
 ## Assignment rules
 - Every task has one primary executor and at least one independent reviewer.
@@ -77,6 +83,7 @@ roles:
 - Security engineering protects the system; Security Red Team independently attempts to break it. They are never the same primary role for the same critical change.
 - Child Safety is an independent concern from general security and must gate child-facing releases.
 - Performance/Scale validates cross-cutting capacity assumptions and architecture guardrails before later phases depend on them.
+- Legal Counsel owns the obligation register and prepares work for external counsel; it never certifies compliance itself. Privacy Engineering turns those obligations into enforced, tested mechanisms. Neither is satisfied by documentation alone.
 - AI CTO owns orchestration, not product decisions reserved for the Human Architect.
 - Discovery findings are routed to the domain owner and become separate tasks when scope expands.
 - New tasks created from discoveries start in BACKLOG and cannot become READY until reviewer, gate owners, dependencies, acceptance criteria and test strategy are recorded.
