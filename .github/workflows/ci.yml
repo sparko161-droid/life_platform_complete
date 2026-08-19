@@ -25,6 +25,9 @@ jobs:
     # tests instead of mocks.
     env:
       DATABASE_URL: postgres://life:life_dev@localhost:5432/life
+      # P1-026: services/api/test/http.e2e.test.ts signs real session
+      # tokens against this secret via src/auth/session.ts.
+      SESSION_JWT_SECRET: ci-only-not-a-real-secret
     # P1-024: real Postgres to verify migrations against. GitHub's own
     # runners always have Docker, unlike some local dev sandboxes -- this
     # is the environment that actually proves a migration round-trips,

@@ -27,9 +27,9 @@ import {
 import { rowToChildProfile, rowToFamily, rowToParentMembership } from "../db/rows.js";
 import { RepositoryConflictError, RepositoryNotFoundError } from "./errors.js";
 
-async function loadFamily(client: PoolClient, familyId: string): Promise<Family | null> {
+async function fetchFamily(client: PoolClient, familyId: string, forUpdate: boolean): Promise<Family | null> {
   const familyResult = await client.query(
-    "SELECT family_id, status, version, created_at FROM families WHERE family_id = $1 FOR UPDATE",
+    `SELECT family_id, status, version, created_at FROM families WHERE family_id = $1${forUpdate ? " FOR UPDATE" : ""}`,
     [familyId],
   );
   const familyRow = familyResult.rows[0];
@@ -47,6 +47,15 @@ async function loadFamily(client: PoolClient, familyId: string): Promise<Family 
   ]);
 
   return rowToFamily(familyRow, parentsResult.rows, childrenResult.rows);
+}
+
+async function loadFamily(client: PoolClient, familyId: string): Promise<Family | null> {
+  return fetchFamily(client, familyId, true);
+}
+
+/** Read-only variant (no `FOR UPDATE`) for GET endpoints (P1-026). */
+export async function readFamily(client: PoolClient, familyId: string): Promise<Family | null> {
+  return fetchFamily(client, familyId, false);
 }
 
 /**
