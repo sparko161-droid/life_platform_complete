@@ -428,7 +428,41 @@ test("RT-005 retest: confirmRedemption rejects an actor with no family membershi
 test("reward ledger: replaying grantTaskReward does not double the balance", async (t) => {
   if (skipIfNoDb(t)) return;
   const { familyId, ownerId, childId } = await makeFamilyWithChild();
-  const assignmentId = randomUUID();
+  // reward_ledger_entries.source_task_assignment_id carries a real FK
+  // (P1-024) -- a bare random id would violate it, so this needs an
+  // actual approved assignment, not just a well-formed UUID.
+  const assignmentId = await withTransaction(async (client) => {
+    const template = await taskRepository.createTemplate(client, {
+      taskTemplateId: randomUUID() as any,
+      familyId: familyId as any,
+      createdByParentId: ownerId as any,
+      title: "T",
+      verificationStrategy: "PARENT_APPROVAL",
+      rewardXp: 20,
+      rewardCoins: 5,
+      now: NOW,
+    });
+    const published = await taskRepository.publishTemplate(client, template.taskTemplateId, { actorId: ownerId as any, now: NOW });
+    const assigned = await taskRepository.assignTask(client, published.taskTemplateId, {
+      taskAssignmentId: randomUUID() as any,
+      assignedToChildId: childId as any,
+      actorId: ownerId as any,
+      now: NOW,
+    });
+    const started = await taskRepository.startTask(client, assigned.taskAssignmentId, { actorId: childId as any, now: NOW });
+    const submitted = await taskRepository.submitTask(client, started.taskAssignmentId, {
+      taskCompletionId: randomUUID() as any,
+      actorId: childId as any,
+      now: NOW,
+    });
+    const verifying = await taskRepository.beginVerification(client, submitted.assignment.taskAssignmentId, ownerId, NOW);
+    const approved = await taskRepository.verifyTask(client, verifying.taskAssignmentId, {
+      actorId: ownerId as any,
+      outcome: "APPROVED",
+      now: NOW,
+    });
+    return approved.taskAssignmentId;
+  });
 
   const [first, second] = await withTransaction(async (client) => {
     const a = await rewardRepository.grantTaskReward(client, {
