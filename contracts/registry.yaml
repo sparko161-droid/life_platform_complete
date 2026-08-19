@@ -65,6 +65,39 @@ groups:
     open_decisions:
       - "Parent role permission set beyond PARENT_CAPABILITIES's disclosed placeholder (tasks/packets/P0-009-phase1-contract-pack.md)"
 
+  - name: identity
+    status: FROZEN
+    version: "0.1.0"
+    owner: chief-architect
+    defines:
+      domain_types: packages/domain-types/src/identity.ts
+      exports:
+        - AUTH_PROVIDERS
+        - AuthProvider
+        - ACCOUNT_STATUSES
+        - AccountStatus
+        - isValidAccountTransition
+        - AccountSchema
+        - Account
+        - ACCOUNT_CLASSIFICATION
+        - CREDENTIAL_ALGORITHMS
+        - CredentialAlgorithm
+        - CredentialRecordSchema
+        - CredentialRecord
+        - CREDENTIAL_RECORD_CLASSIFICATION
+        - SESSION_SUBJECT_KINDS
+        - SessionSubjectKind
+        - SessionSchema
+        - Session
+        - SESSION_CLASSIFICATION
+        - isSessionActive
+      openapi_schemas: []
+    consumed_by: [P1-029, P1-030, P1-031, P1-032]
+    changelog_ref: "0.19"
+    open_decisions:
+      - "Consent content and retention rules are a legal question owned by P1-034 (docs/security/legal-ru.md); this contract carries the consentAcceptedAt flag, deliberately not the policy."
+      - "External counsel review is not done (HD-P1-033-2, still open) -- it may change what account or consent data must be captured."
+
   - name: family_service
     status: FROZEN
     version: "0.1.0"

@@ -170,6 +170,7 @@ Inputs: MASTER_SPEC, docs/security/legal-ru.md, data-classification.md, privacy.
 Outputs: consent and parental-rights model, data inventory and processing-purpose register, retention/deletion/export requirements, privacy notice and terms source text, processor/vendor requirements, and a record of which obligations are satisfied, which are open and who owns each.
 Never: state or imply that the product is "legally compliant". This role prepares work for, and consumes the output of, qualified external counsel -- it does not substitute for it (docs/security/legal-ru.md's own rule).
 Never: block engineering on an unstated requirement -- an obligation that is not written down as a task does not exist.
+Mandatory caveat: while this role drafts without human proofreading (Human Architect direction, recorded as HD-P1-033-2 and still open), every artifact it produces must carry, in the artifact itself, that it is AI-authored and not reviewed by qualified counsel. The caveat travels with the document, not with the task record, because the document is what someone will later read in isolation.
 
 ## Privacy Engineering Lead
 Mission: turn legal obligations into mechanisms the codebase actually enforces, and prove they hold.
