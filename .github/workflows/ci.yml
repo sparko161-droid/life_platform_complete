@@ -17,6 +17,24 @@ jobs:
   checks:
     name: install-lint-typecheck-test-build
     runs-on: ubuntu-latest
+    # P1-024: real Postgres to verify migrations against. GitHub's own
+    # runners always have Docker, unlike some local dev sandboxes -- this
+    # is the environment that actually proves a migration round-trips,
+    # not just that its JS is syntactically valid.
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: life
+          POSTGRES_USER: life
+          POSTGRES_PASSWORD: life_dev
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U life -d life"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v7
 
@@ -48,6 +66,20 @@ jobs:
       # manual build was still on disk.
       - name: Build
         run: pnpm build
+
+      # P1-024: migrate up, down, and up again against the real Postgres
+      # service above -- proves the migration is reversible, not just
+      # that it applies once -- then seeds it with real
+      # domain-service-generated aggregates (not the Phase 0 smoke
+      # value), proving the schema round-trips real domain shapes.
+      - name: Database migrations round-trip (up/down/up) and domain seed
+        env:
+          DATABASE_URL: postgres://life:life_dev@localhost:5432/life
+        run: |
+          pnpm --filter @life/services-api run migrate:up
+          pnpm --filter @life/services-api run migrate:down
+          pnpm --filter @life/services-api run migrate:up
+          pnpm --filter @life/fixtures run seed:domain
 
       - name: Typecheck
         run: pnpm typecheck

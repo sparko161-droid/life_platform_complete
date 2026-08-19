@@ -24,3 +24,20 @@ export function pick<T>(rng: () => number, items: readonly T[]): T {
 export function intBetween(rng: () => number, min: number, max: number): number {
   return min + Math.floor(rng() * (max - min + 1));
 }
+
+/**
+ * A deterministic, UUID-shaped string from the seeded RNG (version nibble
+ * fixed to 4, variant nibble fixed to 8 -- cosmetic, this is not a real
+ * v4 UUID generator, just something @life/domain-types's branded
+ * `z.string().uuid()` ids accept). Used only for synthetic fixtures
+ * (P1-024): domain-types commands require a real UUID-shaped id, and
+ * fixtures must stay reproducible for the same seed per
+ * docs/engineering/local-environment.md ("Seed scripts must be
+ * deterministic") -- `crypto.randomUUID()` would satisfy the schema but
+ * not reproducibility.
+ */
+export function seededUuid(rng: () => number): string {
+  const hex = (): string => Math.floor(rng() * 16).toString(16);
+  const group = (n: number): string => Array.from({ length: n }, hex).join("");
+  return `${group(8)}-${group(4)}-4${group(3)}-8${group(3)}-${group(12)}`;
+}
