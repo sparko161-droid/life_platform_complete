@@ -1751,7 +1751,7 @@ tasks:
     phase: 1
     title: Session/auth and the vertical-slice REST API handlers
     primary: backend-lead
-    status: PLANNED
+    status: DONE
     deps: []
     deps_contract:
       - P1-013
@@ -1762,7 +1762,22 @@ tasks:
       - qa-lead
       - security-engineering
       - child-safety-lead
-    discovery_links: []
+    discovery_links:
+      - discovery_id: DISC-P1-026-1
+        source_task: P1-026
+        type: MISSING_REQUIREMENT
+        finding: 'services/api/openapi/openapi.yaml has no operation to publish a TaskTemplate (DRAFT -> ACTIVE) -- only createTaskTemplate (which returns a DRAFT) exists. assignTask requires an ACTIVE template (task-service.ts: ASSIGN_TASK_TEMPLATE_NOT_ACTIVE), so the frozen HTTP contract cannot reach past template creation: a client can never assign, start, submit, approve or redeem anything through the API as specified today.'
+        why_it_matters: "This blocks P1-027's E2E vertical slice (parent creates task -> child completes -> approval -> reward) from running end to end through the real HTTP surface -- the exact acceptance criterion P1-027 exists to prove. Found while writing P1-026's e2e test, which could only exercise createTaskTemplate and had to stop there rather than silently skip verifying the rest of the chain."
+        affected_domains: []
+        architecture_impact: null
+        security_impact: null
+        ux_impact: null
+        recommended_solution: "Add a publishTaskTemplate operation (e.g. POST /task-templates/{taskTemplateId}/publish) to openapi.yaml and a matching TaskController handler, following the same pattern as startTaskAssignment/approveTaskCompletion."
+        alternatives:
+          - "Auto-publish on createTaskTemplate (skip DRAFT entirely via the API) -- rejected: DRAFT exists so a parent can build a template before children see it (docs/architecture/entity-lifecycle.md), auto-publishing would silently remove that."
+        priority: HIGH
+        blocking: false
+        proposed_task: null
     blocked_reason: null
     human_decisions: []
     origin_discovery: null
