@@ -4,6 +4,14 @@
   "version": "0.1.0",
   "description": "Frozen screen map, action/API catalog and UI-state mappings for the Phase 1 vertical slice (P1-009).",
   "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
   "scripts": {
     "lint": "echo TODO",
     "typecheck": "tsc --noEmit",
