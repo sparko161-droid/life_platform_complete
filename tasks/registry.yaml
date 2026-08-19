@@ -1818,7 +1818,7 @@ tasks:
     phase: 1
     title: Add publishTaskTemplate operation to the frozen API contract
     primary: backend-lead
-    status: IN_PROGRESS
+    status: DONE
     deps: []
     deps_contract: []
     deps_implementation:
