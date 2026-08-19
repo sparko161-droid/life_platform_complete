@@ -1792,7 +1792,7 @@ tasks:
     phase: 1
     title: Vertical-slice end-to-end against the real stack
     primary: qa-lead
-    status: PLANNED
+    status: IN_PROGRESS
     deps: []
     deps_contract:
       - P1-013
