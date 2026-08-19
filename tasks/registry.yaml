@@ -1695,7 +1695,7 @@ tasks:
     phase: 1
     title: Database schema, migrations and seed compatibility
     primary: backend-lead
-    status: PLANNED
+    status: DONE
     deps: []
     deps_contract:
       - P0-009
