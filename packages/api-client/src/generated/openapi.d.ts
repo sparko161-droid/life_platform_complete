@@ -90,6 +90,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/task-templates/{taskTemplateId}/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Publish a task template so it can be assigned. DRAFT -> ACTIVE (packages/domain-types TASK_TEMPLATE_TRANSITIONS). Added by P1-028 from DISC-P1-026-1: createTaskTemplate returns a DRAFT and assignTask requires an ACTIVE template, so without this operation the contract could not reach past template creation. Idempotent: publishing an already-ACTIVE template returns it unchanged rather than conflicting, matching startTaskAssignment's repeat-tap rule. */
+        post: operations["publishTaskTemplate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/task-templates/{taskTemplateId}/assignments": {
         parameters: {
             query?: never;
@@ -632,6 +649,32 @@ export interface operations {
         responses: {
             /** @description Task template created. */
             201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskTemplate"];
+                };
+            };
+            "5XX": components["responses"]["Error"];
+        };
+    };
+    publishTaskTemplate: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Required for reward redemption, money ledger writes, completion submissions and integration callbacks, per docs/architecture/api-contracts.md ("Idempotency"). The vertical slice (docs/architecture/vertical-slice/api-and-events.md: "All commands require actor, family scope, authorization and idempotency key") widens this to every task-assignment/reward state-changing command, not only the original list -- start, approve and reject carry it too. Client-generated, unique per logical operation; replaying the same key returns the original result instead of repeating the side effect. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                taskTemplateId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Template is now ACTIVE. */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };

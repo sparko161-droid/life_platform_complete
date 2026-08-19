@@ -1,5 +1,31 @@
 # Planning Change Log
 
+## 0.18 (openapi 0.3.0 — P1-028, from DISC-P1-026-1)
+
+`services/api/openapi/openapi.yaml` gains one operation and bumps its own
+`info.version` 0.2.0 → 0.3.0. Additive minor: no existing operation or
+schema changed shape.
+
+- **`publishTaskTemplate`** (`POST /task-templates/{id}/publish`,
+  DRAFT → ACTIVE). Found by P1-026's e2e test, not by inspection:
+  `createTaskTemplate` returns a DRAFT and `assignTask` requires an
+  ACTIVE template, so the frozen contract could not reach past template
+  creation — a client could never assign, start, submit, approve or
+  redeem anything through the real API. Recorded as DISC-P1-026-1 and
+  traced into P1-028 rather than patched silently.
+- Fixed alongside it, surfaced by the same test: five POST transitions
+  (`publish`, `start`, `approve`, `reject`, `redeem`) declare `200` in
+  the spec but returned NestJS's default `201`. Handlers now carry
+  `@HttpCode(200)`. Convention confirmed and now consistent: `201` for
+  operations that create a resource, `200` for state transitions.
+- `packages/api-client/src/generated` regenerated in the same change
+  (CI's `generate:check` gate enforces this).
+- The REST API surface is now version-tracked in
+  `@life/versioning`'s `SURFACE_VERSION_STATUS`, deliberately independent
+  of `contract_pack_version` (domain-types, unchanged at 0.2.0) — two
+  separate versioned surfaces per
+  docs/architecture/versioning-and-compatibility.md.
+
 ## 0.17 (contracts/registry.yaml — catch up six shipped domain-service groups)
 
 `task-registry contracts validate` runs in CI (`pnpm run contracts:validate`,
