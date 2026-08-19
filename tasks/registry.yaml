@@ -1691,3 +1691,111 @@ tasks:
       acceptance_criteria: Complete evidence package exists and every mandatory Phase 1 outcome is PASS or has an explicit Human Architect exception with owner, mitigation and revisit condition.
       test_strategy: Evidence completeness/traceability check plus clean-room reproduction of the acceptance package index.
       source_reference: tasks/phase-1-control-tasks.yaml
+  - id: P1-024
+    phase: 1
+    title: Database schema, migrations and seed compatibility
+    primary: backend-lead
+    status: PLANNED
+    deps: []
+    deps_contract:
+      - P0-009
+    deps_implementation:
+      - P1-001
+      - P1-002A
+      - P1-002B
+      - P1-005
+      - P1-006
+    reviewer: devops-lead
+    gate_owners:
+      - qa-lead
+      - architecture-control-lead
+    discovery_links: []
+    blocked_reason: null
+    human_decisions: []
+    origin_discovery: null
+    discovered_from: null
+    execution:
+      wave: W7
+      priority: P0
+      acceptance_criteria: Tables for every persisted aggregate (Family, ParentMembership, ChildProfile, TaskTemplate, TaskAssignment, TaskCompletion, VerificationResult, MediaEvidence, RewardLedgerEntry, Reward) match packages/domain-types schemas' shape; indexes match docs/architecture/phase-1-scale-guardrails.md's query predicates (closes SG-002); pnpm db:migrate:up/down/up verified against real local Postgres; packages/fixtures seeds against the real schema instead of ad-hoc CREATE TABLE.
+      test_strategy: node-pg-migrate up/down/up round-trip against a real local Postgres (docker-compose.dev.yml), schema-shape assertions cross-checked against packages/domain-types zod schemas, seed script smoke test.
+      source_reference: tasks/packets/BLK-P1-006-007-persistence-api-pack.md
+  - id: P1-025
+    phase: 1
+    title: Repository layer -- persistence, authorization and concurrency enforcement
+    primary: backend-lead
+    status: PLANNED
+    deps: []
+    deps_contract:
+      - P0-009
+    deps_implementation:
+      - P1-024
+      - P1-021
+    reviewer: security-engineering
+    gate_owners:
+      - qa-lead
+      - security-red-team
+      - chief-architect
+    discovery_links: []
+    blocked_reason: null
+    human_decisions: []
+    origin_discovery: null
+    discovered_from: null
+    execution:
+      wave: W7
+      priority: P0
+      acceptance_criteria: Every domain-service mutation (family-service.ts, task-service.ts, media-service.ts, reward-service.ts) has a repository wrapper that loads the real Family aggregate and verifies actor family-membership/role before calling it, and calls the matching check*Version function inside the same DB transaction as the read before writing. packages/security-red-team's RT-002/RT-003/RT-005/RT-010/RT-016 are retested against this layer and reclassified BLOCKED (closes DISC-P1-021-1, DISC-P1-021-2).
+      test_strategy: Re-run packages/security-red-team's adversarial suite against the repository layer (not the pure domain layer); concurrent-write integration tests against real Postgres proving a stale-version writer is rejected.
+      source_reference: tasks/packets/BLK-P1-006-007-persistence-api-pack.md
+  - id: P1-026
+    phase: 1
+    title: Session/auth and the vertical-slice REST API handlers
+    primary: backend-lead
+    status: PLANNED
+    deps: []
+    deps_contract:
+      - P1-013
+    deps_implementation:
+      - P1-025
+    reviewer: security-engineering
+    gate_owners:
+      - qa-lead
+      - security-engineering
+      - child-safety-lead
+    discovery_links: []
+    blocked_reason: null
+    human_decisions: []
+    origin_discovery: null
+    discovered_from: null
+    execution:
+      wave: W7
+      priority: P0
+      acceptance_criteria: Every operation in services/api/openapi/openapi.yaml has a real NestJS handler wired to the P1-025 repository layer; a request's actor is derived from a verified session token, never a client-supplied field; idempotency keys are enforced on every mutating endpoint per docs/architecture/api-contracts.md.
+      test_strategy: Integration tests per endpoint against real Postgres (success, auth-rejection, idempotency-replay and stale-version-conflict cases); OpenAPI operation-by-operation coverage check.
+      source_reference: tasks/packets/BLK-P1-006-007-persistence-api-pack.md
+  - id: P1-027
+    phase: 1
+    title: Vertical-slice end-to-end against the real stack
+    primary: qa-lead
+    status: PLANNED
+    deps: []
+    deps_contract:
+      - P1-013
+    deps_implementation:
+      - P1-026
+    reviewer: chief-architect
+    gate_owners:
+      - security-engineering
+      - child-safety-lead
+      - journey-agent
+    discovery_links: []
+    blocked_reason: null
+    human_decisions: []
+    origin_discovery: null
+    discovered_from: null
+    execution:
+      wave: W7
+      priority: P0
+      acceptance_criteria: The full parent-creates-task -> child-completes -> proof -> approval -> reward-ledger journey runs against real Postgres end to end with no manual DB intervention (closes BLK-P1-009's resolution text); contributes the real-stack evidence half of P1-007.
+      test_strategy: Automated E2E against docker-compose.dev.yml's stack using packages/fixtures synthetic families, asserting on real DB state and real API responses at each step.
+      source_reference: tasks/packets/BLK-P1-006-007-persistence-api-pack.md
