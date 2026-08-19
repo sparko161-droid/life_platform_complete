@@ -1980,7 +1980,7 @@ tasks:
     phase: 1
     title: Freeze the Identity contract (Account, Credential, Session)
     primary: chief-architect
-    status: BACKLOG
+    status: DONE
     deps: []
     deps_contract:
       - P0-009
