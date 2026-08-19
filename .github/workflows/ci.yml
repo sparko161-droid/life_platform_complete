@@ -17,6 +17,14 @@ jobs:
   checks:
     name: install-lint-typecheck-test-build
     runs-on: ubuntu-latest
+    # Job-level (not just step-level): P1-025's services/api/test/*.test.ts
+    # repository integration tests need this in the later "Unit tests"
+    # step too, not only the migration step below -- otherwise they'd
+    # silently skip in CI the same way they do in a sandbox with no
+    # database, defeating the point of writing them as real integration
+    # tests instead of mocks.
+    env:
+      DATABASE_URL: postgres://life:life_dev@localhost:5432/life
     # P1-024: real Postgres to verify migrations against. GitHub's own
     # runners always have Docker, unlike some local dev sandboxes -- this
     # is the environment that actually proves a migration round-trips,
@@ -73,8 +81,6 @@ jobs:
       # domain-service-generated aggregates (not the Phase 0 smoke
       # value), proving the schema round-trips real domain shapes.
       - name: Database migrations round-trip (up/down/up) and domain seed
-        env:
-          DATABASE_URL: postgres://life:life_dev@localhost:5432/life
         run: |
           pnpm --filter @life/services-api run migrate:up
           pnpm --filter @life/services-api run migrate:down

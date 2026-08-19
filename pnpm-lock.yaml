@@ -261,13 +261,26 @@ importers:
         version: 5.9.3
 
   services/api:
-    devDependencies:
-      node-pg-migrate:
-        specifier: ^9.0.0
-        version: 9.0.0(@types/pg@8.21.0)(pg@8.23.0)
+    dependencies:
+      '@life/domain-types':
+        specifier: workspace:*
+        version: link:../../packages/domain-types
       pg:
         specifier: ^8.13.1
         version: 8.23.0
+    devDependencies:
+      '@types/node':
+        specifier: ^26.2.0
+        version: 26.2.0
+      '@types/pg':
+        specifier: ^8.11.10
+        version: 8.21.0
+      node-pg-migrate:
+        specifier: ^9.0.0
+        version: 9.0.0(@types/pg@8.21.0)(pg@8.23.0)
+      tsx:
+        specifier: ^4.19.2
+        version: 4.23.12
       typescript:
         specifier: ^5.9.2
         version: 5.9.3
