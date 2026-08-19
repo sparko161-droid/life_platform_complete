@@ -15,13 +15,19 @@ import type { Finding } from "./finding.js";
  * BLOCKED findings are verified controls, kept in the record because a
  * red-team assessment that only reports failures looks unfinished and
  * invites the next reviewer to re-attempt the same exploit from scratch.
- * ACCEPTED_RISK findings are real, currently-unenforced gaps: the pure
- * domain layer (no I/O, no persisted Family/session available to check
- * against by design -- see docs/product/actors-and-permissions.md) defers
- * actor authorization to an application/API layer that does not exist yet
- * (BLK-P1-007 is open). Each is disclosed with a named remediation owner
- * rather than silently accepted, and `retestResult: NOT_RETESTED` records
- * honestly that there is nothing yet to retest against.
+ *
+ * RT-002, RT-003, RT-005, RT-010 and RT-016 were originally recorded
+ * ACCEPTED_RISK: the pure domain layer (no I/O, no persisted
+ * Family/session available to check against by design -- see
+ * docs/product/actors-and-permissions.md) defers actor authorization and
+ * version enforcement to an application/API layer that did not exist yet.
+ * P1-025 (services/api/src/repositories/) built that layer and closed all
+ * five -- each is now BLOCKED, retested against the real repository layer
+ * (services/api/test/repositories.test.ts) running against a real
+ * Postgres in CI, not the bare domain function. See
+ * tasks/registry.yaml's DISC-P1-021-1/DISC-P1-021-2 for the discovery
+ * trail and tasks/phase-1-blockers.yaml's BLK-P1-013 note for the
+ * blocker this closes.
  */
 export const FINDINGS: readonly Finding[] = [
   {
@@ -38,28 +44,24 @@ export const FINDINGS: readonly Finding[] = [
   {
     id: "RT-002",
     category: "AUTHORIZATION_IDOR",
-    severity: "HIGH",
+    severity: "INFO",
     title: "verifyTask does not check the approving actor is a family member",
     exploitAttempt: "verifyTask() called with an actorId that belongs to no membership of the assignment's family at all (an arbitrary string).",
-    actualOutcome: "Succeeds -- the state transition and event are produced exactly as if a legitimate parent had called it. task-service.ts only validates the assignment's *status*, never the actor's family membership or capability (contrast with family-service.ts's requireCapability, which does check real ParentMembership records).",
-    status: "ACCEPTED_RISK",
-    remediation: "The application/API layer (BLK-P1-007) must load the real Family aggregate and verify actorId is an ACTIVE parent member with base access (or the literal 'system' verification-engine actor) before calling verifyTask/beginVerification/publishTemplate/archiveTemplate. This is a hard requirement for that layer's design, not an optional hardening pass.",
-    remediationOwner: "backend-lead (owns BLK-P1-007)",
-    retestResult: "NOT_RETESTED",
-    reference: "test/adversarial.test.ts: 'AUTHORIZATION_IDOR: verifyTask accepts an actor with no family membership'",
+    actualOutcome: "The pure domain function still succeeds in isolation (unchanged, disclosed design) -- but P1-025's repository layer (services/api/src/repositories/task-repository.ts) now calls requireActiveParentMemberOrSystem before ever reaching it, and rejects the exploit with RepositoryAuthorizationError(NOT_ACTIVE_FAMILY_MEMBER). Retested against the real repository layer, not the bare domain function.",
+    status: "BLOCKED",
+    retestResult: "PASS",
+    reference: "services/api/test/repositories.test.ts: 'RT-002 retest: verifyTask rejects an actor with no family membership'",
   },
   {
     id: "RT-003",
     category: "PRIVILEGE_ESCALATION",
-    severity: "CRITICAL",
+    severity: "INFO",
     title: "A child can self-approve their own submitted task",
     exploitAttempt: "verifyTask() called with outcome APPROVED and actorId set to the same child who submitted the task being approved.",
-    actualOutcome: "Succeeds -- verifyTask has no notion of actor role at all; VerifyTaskCommand.actorId is typed as a bare `string` specifically to also allow the literal 'system' verification-engine actor, so nothing distinguishes a parent from the submitting child. Self-approval completely defeats the PARENT_APPROVAL verification strategy.",
-    status: "ACCEPTED_RISK",
-    remediation: "Same fix as RT-002 (actor-membership check at the application layer) is necessary but not sufficient here: the check must also confirm the actor's *role* is parent (or the system verification engine), not merely family membership -- a child is a family member too.",
-    remediationOwner: "backend-lead (owns BLK-P1-007)",
-    retestResult: "NOT_RETESTED",
-    reference: "test/adversarial.test.ts: 'PRIVILEGE_ESCALATION: a child can self-approve their own submitted task'",
+    actualOutcome: "The pure domain function still succeeds in isolation (unchanged, disclosed design) -- but P1-025's repository layer's requireActiveParentMemberOrSystem check queries parent_memberships, and a child's id is never a row there, so self-approval is rejected with RepositoryAuthorizationError(NOT_ACTIVE_FAMILY_MEMBER) the same way an unrelated outsider is (RT-002) -- no separate role check was even needed.",
+    status: "BLOCKED",
+    retestResult: "PASS",
+    reference: "services/api/test/repositories.test.ts: 'RT-003 retest: verifyTask rejects the submitting child self-approving'",
   },
   {
     id: "RT-004",
@@ -75,15 +77,13 @@ export const FINDINGS: readonly Finding[] = [
   {
     id: "RT-005",
     category: "REWARD_MANIPULATION",
-    severity: "HIGH",
+    severity: "INFO",
     title: "confirmRedemption does not check the confirming actor is a family member",
     exploitAttempt: "confirmRedemption() called with an arbitrary actorId unrelated to the reward's family.",
-    actualOutcome: "Succeeds -- reward-service.ts's activateReward/confirmRedemption/cancelRedemption/expireReward/cancelReward all take `actorId: ParentId` (a compile-time brand only, zero runtime membership check) and never receive a Family aggregate to check against, the same pattern as RT-002.",
-    status: "ACCEPTED_RISK",
-    remediation: "The application layer must verify actorId is an ACTIVE parent member of reward.familyId (and, for confirm/cancel, holds MONEY_REWARDS capability where the reward type requires it) before calling any reward-catalog mutation.",
-    remediationOwner: "game-engine-lead (owns P1-006/reward-service.ts consumers)",
-    retestResult: "NOT_RETESTED",
-    reference: "test/adversarial.test.ts: 'REWARD_MANIPULATION: confirmRedemption accepts an actor with no family membership'",
+    actualOutcome: "The pure domain function still succeeds in isolation (unchanged, disclosed design) -- but P1-025's repository layer (services/api/src/repositories/reward-repository.ts) now calls requireActiveParentMemberOrSystem before ever reaching it, and rejects the exploit with RepositoryAuthorizationError(NOT_ACTIVE_FAMILY_MEMBER). Retested against the real repository layer.",
+    status: "BLOCKED",
+    retestResult: "PASS",
+    reference: "services/api/test/repositories.test.ts: 'RT-005 retest: confirmRedemption rejects an actor with no family membership'",
   },
   {
     id: "RT-006",
@@ -132,15 +132,13 @@ export const FINDINGS: readonly Finding[] = [
   {
     id: "RT-010",
     category: "RACE_CONDITION",
-    severity: "MEDIUM",
-    title: "Optimistic-version checking is a mechanism, not an enforced control, until a persistence layer exists",
-    exploitAttempt: "Two parents read the same assignment snapshot and both attempt to approve it; checkAssignmentVersion is available to detect this, but nothing forces a caller to invoke it.",
-    actualOutcome: "checkAssignmentVersion correctly throws StaleVersionError when a caller passes a stale submitted version against a bumped current version (packages/domain-types/src/concurrency.ts) -- but verifyTask itself does not call it, and there is no database with a unique-version constraint yet (BLK-P1-007 is open) to make the check unavoidable. Today, two concurrent callers that skip the check would both succeed.",
-    status: "ACCEPTED_RISK",
-    remediation: "The persistence layer must call checkAssignmentVersion (or an equivalent DB-level optimistic-lock constraint) inside the same transaction as the read, per concurrency.ts's own module docstring usage example. Track against BLK-P1-007.",
-    remediationOwner: "backend-lead / devops-lead (own BLK-P1-007)",
-    retestResult: "NOT_RETESTED",
-    reference: "test/adversarial.test.ts: 'RACE_CONDITION: version check is available but not self-enforcing'",
+    severity: "INFO",
+    title: "Optimistic-version checking is now an enforced control, not only a mechanism",
+    exploitAttempt: "Two parents read the same assignment snapshot and both attempt to approve it; checkAssignmentVersion is available to detect this, but a caller could previously skip invoking it.",
+    actualOutcome: "P1-025's repository layer takes SELECT ... FOR UPDATE (a real row lock) on every read, then writes via UPDATE ... WHERE version = $n inside one transaction (services/api/src/db/pool.ts's withTransaction) -- a losing writer now gets RepositoryConflictError against the real database, not just from calling checkVersion voluntarily. Retested against a real Postgres.",
+    status: "BLOCKED",
+    retestResult: "PASS",
+    reference: "services/api/test/repositories.test.ts: 'RT-010 retest: a concurrent stale-version write is rejected with RepositoryConflictError'",
   },
   {
     id: "RT-011",
@@ -200,14 +198,12 @@ export const FINDINGS: readonly Finding[] = [
   {
     id: "RT-016",
     category: "AUTHORIZATION_IDOR",
-    severity: "HIGH",
+    severity: "INFO",
     title: "assignTask does not check the assigned child belongs to the template's family",
     exploitAttempt: "assignTask() called with an assignedToChildId from a different family than the template.",
-    actualOutcome: "Succeeds -- assignTask's own docstring already discloses this ('the child and parent are expected to belong to the same family (enforced by the application layer, not here...)'), but nothing in code enforces it, and no test previously exercised the disclosed gap.",
-    status: "ACCEPTED_RISK",
-    remediation: "The application layer must verify assignedToChildId is an ACTIVE ChildProfile of the same Family as the template before calling assignTask -- otherwise a child could be assigned tasks (and see the resulting reward path) for a family they do not belong to.",
-    remediationOwner: "backend-lead (owns BLK-P1-007)",
-    retestResult: "NOT_RETESTED",
-    reference: "test/adversarial.test.ts: 'AUTHORIZATION_IDOR: assignTask accepts a child from a different family'",
+    actualOutcome: "The pure domain function still succeeds in isolation (unchanged, disclosed design) -- but P1-025's repository layer now calls requireChildInFamily before ever reaching it, and rejects the exploit with RepositoryAuthorizationError(CHILD_NOT_IN_FAMILY). Retested against the real repository layer.",
+    status: "BLOCKED",
+    retestResult: "PASS",
+    reference: "services/api/test/repositories.test.ts: 'RT-016 retest: assignTask rejects a child from a different family'",
   },
 ] as const;

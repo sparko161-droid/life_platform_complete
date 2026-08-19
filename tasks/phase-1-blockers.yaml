@@ -105,24 +105,27 @@ blockers:
     resolution: "Implement Family, Task, persistence, verification, reward and application-service runtime instead of placeholder entrypoints."
   - id: BLK-P1-007
     priority: P0
-    status: OPEN
+    status: PARTIALLY_RESOLVED
     title: "Implement transactional persistence and real API path"
     owners: [backend-lead, devops-lead]
     reviewers: [chief-architect, security-engineering]
-    blocks: [P1-014, P1-015, P1-016, P1-017]
+    blocks: [P1-016, P1-017]
     resolution: "Add migrations, repositories/application services, API handlers, authorization and transaction boundaries for the vertical slice."
     note: >-
-      P1-021's adversarial assessment (packages/security-red-team) confirmed
-      by exploit, not just inspection, that this layer must independently
-      enforce actor authorization (family membership + role) before calling
-      verifyTask/assignTask/activateReward/confirmRedemption/cancelRedemption/
-      expireReward/cancelReward -- the domain layer intentionally does not
-      (DISC-P1-021-1; RT-002/RT-003/RT-005/RT-016 in packages/security-red-team/src/findings.ts,
-      RT-003 is CRITICAL: a child can self-approve their own task today) -- and
-      must call checkAssignmentVersion (or an equivalent DB constraint) inside
-      the same transaction as the read to make optimistic concurrency real
-      rather than advisory (DISC-P1-021-2; RT-010). Both are acceptance
-      criteria for this blocker's resolution, not optional hardening.
+      P1-024 added migrations (real Postgres schema, migrate up/down/up
+      verified in CI). P1-025 added the repository/application-service
+      layer with the authorization and transaction-boundary requirements
+      this note originally raised: every parent-facing mutation now calls
+      requireActiveParentMemberOrSystem (or requireChildInFamily) before
+      the domain function, and every write takes SELECT ... FOR UPDATE +
+      UPDATE ... WHERE version = $n inside one transaction. Retested for
+      real: RT-002/RT-003/RT-005/RT-010/RT-016 (DISC-P1-021-1/2) all now
+      BLOCKED against services/api/test/repositories.test.ts, running
+      against a real Postgres in CI -- see the updated findings in
+      packages/security-red-team/src/findings.ts and BLK-P1-013 (now
+      RESOLVED). `blocks` narrowed to P1-016/P1-017, which need the
+      remaining scope: real REST API handlers and session/auth (P1-026),
+      then the E2E vertical slice (P1-027).
   - id: BLK-P1-008
     priority: P0
     status: OPEN
@@ -195,25 +198,25 @@ blockers:
       until it closes.
   - id: BLK-P1-013
     priority: P0
-    status: PARTIALLY_RESOLVED
+    status: RESOLVED
     title: "Independent Security Red Team capability"
     owners: [security-red-team]
     reviewers: [security-engineering, child-safety-lead]
     gates: [qa-lead, chief-architect]
-    blocks: [W3, W4, W7, W8, phase-1-exit]
+    blocks: []
     resolution: "Build adversarial cases and execute/redrive attacks against authorization, family isolation, replay, races, media access, reward manipulation and information disclosure; require retest after fixes."
     note: >-
       P1-021 built the capability: packages/security-red-team runs 16 real
       exploit attempts against the live domain-types package (not mocks),
       covering all 8 required categories, each backed by a Finding with
-      severity and retestResult. 12 are BLOCKED (verified controls,
-      retested PASS); 4 are ACCEPTED_RISK (real, disclosed gaps -- see
-      DISC-P1-021-1/2 on P1-021 and BLK-P1-007's note) with
-      retestResult=NOT_RETESTED because there is no application/persistence
-      layer yet to retest against. Stays open, narrowed: the capability
-      exists and W3/W4/W7/W8/phase-1-exit no longer need to wait on it
-      being *built*, but "require retest after fixes" cannot close until
-      BLK-P1-007 lands and the 4 ACCEPTED_RISK findings are retested
+      severity and retestResult. 5 (RT-002, RT-003, RT-005, RT-010, RT-016)
+      were originally ACCEPTED_RISK -- real, disclosed gaps deferred to an
+      application layer that did not exist yet (DISC-P1-021-1/2 on
+      P1-021). P1-025 (services/api/src/repositories/) built that layer;
+      all 5 are now retested against it in
+      services/api/test/repositories.test.ts (real Postgres, run in CI)
+      and reclassified BLOCKED, retestResult=PASS. All 16 findings are now
+      BLOCKED. "require retest after fixes" is satisfied; `blocks` cleared
       against the real implementation.
   - id: BLK-P1-014
     priority: P1
@@ -267,3 +270,9 @@ historical_discoveries:
   - id: DISC-P1-014-1
     status: RESOLVED
     note: "packages/domain-types's DOMAIN_EVENT_TYPES was missing two of task-to-reward.md's seven Required events (PROGRESS_UPDATED, NOTIFICATION_REQUESTED), found while wiring P1-014's event path. Added both plus a completeness test."
+  - id: DISC-P1-021-1
+    status: RESOLVED
+    note: "task-service.ts/reward-service.ts mutations accepted any actorId with no family-membership or role check -- confirmed exploitable by packages/security-red-team (RT-002, RT-003 critical: child self-approval, RT-005, RT-016). Resolved by P1-025: services/api/src/repositories/auth.ts's requireActiveParentMemberOrSystem/requireChildInFamily now gate every one of those mutations. All four findings retested against the real repository layer (services/api/test/repositories.test.ts, real Postgres in CI) and reclassified BLOCKED."
+  - id: DISC-P1-021-2
+    status: RESOLVED
+    note: "checkAssignmentVersion existed but nothing called it, so concurrent writes were not actually prevented (RT-010). Resolved by P1-025: every repository write takes SELECT ... FOR UPDATE then UPDATE ... WHERE version = $n inside one transaction (services/api/src/db/pool.ts); a losing writer gets RepositoryConflictError. Retested against a real Postgres in CI and reclassified BLOCKED."

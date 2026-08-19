@@ -1724,7 +1724,7 @@ tasks:
     phase: 1
     title: Repository layer -- persistence, authorization and concurrency enforcement
     primary: backend-lead
-    status: PLANNED
+    status: DONE
     deps: []
     deps_contract:
       - P0-009
