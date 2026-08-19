@@ -18,6 +18,8 @@ export const MediaEvidenceId = brandedUuid("MediaEvidenceId");
 export const RewardLedgerEntryId = brandedUuid("RewardLedgerEntryId");
 export const RewardId = brandedUuid("RewardId");
 export const InvitationTokenId = brandedUuid("InvitationTokenId");
+export const AccountId = brandedUuid("AccountId");
+export const SessionId = brandedUuid("SessionId");
 
 export type FamilyId = z.infer<typeof FamilyId>;
 export type ParentId = z.infer<typeof ParentId>;
@@ -29,3 +31,5 @@ export type MediaEvidenceId = z.infer<typeof MediaEvidenceId>;
 export type RewardLedgerEntryId = z.infer<typeof RewardLedgerEntryId>;
 export type RewardId = z.infer<typeof RewardId>;
 export type InvitationTokenId = z.infer<typeof InvitationTokenId>;
+export type AccountId = z.infer<typeof AccountId>;
+export type SessionId = z.infer<typeof SessionId>;

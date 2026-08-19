@@ -1,5 +1,48 @@
 # Planning Change Log
 
+## 0.19 (contracts — P1-029, the Identity domain)
+
+`docs/architecture/domain-map.md` has always listed Identity first and
+said "Identity/Family → nearly all domains". P0-009's contract pack froze
+Family/Task/Verification/Media/Reward and never covered it. This closes
+that, and it is the first genuinely *new* domain added to the pack rather
+than a revision of an existing one.
+
+Found by P1-010 as "there is no login endpoint", then rescoped
+(DISC-P1-010-1) once investigation showed the real shape: no Account,
+Credential or Session entity existed anywhere; `family-service.ts` stated
+the assumption in a comment — *"createFamily: any authenticated parent"* —
+with nothing defining it; and `ParentId` was a branded UUID that
+originated nowhere.
+
+- New `identity` contract group at `0.1.0`: `Account`, `CredentialRecord`,
+  `Session`, with classification maps and lifecycle transitions.
+- Decisions recorded in **ADR-0006** (`docs/adr/0006-identity-and-session-model.md`):
+  in-house identity with an `authProvider` seam; server-side session
+  *records* rather than bearer-JWT-only; child access always
+  parent-provisioned; Argon2id with the hash on a separate record from
+  the aggregate that authorization reads.
+- The parent/child asymmetry is enforced **by the schema**, not by
+  convention: a `CHILD` session requires `issuedByParentId` and must not
+  carry an `accountId`, because a `ChildProfile` has no credentials by
+  contract and `data-architecture.md` requires child PII stay minimal.
+- Server-side sessions are what make `family-lifecycle.md`'s existing
+  promise — *"Revocation immediately invalidates protected access
+  tokens/session grants"* — implementable at all. A stateless token is
+  valid until expiry by construction.
+- `SECRET` is used for the first time in this pack (`passwordHash`,
+  `sessionId`), the class `data-classification.md` reserves for
+  "credentials, tokens, keys and signing material".
+
+`contract_pack_version` stays `0.2.0`: this is an additive new group, and
+no existing schema changed shape.
+
+Deliberately **not** included (packet D4, same line the API packet drew):
+password reset, MFA, account recovery. `Account.consentAcceptedAt`
+carries the consent *flag* only — the *policy* is a legal question owned
+by P1-034, and per `docs/security/legal-ru.md` no compliance claim
+follows from this work.
+
 ## 0.18 (openapi 0.3.0 — P1-028, from DISC-P1-026-1)
 
 `services/api/openapi/openapi.yaml` gains one operation and bumps its own
