@@ -569,7 +569,7 @@ tasks:
     phase: 1
     title: Parent/child core navigation and API wiring
     primary: frontend-lead
-    status: PLANNED
+    status: DONE
     deps: []
     deps_contract:
       - P1-013
@@ -583,7 +583,22 @@ tasks:
       - qa-lead
       - security-engineering
       - child-safety-lead
-    discovery_links: []
+    discovery_links:
+      - discovery_id: DISC-P1-010-1
+        source_task: P1-010
+        type: MISSING_REQUIREMENT
+        finding: 'There is no login/session-issuance operation anywhere in services/api/openapi/openapi.yaml. P1-026 built session *verification* (SessionGuard reads and validates a Bearer JWT) and `signSessionToken` exists in services/api/src/auth/session.ts, but it is only ever called by test fixtures -- no endpoint issues a token to a real client. The web apps can therefore proxy an authenticated request but have no way for a parent or child to ever obtain a session in the first place.'
+        why_it_matters: 'Every authenticated screen in P1-003/P1-004/P1-016 is unreachable by a real user until this exists -- the httpOnly session cookie the frontend is built around has nothing to put in it. It also means the vertical slice, though proven end to end in tests, cannot be demonstrated by a human through the browser. tasks/packets/BLK-P1-006-007-persistence-api-pack.md explicitly scoped full auth (password reset, OAuth, MFA) out of P1-026 but did name "a request is provably bound to one real actor" as in scope; issuance was the half that fell through the gap between that packet and the frontend packet.'
+        affected_domains: []
+        architecture_impact: null
+        security_impact: 'This is the one place credentials are handled, so it is where docs/security/threat-model.md''s account-takeover and child-impersonation concerns concentrate. It should be designed deliberately (child sign-in is not the same problem as parent sign-in -- a child may have no email and no password by design, per the ChildProfile contract carrying no credentials at all), not added ad hoc to unblock a screen.'
+        ux_impact: 'No sign-in screen exists in packages/ux-contracts'' SCREEN_IDS either -- P-FAMILY-SETUP is named in SPECIFIED_SCREEN_IDS but has no frozen contract.'
+        recommended_solution: 'Design parent and child session issuance as its own task: a parent credential flow, plus a child sign-in that does not assume the child has an email/password (e.g. a family-scoped device pairing or parent-provisioned code). Add the operations to openapi.yaml, a Next route handler that sets the httpOnly cookie via @life/web-session''s sessionCookieOptions, and the matching frozen screen contract.'
+        alternatives:
+          - 'Have the frontend mint its own tokens with the shared secret -- rejected outright: it would put the signing secret in the web tier and make every browser able to forge any actor, defeating the entire P1-025 authorization layer.'
+        priority: HIGH
+        blocking: false
+        proposed_task: null
     blocked_reason: null
     human_decisions: []
     origin_discovery: null
@@ -1807,13 +1822,13 @@ tasks:
       - discovery_id: DISC-P1-027-1
         source_task: P1-027
         type: MISSING_REQUIREMENT
-        finding: 'There is no media upload operation anywhere in services/api/openapi/openapi.yaml. P1-005 built the MediaEvidence domain layer (registerEvidence, upload policy, retention, family isolation) and P1-024 persists a media_evidence table, but nothing exposes either over HTTP, and TaskCompletion.mediaEvidenceId can therefore only ever be supplied by a client that already has an id no endpoint can mint.'
-        why_it_matters: 'Four of the ten verification strategies (PHOTO_PROOF, VIDEO_PROOF, AUDIO_PROOF, CAMERA_EXERCISE) depend on media evidence, so "proof" in the vertical slice is currently only provable in its weakest form -- a self-report note. P1-027''s own acceptance criterion names the journey rather than media, so this is not a gap in this task, but any Phase 1 claim that photo/video proof works end to end would be false today.'
+        finding: There is no media upload operation anywhere in services/api/openapi/openapi.yaml. P1-005 built the MediaEvidence domain layer (registerEvidence, upload policy, retention, family isolation) and P1-024 persists a media_evidence table, but nothing exposes either over HTTP, and TaskCompletion.mediaEvidenceId can therefore only ever be supplied by a client that already has an id no endpoint can mint.
+        why_it_matters: Four of the ten verification strategies (PHOTO_PROOF, VIDEO_PROOF, AUDIO_PROOF, CAMERA_EXERCISE) depend on media evidence, so "proof" in the vertical slice is currently only provable in its weakest form -- a self-report note. P1-027's own acceptance criterion names the journey rather than media, so this is not a gap in this task, but any Phase 1 claim that photo/video proof works end to end would be false today.
         affected_domains: []
         architecture_impact: null
-        security_impact: 'docs/security/privacy.md requires signed/authorized access and never a public URL; the upload/download path is exactly where that gets enforced or lost, so it should not be added casually late.'
-        ux_impact: 'C-CAMERA and the PHOTO_PROOF path in docs/ux/screens/child-task-detail.md have no backend to call.'
-        recommended_solution: 'Add upload-intent + evidence-registration operations (e.g. POST /media/upload-intent returning a short-lived signed PUT target, then POST /media/evidence to register the stored object) wired to packages/domain-types'' registerEvidence/validateUploadPolicy, plus a signed-read operation. Storage-key-only, never a public URL.'
+        security_impact: docs/security/privacy.md requires signed/authorized access and never a public URL; the upload/download path is exactly where that gets enforced or lost, so it should not be added casually late.
+        ux_impact: C-CAMERA and the PHOTO_PROOF path in docs/ux/screens/child-task-detail.md have no backend to call.
+        recommended_solution: Add upload-intent + evidence-registration operations (e.g. POST /media/upload-intent returning a short-lived signed PUT target, then POST /media/evidence to register the stored object) wired to packages/domain-types' registerEvidence/validateUploadPolicy, plus a signed-read operation. Storage-key-only, never a public URL.
         alternatives:
           - 'Accept raw bytes through the API and store them server-side -- rejected: docs/architecture/data-architecture.md puts objects in S3-compatible storage with the DB holding only metadata and keys, and docs/architecture/phase-1-scale-guardrails.md SG-004 explicitly verifies media never lands in the primary DB path.'
         priority: HIGH

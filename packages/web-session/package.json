@@ -1,7 +1,8 @@
 {
-  "name": "@life/ui",
+  "name": "@life/web-session",
   "private": true,
   "version": "0.1.0",
+  "description": "httpOnly session cookie handling and the server-side API proxy shared by both web apps (P1-010).",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -9,8 +10,7 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
-    },
-    "./tailwind-preset": "./tailwind-preset.js"
+    }
   },
   "scripts": {
     "lint": "echo TODO",
@@ -18,18 +18,9 @@
     "test": "node --import tsx --test ./test/*.test.ts",
     "build": "tsc -p tsconfig.json"
   },
-  "dependencies": {
-    "@life/ui-language": "workspace:*",
-    "@life/ux-contracts": "workspace:*"
-  },
   "devDependencies": {
     "@types/node": "^26.2.0",
-    "@types/react": "^19.0.0",
-    "react": "^19.0.0",
     "tsx": "^4.19.2",
     "typescript": "^5.9.2"
-  },
-  "peerDependencies": {
-    "react": "^19.0.0"
   }
 }
