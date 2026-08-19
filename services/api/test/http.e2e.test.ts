@@ -111,24 +111,100 @@ test("full vertical slice: create family -> add child -> template -> assign -> s
   });
   assert.equal(templateRes.status, 201);
   assert.equal(templateRes.body.status, "DRAFT");
+  const templateId = templateRes.body.taskTemplateId;
 
-  // publishTemplate has no dedicated endpoint in the frozen contract yet
-  // -- assignTask requires an ACTIVE template, so this slice can only
-  // reach as far as template creation via HTTP today. Recorded as a
-  // known gap in this task's handoff, not silently worked around.
   const listRes = await authed(request(server).get(`/api/v1/families/${familyId}/task-templates`));
   assert.equal(listRes.status, 200);
   assert.equal(listRes.body.items.length, 1);
   assert.equal(listRes.body.page_info.has_next_page, false);
 
+  // publishTaskTemplate (P1-028, from DISC-P1-026-1) -- without it the
+  // chain below is unreachable, since assignTask requires ACTIVE.
+  const publishRes = await authed(request(server).post(`/api/v1/task-templates/${templateId}/publish`)).set(
+    "Idempotency-Key",
+    `publish-${templateId}`,
+  );
+  assert.equal(publishRes.status, 200, "openapi.yaml declares 200 for publishTaskTemplate");
+  assert.equal(publishRes.body.status, "ACTIVE");
+
+  const assignRes = await authed(request(server).post(`/api/v1/task-templates/${templateId}/assignments`)).send({
+    assignedToChildId: childId,
+  });
+  assert.equal(assignRes.status, 201);
+  assert.equal(assignRes.body.status, "ASSIGNED");
+  const assignmentId = assignRes.body.taskAssignmentId;
+
+  // The child acts from here -- a separate session, not the parent's.
+  const childToken = signSessionToken({ actorId: childId, role: "child", familyId });
+  const asChild = (req: request.Test) => req.set("Authorization", `Bearer ${childToken}`);
+
+  const startRes = await asChild(request(server).post(`/api/v1/task-assignments/${assignmentId}/start`)).set(
+    "Idempotency-Key",
+    `start-${assignmentId}`,
+  );
+  assert.equal(startRes.status, 200, "openapi.yaml declares 200 for startTaskAssignment");
+  assert.equal(startRes.body.status, "IN_PROGRESS");
+
+  const submitRes = await asChild(request(server).post(`/api/v1/task-assignments/${assignmentId}/completions`))
+    .set("Idempotency-Key", `submit-${assignmentId}`)
+    .send({ selfReportNote: "Готово!" });
+  assert.equal(submitRes.status, 201);
+  assert.equal(submitRes.body.childId, childId);
+
+  const approveRes = await authed(request(server).post(`/api/v1/task-assignments/${assignmentId}/approve`)).set(
+    "Idempotency-Key",
+    `approve-${assignmentId}`,
+  );
+  assert.equal(approveRes.status, 200, "openapi.yaml declares 200 for approveTaskCompletion");
+  assert.equal(approveRes.body.status, "COMPLETED");
+
+  // The whole point of the chain: approval actually granted the reward.
   const ledgerRes = await authed(request(server).get(`/api/v1/children/${childId}/reward-ledger`));
   assert.equal(ledgerRes.status, 200);
-  assert.deepEqual(ledgerRes.body.items, []);
+  const kinds = ledgerRes.body.items.map((e: { kind: string }) => e.kind).sort();
+  assert.deepEqual(kinds, ["COINS", "XP"]);
+  const xp = ledgerRes.body.items.find((e: { kind: string }) => e.kind === "XP");
+  assert.equal(xp.amount, 15);
+  assert.equal(xp.reason, "TASK_COMPLETION");
 
-  const todayRes = await request(server).get(`/api/v1/child/today?childId=${childId}`).set("Authorization", `Bearer ${ownerToken}`);
+  // Replaying approve must not grant the reward twice.
+  const approveAgain = await authed(request(server).post(`/api/v1/task-assignments/${assignmentId}/approve`)).set(
+    "Idempotency-Key",
+    `approve-${assignmentId}`,
+  );
+  assert.equal(approveAgain.status, 200);
+  const ledgerAfterReplay = await authed(request(server).get(`/api/v1/children/${childId}/reward-ledger`));
+  assert.equal(ledgerAfterReplay.body.items.length, 2, "replayed approval must not double-post the ledger");
+
+  const todayRes = await request(server).get(`/api/v1/child/today?childId=${childId}`).set("Authorization", `Bearer ${childToken}`);
   assert.equal(todayRes.status, 200);
   assert.equal(todayRes.body.childId, childId);
-  assert.deepEqual(todayRes.body.assignments, []);
+  assert.equal(todayRes.body.assignments.length, 1);
+  assert.equal(todayRes.body.assignments[0].status, "COMPLETED");
+});
+
+test("publishTaskTemplate is idempotent: publishing an already-ACTIVE template returns it unchanged", async (t) => {
+  if (skipIfNoDb(t)) return;
+  const server = app!.getHttpServer();
+  const ownerId = randomUUID();
+  const token = signSessionToken({ actorId: ownerId, role: "parent" });
+  const authed = (req: request.Test) => req.set("Authorization", `Bearer ${token}`);
+
+  const familyRes = await authed(request(server).post("/api/v1/families")).send({ ownerParentId: ownerId });
+  const familyId = familyRes.body.familyId;
+  const templateRes = await authed(request(server).post(`/api/v1/families/${familyId}/task-templates`)).send({
+    title: "Полить цветы",
+    verificationStrategy: "MANUAL_SELF",
+    rewardXp: 5,
+    rewardCoins: 1,
+  });
+  const templateId = templateRes.body.taskTemplateId;
+
+  const first = await authed(request(server).post(`/api/v1/task-templates/${templateId}/publish`)).set("Idempotency-Key", "k1");
+  assert.equal(first.body.status, "ACTIVE");
+  const second = await authed(request(server).post(`/api/v1/task-templates/${templateId}/publish`)).set("Idempotency-Key", "k1");
+  assert.equal(second.body.status, "ACTIVE");
+  assert.equal(second.body.version, first.body.version, "a replayed publish must not bump the version");
 });
 
 test("GET /api/v1/task-assignments/:id returns 404 for an unknown id", async (t) => {

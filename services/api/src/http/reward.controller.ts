@@ -1,4 +1,4 @@
-import { Controller, Get, Headers, Param, Post, Query, UseGuards } from "@nestjs/common";
+import { Controller, Get, Headers, HttpCode, Param, Post, Query, UseGuards } from "@nestjs/common";
 import { rewardRepository } from "../repositories/index.js";
 import { withTransaction } from "../db/pool.js";
 import { Session } from "../auth/session.decorator.js";
@@ -30,6 +30,7 @@ export class RewardController {
   // (REDEEMING -> REDEEMED, the parent-confirmed settlement) has no
   // exposed operation in the frozen contract yet.
   @Post("api/v1/rewards/:rewardId/redeem")
+  @HttpCode(200)
   async redeem(
     @Param("rewardId") rewardId: string,
     @Session() session: SessionClaims,

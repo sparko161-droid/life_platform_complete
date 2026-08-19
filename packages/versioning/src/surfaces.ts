@@ -44,8 +44,8 @@ export const SURFACE_VERSION_STATUS: readonly SurfaceVersionStatus[] = [
   },
   {
     surface: "rest-api",
-    trackedVersion: null,
-    note: "No independent API version yet -- the 5 vertical-slice OpenAPI operations (P1-014) are unversioned. Real handlers land with the persistence/API layer (BLK-P1-007); version them then, not speculatively now.",
+    trackedVersion: "0.3.0",
+    note: "services/api/openapi/openapi.yaml's own info.version. Tracked from P1-028, which is exactly the moment this entry's earlier note anticipated (\"version them then\"): real handlers had just landed (P1-026) and the first post-handler contract change -- adding publishTaskTemplate -- needed a version to move. Deliberately independent of contract_pack_version (domain-types, still 0.2.0): separate versioned surfaces per docs/architecture/versioning-and-compatibility.md.",
   },
   {
     surface: "domain-events",

@@ -1767,14 +1767,14 @@ tasks:
         source_task: P1-026
         type: MISSING_REQUIREMENT
         finding: 'services/api/openapi/openapi.yaml has no operation to publish a TaskTemplate (DRAFT -> ACTIVE) -- only createTaskTemplate (which returns a DRAFT) exists. assignTask requires an ACTIVE template (task-service.ts: ASSIGN_TASK_TEMPLATE_NOT_ACTIVE), so the frozen HTTP contract cannot reach past template creation: a client can never assign, start, submit, approve or redeem anything through the API as specified today.'
-        why_it_matters: "This blocks P1-027's E2E vertical slice (parent creates task -> child completes -> approval -> reward) from running end to end through the real HTTP surface -- the exact acceptance criterion P1-027 exists to prove. Found while writing P1-026's e2e test, which could only exercise createTaskTemplate and had to stop there rather than silently skip verifying the rest of the chain."
+        why_it_matters: This blocks P1-027's E2E vertical slice (parent creates task -> child completes -> approval -> reward) from running end to end through the real HTTP surface -- the exact acceptance criterion P1-027 exists to prove. Found while writing P1-026's e2e test, which could only exercise createTaskTemplate and had to stop there rather than silently skip verifying the rest of the chain.
         affected_domains: []
         architecture_impact: null
         security_impact: null
         ux_impact: null
-        recommended_solution: "Add a publishTaskTemplate operation (e.g. POST /task-templates/{taskTemplateId}/publish) to openapi.yaml and a matching TaskController handler, following the same pattern as startTaskAssignment/approveTaskCompletion."
+        recommended_solution: Add a publishTaskTemplate operation (e.g. POST /task-templates/{taskTemplateId}/publish) to openapi.yaml and a matching TaskController handler, following the same pattern as startTaskAssignment/approveTaskCompletion.
         alternatives:
-          - "Auto-publish on createTaskTemplate (skip DRAFT entirely via the API) -- rejected: DRAFT exists so a parent can build a template before children see it (docs/architecture/entity-lifecycle.md), auto-publishing would silently remove that."
+          - 'Auto-publish on createTaskTemplate (skip DRAFT entirely via the API) -- rejected: DRAFT exists so a parent can build a template before children see it (docs/architecture/entity-lifecycle.md), auto-publishing would silently remove that.'
         priority: HIGH
         blocking: false
         proposed_task: null
@@ -1814,3 +1814,42 @@ tasks:
       acceptance_criteria: The full parent-creates-task -> child-completes -> proof -> approval -> reward-ledger journey runs against real Postgres end to end with no manual DB intervention (closes BLK-P1-009's resolution text); contributes the real-stack evidence half of P1-007.
       test_strategy: Automated E2E against docker-compose.dev.yml's stack using packages/fixtures synthetic families, asserting on real DB state and real API responses at each step.
       source_reference: tasks/packets/BLK-P1-006-007-persistence-api-pack.md
+  - id: P1-028
+    phase: 1
+    title: Add publishTaskTemplate operation to the frozen API contract
+    primary: backend-lead
+    status: IN_PROGRESS
+    deps: []
+    deps_contract: []
+    deps_implementation:
+      - P1-026
+    reviewer: chief-architect
+    gate_owners:
+      - qa-lead
+      - security-engineering
+    discovery_links:
+      - discovery_id: DISC-P1-028-1
+        source_task: P1-028
+        type: ARCHITECTURE_GAP
+        finding: '`task-registry create-child-task` creates a task at BACKLOG, but the CLI has no command to move BACKLOG -> ANALYSIS -> ARCHITECTURE_CHECK (only `admit`, which targets READY and rejects a BACKLOG source). A discovery-created task therefore cannot reach READY through the CLI at all -- the same class of defect DISC-P0-003-1 recorded for claim/handoff.'
+        why_it_matters: docs/governance/task-admission.md requires discovery-driven work to be traced through the registry, and AGENTS.md requires status changes to go through the locked/validated CLI rather than hand edits. Today those two rules contradict each other for every task create-child-task produces, forcing exactly the manual registry.yaml edit the CLI exists to prevent.
+        affected_domains: []
+        architecture_impact: null
+        security_impact: null
+        ux_impact: null
+        recommended_solution: Add an `analyze <id>` (BACKLOG -> ANALYSIS) and `architecture-check <id>` (ANALYSIS -> ARCHITECTURE_CHECK) command pair, or widen `admit` to walk the whole BACKLOG -> READY path when the admission metadata is complete.
+        alternatives:
+          - 'Make create-child-task emit PLANNED instead of BACKLOG (PLANNED -> READY is already allowed) -- rejected: it would skip the analysis/architecture-check states that exist precisely because discovery-driven work has not been planned in advance.'
+        priority: MEDIUM
+        blocking: false
+        proposed_task: null
+    blocked_reason: null
+    human_decisions: []
+    origin_discovery: DISC-P1-026-1
+    discovered_from: P1-026
+    execution:
+      wave: W7
+      priority: P0
+      acceptance_criteria: services/api/openapi/openapi.yaml carries a publishTaskTemplate operation (DRAFT -> ACTIVE), packages/api-client's generated types are regenerated and committed in the same change, and a matching TaskController handler exists so the full parent-creates-task -> assign -> child-completes -> approve -> reward chain is reachable through the real HTTP surface. Additive-only -- no existing operation or schema changes shape.
+      test_strategy: e2e test extending services/api/test/http.e2e.test.ts to publish then assign through HTTP (the step DISC-P1-026-1 blocked), plus the existing generate:check CI gate proving the client was regenerated.
+      source_reference: discovery:DISC-P1-026-1

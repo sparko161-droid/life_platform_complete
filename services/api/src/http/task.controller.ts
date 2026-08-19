@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Headers, Param, Post, Query, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, Headers, HttpCode, Param, Post, Query, UseGuards } from "@nestjs/common";
 import { randomUUID } from "node:crypto";
 import { rewardRepository, taskRepository } from "../repositories/index.js";
 import { withTransaction } from "../db/pool.js";
@@ -44,6 +44,28 @@ export class TaskController {
         now: new Date().toISOString(),
       }),
     );
+  }
+
+  // POST /task-templates/{taskTemplateId}/publish -- publishTaskTemplate
+  @Post("api/v1/task-templates/:taskTemplateId/publish")
+  @HttpCode(200)
+  async publishTaskTemplate(
+    @Param("taskTemplateId") taskTemplateId: string,
+    @Session() session: SessionClaims,
+    @Headers("idempotency-key") _idempotencyKey: string,
+  ) {
+    return withTransaction(async (client) => {
+      const current = await taskRepository.loadTaskTemplate(client, taskTemplateId);
+      if (!current) throw new RepositoryNotFoundError("TaskTemplate", taskTemplateId);
+      // Idempotent replay: already ACTIVE returns unchanged rather than
+      // failing PUBLISH_TEMPLATE_INVALID_TRANSITION, same rule as
+      // startTaskAssignment's repeat taps.
+      if (current.status === "ACTIVE") return current;
+      return taskRepository.publishTemplate(client, taskTemplateId, {
+        actorId: session.actorId as any,
+        now: new Date().toISOString(),
+      });
+    });
   }
 
   // POST /task-templates/{taskTemplateId}/assignments -- assignTask
@@ -96,6 +118,7 @@ export class TaskController {
 
   // POST /task-assignments/{taskAssignmentId}/start -- startTaskAssignment
   @Post("api/v1/task-assignments/:taskAssignmentId/start")
+  @HttpCode(200)
   async start(
     @Param("taskAssignmentId") taskAssignmentId: string,
     @Session() session: SessionClaims,
@@ -114,6 +137,7 @@ export class TaskController {
 
   // POST /task-assignments/{taskAssignmentId}/approve -- approveTaskCompletion
   @Post("api/v1/task-assignments/:taskAssignmentId/approve")
+  @HttpCode(200)
   async approve(
     @Param("taskAssignmentId") taskAssignmentId: string,
     @Session() session: SessionClaims,
@@ -157,6 +181,7 @@ export class TaskController {
 
   // POST /task-assignments/{taskAssignmentId}/reject -- rejectTaskCompletion
   @Post("api/v1/task-assignments/:taskAssignmentId/reject")
+  @HttpCode(200)
   async reject(
     @Param("taskAssignmentId") taskAssignmentId: string,
     @Session() session: SessionClaims,

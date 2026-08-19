@@ -1,7 +1,13 @@
 openapi: 3.1.0
 info:
   title: Life Platform API
-  version: 0.2.0
+  # 0.3.0 (P1-028): additive minor bump -- adds publishTaskTemplate, no
+  # existing operation or schema changed shape. This is the REST API
+  # surface's own version, deliberately independent of
+  # contracts/registry.yaml's contract_pack_version (the domain-types zod
+  # pack, still 0.2.0 and untouched here) -- the two are separate
+  # versioned surfaces per docs/architecture/versioning-and-compatibility.md.
+  version: 0.3.0
   description: >
     Canonical external REST contract for the Life Platform API, per
     docs/architecture/api-contracts.md. P0-005 established the reusable
@@ -155,6 +161,36 @@ paths:
       responses:
         "201":
           description: Task template created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskTemplate"
+        "5XX":
+          $ref: "#/components/responses/Error"
+
+  /task-templates/{taskTemplateId}/publish:
+    post:
+      operationId: publishTaskTemplate
+      summary: >-
+        Publish a task template so it can be assigned. DRAFT -> ACTIVE
+        (packages/domain-types TASK_TEMPLATE_TRANSITIONS). Added by
+        P1-028 from DISC-P1-026-1: createTaskTemplate returns a DRAFT and
+        assignTask requires an ACTIVE template, so without this operation
+        the contract could not reach past template creation. Idempotent:
+        publishing an already-ACTIVE template returns it unchanged rather
+        than conflicting, matching startTaskAssignment's repeat-tap rule.
+      tags: [task]
+      parameters:
+        - name: taskTemplateId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "200":
+          description: Template is now ACTIVE.
           content:
             application/json:
               schema:
