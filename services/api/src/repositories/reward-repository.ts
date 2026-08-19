@@ -207,4 +207,28 @@ export async function cancelReward(client: PoolClient, rewardId: string, actorId
   return next;
 }
 
+/**
+ * Cursor-paginated reward ledger for one child (P1-026's
+ * `/children/{childId}/reward-ledger`) -- no balance field exists to read
+ * back (docs/architecture/data-architecture.md: "Never store mutable
+ * balance as sole truth"); a caller sums `amount` client- or
+ * service-side, per computeBalance's own contract.
+ */
+export async function listRewardLedgerByChild(
+  client: PoolClient,
+  childId: string,
+  opts: { limit: number; afterPostedAt?: string },
+): Promise<RewardLedgerEntry[]> {
+  const { rows } = opts.afterPostedAt
+    ? await client.query(
+        "SELECT reward_ledger_entry_id, family_id, child_id, kind, amount, reason, source_task_assignment_id, source_reward_id, adjusted_by_parent_id, idempotency_key, posted_at FROM reward_ledger_entries WHERE child_id = $1 AND posted_at > $2 ORDER BY posted_at ASC LIMIT $3",
+        [childId, opts.afterPostedAt, opts.limit],
+      )
+    : await client.query(
+        "SELECT reward_ledger_entry_id, family_id, child_id, kind, amount, reason, source_task_assignment_id, source_reward_id, adjusted_by_parent_id, idempotency_key, posted_at FROM reward_ledger_entries WHERE child_id = $1 ORDER BY posted_at ASC LIMIT $2",
+        [childId, opts.limit],
+      );
+  return rows.map(rowToRewardLedgerEntry);
+}
+
 export { loadReward };

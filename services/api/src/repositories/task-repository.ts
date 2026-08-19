@@ -245,4 +245,48 @@ export async function getTaskCompletion(client: PoolClient, taskCompletionId: st
   return rows[0] ? rowToTaskCompletion(rows[0]) : null;
 }
 
+/**
+ * Read-only variants (no `FOR UPDATE`) for GET endpoints (P1-026) --
+ * taking a row lock to serve a read would only add contention for no
+ * safety benefit; locking is for the read-modify-write sequence inside
+ * a mutation, not for serving current state.
+ */
+export async function readTaskAssignment(client: PoolClient, taskAssignmentId: string): Promise<TaskAssignment | null> {
+  const { rows } = await client.query(
+    "SELECT task_assignment_id, task_template_id, family_id, assigned_to_child_id, status, version, assigned_at, due_at FROM task_assignments WHERE task_assignment_id = $1",
+    [taskAssignmentId],
+  );
+  return rows[0] ? rowToTaskAssignment(rows[0]) : null;
+}
+
+export async function listTaskTemplatesByFamily(
+  client: PoolClient,
+  familyId: string,
+  opts: { limit: number; afterCreatedAt?: string },
+): Promise<TaskTemplate[]> {
+  const { rows } = opts.afterCreatedAt
+    ? await client.query(
+        "SELECT task_template_id, family_id, created_by_parent_id, title, verification_strategy, reward_xp, reward_coins, status, version, created_at FROM task_templates WHERE family_id = $1 AND created_at > $2 ORDER BY created_at ASC LIMIT $3",
+        [familyId, opts.afterCreatedAt, opts.limit],
+      )
+    : await client.query(
+        "SELECT task_template_id, family_id, created_by_parent_id, title, verification_strategy, reward_xp, reward_coins, status, version, created_at FROM task_templates WHERE family_id = $1 ORDER BY created_at ASC LIMIT $2",
+        [familyId, opts.limit],
+      );
+  return rows.map(rowToTaskTemplate);
+}
+
+/**
+ * Non-terminal assignments for one child, oldest first -- the query
+ * `/child/today` (P1-014's ChildTodayView) needs. ARCHIVED is excluded:
+ * it is post-lifecycle housekeeping, not something «Мой день» shows.
+ */
+export async function listActiveAssignmentsByChild(client: PoolClient, childId: string): Promise<TaskAssignment[]> {
+  const { rows } = await client.query(
+    "SELECT task_assignment_id, task_template_id, family_id, assigned_to_child_id, status, version, assigned_at, due_at FROM task_assignments WHERE assigned_to_child_id = $1 AND status != 'ARCHIVED' ORDER BY assigned_at ASC",
+    [childId],
+  );
+  return rows.map(rowToTaskAssignment);
+}
+
 export { loadTaskAssignment, loadTaskTemplate };
