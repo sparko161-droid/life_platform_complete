@@ -2030,7 +2030,7 @@ tasks:
     phase: 1
     title: Sign-in/sign-up API operations and screen contracts
     primary: backend-lead
-    status: IN_PROGRESS
+    status: DONE
     deps: []
     deps_contract:
       - P1-013
@@ -2040,7 +2040,44 @@ tasks:
     gate_owners:
       - security-engineering
       - child-safety-lead
-    discovery_links: []
+    discovery_links:
+      - discovery_id: DISC-P1-031-1
+        source_task: P1-031
+        type: ARCHITECTURE_GAP
+        finding: >-
+          SessionSchema (frozen one task earlier by P1-029) required familyId, which made onboarding impossible: a
+          session could only be issued for a family the parent already belonged to, but creating a family required a
+          session. No family meant no session; no session meant no family. Found while rewriting the e2e suites to
+          authenticate for real -- the switch from self-minted tokens to genuine sign-in is what exposed it, not code
+          review.
+        why_it_matters: >-
+          The requirement contradicted ADR-0006's own constraint 3 ("parent identity exists independently of, and prior
+          to, family membership") and family-service.ts's stated contract ("createFamily: any authenticated parent
+          (bootstraps the family)"). A contract that contradicts its own ADR is worse than a missing one, because
+          everything downstream is built assuming the ADR holds. No real user could ever have registered.
+        affected_domains: []
+        architecture_impact: >-
+          Session.familyId is now optional for PARENT sessions -- a bootstrap session that may only create a family --
+          and still required for CHILD, since a child only exists inside one. Enforced in both the zod schema and the
+          database CHECK constraint. identity contract group 0.1.0 -> 0.2.0.
+        security_impact: >-
+          A bootstrap session is deliberately narrow: it carries no familyId, so every family-scoped authorization check
+          in P1-025 fails closed for it. Nothing had to be relaxed to make onboarding work, which is the property worth
+          preserving if this is ever revisited.
+        ux_impact: >-
+          Sign-in now returns familyId only when the session is family-scoped, so a client can tell whether it must
+          create a family before anything else.
+        recommended_solution: Fixed in this task.
+        alternatives:
+          - >-
+            Create the family during sign-up. Rejected: it forces a family to exist before a parent has decided
+            anything about it, and leaves no state for a parent who has authenticated but not yet set up.
+          - >-
+            Let createFamily accept an unauthenticated caller. Rejected outright -- it would let anyone create a family
+            naming any parentId, reintroducing the class of gap P1-025 closed.
+        priority: HIGH
+        blocking: false
+        proposed_task: null
     blocked_reason: null
     human_decisions: []
     origin_discovery: DISC-P1-010-1
