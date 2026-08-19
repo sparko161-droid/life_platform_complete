@@ -67,7 +67,7 @@ groups:
 
   - name: identity
     status: FROZEN
-    version: "0.1.0"
+    version: "0.2.0"
     owner: chief-architect
     defines:
       domain_types: packages/domain-types/src/identity.ts
@@ -91,9 +91,10 @@ groups:
         - Session
         - SESSION_CLASSIFICATION
         - isSessionActive
+        - isBootstrapSession
       openapi_schemas: []
     consumed_by: [P1-029, P1-030, P1-031, P1-032]
-    changelog_ref: "0.19"
+    changelog_ref: "0.20"
     open_decisions:
       - "Consent content and retention rules are a legal question owned by P1-034 (docs/security/legal-ru.md); this contract carries the consentAcceptedAt flag, deliberately not the policy."
       - "External counsel review is not done (HD-P1-033-2, still open) -- it may change what account or consent data must be captured."
