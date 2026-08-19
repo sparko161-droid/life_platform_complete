@@ -26,6 +26,7 @@ import {
 } from "@life/domain-types";
 import { rowToChildProfile, rowToFamily, rowToParentMembership } from "../db/rows.js";
 import { RepositoryConflictError, RepositoryNotFoundError } from "./errors.js";
+import { revokeSessionsForParent } from "./identity-repository.js";
 
 async function fetchFamily(client: PoolClient, familyId: string, forUpdate: boolean): Promise<Family | null> {
   const familyResult = await client.query(
@@ -194,16 +195,30 @@ export async function acceptInvitation(
   return next;
 }
 
+/**
+ * Revokes a parent's membership **and cuts their live sessions in the
+ * same transaction**.
+ *
+ * docs/product/family-lifecycle.md promises "Revocation immediately
+ * invalidates protected access tokens/session grants". Until P1-030 that
+ * was unimplementable -- a stateless token cannot be withdrawn -- which
+ * is exactly why ADR-0006 chose server-side session records. This is
+ * where the promise is finally kept, and it is in the same transaction
+ * as the membership change on purpose: a revoked membership with a live
+ * session is the failure this exists to prevent, so the two must not be
+ * separately committable.
+ */
 export async function revokeParent(
   client: PoolClient,
   familyId: string,
   command: RevokeParentCommand,
-): Promise<Family> {
+): Promise<{ family: Family; sessionsRevoked: number }> {
   const family = await loadFamily(client, familyId);
   if (!family) throw new RepositoryNotFoundError("Family", familyId);
   const { next } = revokeParentDomain(family, command);
   await saveFamily(client, next, family.version);
-  return next;
+  const sessionsRevoked = await revokeSessionsForParent(client, command.targetId, command.now);
+  return { family: next, sessionsRevoked };
 }
 
 export { loadFamily };

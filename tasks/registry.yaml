@@ -2005,7 +2005,7 @@ tasks:
     phase: 1
     title: Identity persistence, session lifecycle and revocation
     primary: backend-lead
-    status: BACKLOG
+    status: DONE
     deps: []
     deps_contract: []
     deps_implementation:
