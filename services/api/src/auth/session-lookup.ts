@@ -49,9 +49,14 @@ export async function resolveSession(
     // The schema guarantees these are present for a PARENT row, but the
     // guard should not depend on that being true of every future writer.
     if (!session.parentId) return null;
-    return { actorId: session.parentId, role: "parent", familyId: session.familyId };
+    // Spread rather than assign: familyId is absent on a bootstrap
+    // session, and exactOptionalPropertyTypes distinguishes "key omitted"
+    // from "key set to undefined".
+    return { actorId: session.parentId, role: "parent", ...(session.familyId ? { familyId: session.familyId } : {}) };
   }
 
   if (!session.childId) return null;
-  return { actorId: session.childId, role: "child", familyId: session.familyId };
+  // A CHILD session always has a familyId (schema and CHECK both require
+  // it), but the type is optional, so it is spread the same way.
+  return { actorId: session.childId, role: "child", ...(session.familyId ? { familyId: session.familyId } : {}) };
 }
