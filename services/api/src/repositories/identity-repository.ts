@@ -195,15 +195,21 @@ function expiryFrom(now: string, ttlSeconds: number): string {
 
 export interface IssueParentSessionCommand {
   account: Account;
-  familyId: string;
+  /**
+   * Omit to issue a *bootstrap* session: a parent who has authenticated
+   * but belongs to no family yet, and may only create one. Required
+   * otherwise, and checked -- authenticating proves who you are, not
+   * what you may act on.
+   */
+  familyId?: string;
   now: string;
   ttlSeconds?: number;
 }
 
 export async function issueParentSession(client: PoolClient, command: IssueParentSessionCommand): Promise<Session> {
-  // A parent session is scoped to a family they are actually an ACTIVE
-  // member of -- authenticating proves who you are, not what you may act on.
-  await requireActiveParentMember(client, command.familyId, command.account.parentId);
+  if (command.familyId) {
+    await requireActiveParentMember(client, command.familyId, command.account.parentId);
+  }
 
   const sessionId = randomUUID();
   const expiresAt = expiryFrom(command.now, command.ttlSeconds ?? DEFAULT_SESSION_TTL_SECONDS);
@@ -211,7 +217,7 @@ export async function issueParentSession(client: PoolClient, command: IssueParen
     `INSERT INTO sessions (session_id, subject_kind, account_id, parent_id, family_id, issued_at, expires_at)
      VALUES ($1, 'PARENT', $2, $3, $4, $5, $6)
      RETURNING session_id, subject_kind, account_id, parent_id, child_id, family_id, issued_by_parent_id, issued_at, expires_at, revoked_at`,
-    [sessionId, command.account.accountId, command.account.parentId, command.familyId, command.now, expiresAt],
+    [sessionId, command.account.accountId, command.account.parentId, command.familyId ?? null, command.now, expiresAt],
   );
   return rowToSession(rows[0]!);
 }

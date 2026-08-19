@@ -92,7 +92,10 @@ exports.up = (pgm) => {
     account_id: { type: "uuid", references: "accounts(account_id)", onDelete: "CASCADE" },
     parent_id: { type: "uuid" },
     child_id: { type: "uuid" },
-    family_id: { type: "uuid", notNull: true, references: "families(family_id)" },
+    // Nullable: a PARENT bootstrap session exists before the parent
+    // belongs to any family (ADR-0006 constraint 3, DISC-P1-031-1). The
+    // CHECK below still requires it for CHILD.
+    family_id: { type: "uuid", references: "families(family_id)" },
     issued_by_parent_id: { type: "uuid" },
     issued_at: { type: "timestamptz", notNull: true },
     expires_at: { type: "timestamptz", notNull: true },
@@ -114,6 +117,7 @@ exports.up = (pgm) => {
       OR
       (subject_kind = 'CHILD'
         AND child_id IS NOT NULL
+        AND family_id IS NOT NULL
         AND issued_by_parent_id IS NOT NULL
         AND account_id IS NULL)
     )`,

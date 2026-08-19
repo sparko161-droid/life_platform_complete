@@ -1,13 +1,13 @@
 openapi: 3.1.0
 info:
   title: Life Platform API
-  # 0.3.0 (P1-028): additive minor bump -- adds publishTaskTemplate, no
-  # existing operation or schema changed shape. This is the REST API
-  # surface's own version, deliberately independent of
-  # contracts/registry.yaml's contract_pack_version (the domain-types zod
-  # pack, still 0.2.0 and untouched here) -- the two are separate
-  # versioned surfaces per docs/architecture/versioning-and-compatibility.md.
-  version: 0.3.0
+  # 0.4.0 (P1-031): additive minor -- adds the five identity operations
+  # (sign-up, consent, sign-in, sign-out, child provisioning). No existing
+  # operation or schema changed shape. This is the REST API surface own
+  # version, deliberately independent of contracts/registry.yaml
+  # contract_pack_version -- separate versioned surfaces per
+  # docs/architecture/versioning-and-compatibility.md.
+  version: 0.4.0
   description: >
     Canonical external REST contract for the Life Platform API, per
     docs/architecture/api-contracts.md. P0-005 established the reusable
@@ -38,6 +38,186 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+        "5XX":
+          $ref: "#/components/responses/Error"
+
+  # -- Identity (P1-031, ADR-0006). These are what let a real human obtain
+  # a session at all; before them the vertical slice was reachable only by
+  # tests minting their own token (DISC-P1-010-1).
+
+  /auth/sign-up:
+    post:
+      operationId: signUp
+      summary: >-
+        Create an adult account. Starts PENDING_VERIFICATION -- consent
+        must be accepted before sign-in succeeds
+        (docs/product/family-lifecycle.md). Issues no session. Failure is
+        deliberately undifferentiated: a duplicate email reports the same
+        error as any other problem, because confirming an address is
+        registered is an account-enumeration oracle.
+      tags: [identity]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  minLength: 10
+              additionalProperties: false
+      responses:
+        "201":
+          description: Account created.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [accountId, parentId, status]
+                properties:
+                  accountId:
+                    type: string
+                    format: uuid
+                  parentId:
+                    type: string
+                    format: uuid
+                  status:
+                    type: string
+        "400":
+          $ref: "#/components/responses/Error"
+        "5XX":
+          $ref: "#/components/responses/Error"
+
+  /auth/consent:
+    post:
+      operationId: acceptConsent
+      summary: >-
+        Record that required consent was accepted, moving the account to
+        ACTIVE. This endpoint records only *that* consent happened -- what
+        is consented to, under which rule, is a legal question owned by
+        P1-034, and per docs/security/legal-ru.md nothing here supports a
+        compliance claim.
+      tags: [identity]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [accountId]
+              properties:
+                accountId:
+                  type: string
+                  format: uuid
+              additionalProperties: false
+      responses:
+        "200":
+          description: Consent recorded; account is ACTIVE.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [accountId, status]
+                properties:
+                  accountId:
+                    type: string
+                    format: uuid
+                  status:
+                    type: string
+        "5XX":
+          $ref: "#/components/responses/Error"
+
+  /auth/sign-in:
+    post:
+      operationId: signIn
+      summary: >-
+        Exchange credentials for a session id, scoped to one family the
+        account is an ACTIVE member of -- authenticating proves who you
+        are, not what you may act on. The returned sessionId is the
+        opaque bearer value; it maps to a revocable record, not a signed
+        token (ADR-0006 D2). Wrong password, unknown email, suspended
+        account and non-membership all return the same failure.
+        Throttled per email+client address.
+      tags: [identity]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password, familyId]
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                familyId:
+                  type: string
+                  format: uuid
+              additionalProperties: false
+      responses:
+        "200":
+          description: Session issued.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IssuedSession"
+        "401":
+          $ref: "#/components/responses/Error"
+        "5XX":
+          $ref: "#/components/responses/Error"
+
+  /auth/sign-out:
+    post:
+      operationId: signOut
+      summary: Revoke the caller own session. Idempotent.
+      tags: [identity]
+      responses:
+        "204":
+          description: Session revoked.
+        "5XX":
+          $ref: "#/components/responses/Error"
+
+  /auth/child-sessions:
+    post:
+      operationId: provisionChildSession
+      summary: >-
+        A parent provisions a session for their child device. Child
+        access is never self-service: a ChildProfile carries no
+        credentials by contract, so there is nothing a child could
+        present (ADR-0006 D3). Requires a parent session, and the child
+        must belong to that session family.
+      tags: [identity]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [childId]
+              properties:
+                childId:
+                  type: string
+                  format: uuid
+              additionalProperties: false
+      responses:
+        "200":
+          description: Child session issued.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IssuedSession"
+        "401":
+          $ref: "#/components/responses/Error"
         "5XX":
           $ref: "#/components/responses/Error"
 
@@ -537,6 +717,25 @@ components:
         format: uuid
 
   schemas:
+    IssuedSession:
+      type: object
+      required: [sessionId, expiresAt, role]
+      description: >-
+        The opaque bearer value plus its lifetime. sessionId maps to a
+        revocable server-side record (ADR-0006 D2) rather than being a
+        self-contained signed token -- that is what makes
+        docs/product/family-lifecycle.md revocation promise enforceable.
+      properties:
+        sessionId:
+          type: string
+          format: uuid
+        expiresAt:
+          type: string
+          format: date-time
+        role:
+          type: string
+          enum: [parent, child]
+
     HealthStatus:
       type: object
       required: [status]

@@ -14,14 +14,13 @@ import { Test } from "@nestjs/testing";
 import type { INestApplication } from "@nestjs/common";
 import request from "supertest";
 import { AppModule } from "../src/app.module.js";
-import { signSessionToken } from "../src/auth/session.js";
+import { createRealChildSession, createRealParentSession } from "./helpers/real-session.js";
 import { closePool, getPool } from "../src/db/pool.js";
 
 let dbAvailable = false;
 let app: INestApplication | undefined;
 
 before(async () => {
-  process.env.SESSION_JWT_SECRET ??= "test-only-secret-not-a-real-credential";
   try {
     await getPool().query("SELECT 1");
     const tableCheck = await getPool().query("SELECT to_regclass('public.families') AS exists");
@@ -67,26 +66,36 @@ test("POST /api/v1/families rejects a missing session", async (t) => {
 
 test("POST /api/v1/families rejects ownerParentId that does not match the session actor", async (t) => {
   if (skipIfNoDb(t)) return;
-  const actorId = randomUUID();
-  const token = signSessionToken({ actorId, role: "parent" });
+  const parent = await createRealParentSession();
   const res = await request(app!.getHttpServer())
     .post("/api/v1/families")
-    .set("Authorization", `Bearer ${token}`)
-    .send({ ownerParentId: randomUUID() }); // different id
+    .set("Authorization", `Bearer ${parent.sessionId}`)
+    .send({ ownerParentId: randomUUID() }); // someone else's id
   assert.equal(res.status, 403);
   assert.equal(res.body.error.code, "OWNER_MUST_BE_SELF");
+});
+
+test("a self-minted token is rejected -- the bearer value must be a real session record", async (t) => {
+  if (skipIfNoDb(t)) return;
+  // Regression guard for P1-031: before the guard resolved sessions
+  // against the database, anything correctly signed was accepted, which
+  // is why P1-030's revocation could not stop live traffic.
+  const res = await request(app!.getHttpServer())
+    .get(`/api/v1/task-assignments/${randomUUID()}`)
+    .set("Authorization", `Bearer ${randomUUID()}`);
+  assert.equal(res.status, 401);
+  assert.equal(res.body.error.code, "INVALID_SESSION");
 });
 
 test("full vertical slice: create family -> add child -> template -> assign -> start -> submit -> approve grants reward", async (t) => {
   if (skipIfNoDb(t)) return;
   const server = app!.getHttpServer();
-  const ownerId = randomUUID();
-  const ownerToken = signSessionToken({ actorId: ownerId, role: "parent" });
+  // A real account with a real session, exactly as a client would have.
+  const parent = await createRealParentSession();
+  const ownerId = parent.parentId;
+  const ownerToken = parent.sessionId;
   const authed = (req: request.Test) => req.set("Authorization", `Bearer ${ownerToken}`);
-
-  const familyRes = await authed(request(server).post("/api/v1/families")).send({ ownerParentId: ownerId });
-  assert.equal(familyRes.status, 201);
-  const familyId = familyRes.body.familyId;
+  const familyId = parent.familyId;
 
   const childRes = await authed(request(server).post(`/api/v1/families/${familyId}/children`)).send({
     displayName: "Аня",
@@ -134,8 +143,9 @@ test("full vertical slice: create family -> add child -> template -> assign -> s
   assert.equal(assignRes.body.status, "ASSIGNED");
   const assignmentId = assignRes.body.taskAssignmentId;
 
-  // The child acts from here -- a separate session, not the parent's.
-  const childToken = signSessionToken({ actorId: childId, role: "child", familyId });
+  // The child acts from here -- a real parent-provisioned session, not
+  // the parent's own, and not something the child could mint.
+  const childToken = await createRealChildSession(familyId, childId, ownerId);
   const asChild = (req: request.Test) => req.set("Authorization", `Bearer ${childToken}`);
 
   const startRes = await asChild(request(server).post(`/api/v1/task-assignments/${assignmentId}/start`)).set(
@@ -186,12 +196,9 @@ test("full vertical slice: create family -> add child -> template -> assign -> s
 test("publishTaskTemplate is idempotent: publishing an already-ACTIVE template returns it unchanged", async (t) => {
   if (skipIfNoDb(t)) return;
   const server = app!.getHttpServer();
-  const ownerId = randomUUID();
-  const token = signSessionToken({ actorId: ownerId, role: "parent" });
-  const authed = (req: request.Test) => req.set("Authorization", `Bearer ${token}`);
-
-  const familyRes = await authed(request(server).post("/api/v1/families")).send({ ownerParentId: ownerId });
-  const familyId = familyRes.body.familyId;
+  const parent = await createRealParentSession();
+  const authed = (req: request.Test) => req.set("Authorization", `Bearer ${parent.sessionId}`);
+  const familyId = parent.familyId;
   const templateRes = await authed(request(server).post(`/api/v1/families/${familyId}/task-templates`)).send({
     title: "Полить цветы",
     verificationStrategy: "MANUAL_SELF",
@@ -209,10 +216,10 @@ test("publishTaskTemplate is idempotent: publishing an already-ACTIVE template r
 
 test("GET /api/v1/task-assignments/:id returns 404 for an unknown id", async (t) => {
   if (skipIfNoDb(t)) return;
-  const token = signSessionToken({ actorId: randomUUID(), role: "parent" });
+  const parent = await createRealParentSession();
   const res = await request(app!.getHttpServer())
     .get(`/api/v1/task-assignments/${randomUUID()}`)
-    .set("Authorization", `Bearer ${token}`);
+    .set("Authorization", `Bearer ${parent.sessionId}`);
   assert.equal(res.status, 404);
   assert.equal(res.body.error.code, "NOT_FOUND");
 });
