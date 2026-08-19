@@ -1901,10 +1901,18 @@ tasks:
     human_decisions:
       - decision_id: HD-P1-033-1
         question: 'Which markets does Phase 1 actually target? docs/security/legal-ru.md scopes the RU launch, but the obligation set (152-ФЗ vs GDPR vs COPPA-class rules) depends entirely on this and must not be guessed.'
-        decision: null
-        decided_at: null
+        decision: >-
+          Russia only for Phase 1. The Human Architect delegated this to be determined from the project itself, and the project answers it unambiguously: docs/security/legal-ru.md is titled "Russian Legal Workstream" and scopes a RU launch; every user-facing string is Russian and mechanically enforced by @life/ui-language; and MASTER_SPEC's named surfaces include MAX and Alice, which are RU-only products. Governing obligation set is therefore 152-FZ plus its minors provisions. GDPR and COPPA are explicitly NOT in scope and must not be designed for speculatively -- adding a market later is a new decision, not an assumption to bake in now.
+        decided_at: '2026-08-19'
       - decision_id: HD-P1-033-2
-        question: 'Is qualified external counsel engaged, and on what timeline? docs/security/legal-ru.md requires legal review before public launch; this task prepares that review and consumes its output, it cannot replace it.'
+        question: >-
+          Is qualified external counsel engaged, and on what timeline?
+          docs/security/legal-ru.md requires legal review before public launch; this task prepares that review and
+          consumes its output, it cannot replace it. STILL OPEN BY DIRECTION: the Human Architect has directed that the
+          AI Legal Counsel Lead drafts these documents for now without human proofreading. That is a working
+          arrangement, not an answer to this question -- every artifact that role produces must carry an AI-authored /
+          not-reviewed-by-qualified-counsel caveat, docs/security/legal-ru.md's rule stands unchanged (no production
+          claim of legal compliance follows from this work), and this must be resolved before any public launch.
         decision: null
         decided_at: null
     origin_discovery: null
@@ -1933,8 +1941,9 @@ tasks:
     human_decisions:
       - decision_id: HD-P1-034-1
         question: 'What is the minimum age for a child profile, and what parental consent is required to create one? ChildProfileSchema currently accepts birthYear 2000-2030 with no consent gate at all.'
-        decision: null
-        decided_at: null
+        decision: >-
+          Target age range is 4 to 12 years inclusive (Human Architect). Two consequences are engineering work, not prose: (1) ChildProfileSchema's birthYear range of 2000-2030 contradicts it -- at a 2026 reference date the supported range is about 2014-2022, and 2030 is a future year no living child can be born in. Narrowing a frozen contract is a breaking change, so it is recorded here for P1-034 to schedule rather than applied unilaterally. (2) A floor of 4 puts every child user under the 152-FZ minors provisions with no exception, so parental consent is required for every child profile with no per-age branch -- simpler to enforce, and worth stating now rather than discovering later. The consent content itself remains an open legal question.
+        decided_at: '2026-08-19'
     origin_discovery: null
     discovered_from: null
     execution:
@@ -1967,3 +1976,104 @@ tasks:
       acceptance_criteria: 'Data-subject export and deletion actually work against the real schema, and retention is enforced by code rather than described. Specifically: MediaEvidence''s DEFAULT_RETENTION_DAYS/retentionExpiresAt (P1-005) has an expiry path that runs -- today the field is written and nothing ever acts on it -- and deletion honours the append-only reward ledger (docs/architecture/data-architecture.md) rather than violating it.'
       test_strategy: 'Integration tests against real Postgres: seed a family, run export and assert every classified field is present; run deletion and assert removal or documented tombstoning; advance time past a retention window and assert expiry actually fires.'
       source_reference: docs/security/privacy.md
+  - id: P1-029
+    phase: 1
+    title: Freeze the Identity contract (Account, Credential, Session)
+    primary: chief-architect
+    status: BACKLOG
+    deps: []
+    deps_contract:
+      - P0-009
+      - P0-010
+    deps_implementation: []
+    reviewer: security-engineering
+    gate_owners:
+      - child-safety-lead
+      - ai-cto
+    discovery_links: []
+    blocked_reason: null
+    human_decisions: []
+    origin_discovery: DISC-P1-010-1
+    discovered_from: P1-010
+    execution:
+      wave: W7
+      priority: P0
+      acceptance_criteria: 'packages/domain-types carries frozen Account, Credential and Session contracts with data-classification maps, contracts/registry.yaml gains a matching group, and ADR-0006 records D1 (in-house with authProvider seam), D2 (server-side sessions) and D4 (reset/MFA/recovery out of scope) with alternatives and a reversal plan. Additive only -- no existing schema changes shape, proven by @life/versioning''s checkSchemaCompatibility rather than asserted.'
+      test_strategy: 'Schema fixtures per entity, a classification-completeness test matching the existing pattern, and a compatibility check proving the contract-pack bump is additive.'
+      source_reference: tasks/packets/P1-IDENTITY-domain-pack.md
+  - id: P1-030
+    phase: 1
+    title: Identity persistence, session lifecycle and revocation
+    primary: backend-lead
+    status: BACKLOG
+    deps: []
+    deps_contract: []
+    deps_implementation:
+      - P1-029
+      - P1-025
+    reviewer: security-engineering
+    gate_owners:
+      - security-red-team
+      - child-safety-lead
+    discovery_links: []
+    blocked_reason: null
+    human_decisions: []
+    origin_discovery: DISC-P1-010-1
+    discovered_from: P1-010
+    execution:
+      wave: W7
+      priority: P0
+      acceptance_criteria: 'Migrations and repositories for accounts/credentials/sessions; Argon2id hashing with per-account salt; session issue/validate/revoke; and revokeParent actually invalidating live sessions, closing the promise docs/product/family-lifecycle.md already makes ("Revocation immediately invalidates protected access tokens/session grants") and which nothing implements today.'
+      test_strategy: 'Integration tests against real Postgres: a revoked parent''s live session stops working on the next request; a wrong password never yields a session; a password hash is never reversible or logged.'
+      source_reference: tasks/packets/P1-IDENTITY-domain-pack.md
+  - id: P1-031
+    phase: 1
+    title: Sign-in/sign-up API operations and screen contracts
+    primary: backend-lead
+    status: BACKLOG
+    deps: []
+    deps_contract:
+      - P1-013
+    deps_implementation:
+      - P1-030
+    reviewer: uiux-lead
+    gate_owners:
+      - security-engineering
+      - child-safety-lead
+    discovery_links: []
+    blocked_reason: null
+    human_decisions: []
+    origin_discovery: DISC-P1-010-1
+    discovered_from: P1-010
+    execution:
+      wave: W7
+      priority: P0
+      acceptance_criteria: 'openapi.yaml carries sign-up, sign-in, sign-out and child-provisioning operations with the generated client regenerated in the same change; packages/ux-contracts gains a frozen contract for the entry screen (P-FAMILY-SETUP is named in SPECIFIED_SCREEN_IDS today but has no contract, so the product''s entry point is unspecified).'
+      test_strategy: 'Per-operation integration tests including the negative paths -- wrong credentials, replayed sign-in, and a child-provisioning attempt by a non-member -- plus the existing generate:check gate.'
+      source_reference: tasks/packets/P1-IDENTITY-domain-pack.md
+  - id: P1-032
+    phase: 1
+    title: Web sign-in flow and child provisioning
+    primary: frontend-lead
+    status: BACKLOG
+    deps: []
+    deps_contract:
+      - P1-013
+    deps_implementation:
+      - P1-031
+      - P1-010
+    reviewer: security-engineering
+    gate_owners:
+      - child-safety-lead
+      - qa-lead
+    discovery_links: []
+    blocked_reason: null
+    human_decisions: []
+    origin_discovery: DISC-P1-010-1
+    discovered_from: P1-010
+    execution:
+      wave: W7
+      priority: P0
+      acceptance_criteria: 'A human can sign in through the browser on both surfaces and reach an authenticated screen: the Next route handler sets the httpOnly cookie via @life/web-session''s sessionCookieOptions, and a child reaches their surface through parent provisioning without ever holding a credential of their own.'
+      test_strategy: 'E2E through the real stack, closing the gap that the vertical slice is currently only demonstrable by tests that mint their own token.'
+      source_reference: tasks/packets/P1-IDENTITY-domain-pack.md
