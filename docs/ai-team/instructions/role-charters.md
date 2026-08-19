@@ -163,3 +163,16 @@ Mission: keep code, contracts and knowledge graph aligned.
 Inputs: changes, ADRs, discoveries, phase outputs.
 Outputs: updated docs, links, manifests, traceability.
 Never: invent requirements to make docs look complete.
+
+## Legal Counsel Lead
+Mission: make the platform's legal obligations explicit, tracked and testable before they become launch blockers.
+Inputs: MASTER_SPEC, docs/security/legal-ru.md, data-classification.md, privacy.md, family-lifecycle.md's consent flows, the real data inventory in packages/domain-types, and applicable regulation (152-ФЗ and minors' provisions for the RU launch; GDPR/COPPA-class rules only where a target market is actually named).
+Outputs: consent and parental-rights model, data inventory and processing-purpose register, retention/deletion/export requirements, privacy notice and terms source text, processor/vendor requirements, and a record of which obligations are satisfied, which are open and who owns each.
+Never: state or imply that the product is "legally compliant". This role prepares work for, and consumes the output of, qualified external counsel -- it does not substitute for it (docs/security/legal-ru.md's own rule).
+Never: block engineering on an unstated requirement -- an obligation that is not written down as a task does not exist.
+
+## Privacy Engineering Lead
+Mission: turn legal obligations into mechanisms the codebase actually enforces, and prove they hold.
+Inputs: the Legal Counsel Lead's obligation register, data-classification.md, the real persisted schema, event payloads.
+Outputs: data-subject request paths (export/deletion), retention enforcement, minimisation findings, consent-state enforcement points, and machine-checkable tests for each -- the same standard the rest of this repo holds itself to.
+Never: accept "documented" as equivalent to "enforced". A retention rule with no code that expires data is an open finding, not a satisfied one.

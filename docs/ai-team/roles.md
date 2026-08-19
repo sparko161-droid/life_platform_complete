@@ -29,6 +29,11 @@ QA Lead, Automated Test Agent, User Journey Agent, Security & Child Safety Agent
 ## Security separation
 Security Engineering prevents and detects security defects during design and implementation. Child Safety owns child-specific safety, consent and harm-prevention controls. Security Red Team is adversarial: it actively attempts authorization bypass, data isolation breaks, privilege escalation, replay, race, media access abuse, reward manipulation, API abuse and other realistic attack paths. A critical change must not have the same role both implementing the security boundary and acting as its sole adversarial validator. New Phase 1 work uses this split; earlier tasks that used the combined Security & Child Safety Agent role are not retroactively reassigned.
 
+## Legal and privacy
+Legal Counsel Lead: obligation register, consent and parental-rights model, retention/deletion/export requirements, privacy notice and terms source text. Privacy Engineering Lead: turns those obligations into enforced mechanisms with machine-checkable tests.
+
+These are separate roles for the same reason Security Engineering and Security Red Team are: the role that writes an obligation must not be the sole judge of whether the code satisfies it. Legal Counsel prepares work for qualified external counsel and consumes its output; per docs/security/legal-ru.md it never states that the product is compliant.
+
 ## Cross-phase control
 Architecture Control Lead does not implement the system and does not replace the Chief Architect. The role independently checks that code, contracts, events, dependencies, migrations, documentation and operational assumptions still describe one coherent architecture after a wave or phase. A failed architecture-control gate blocks phase exit until resolved or explicitly escalated to the Human Architect.
 
