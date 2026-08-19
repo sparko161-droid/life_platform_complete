@@ -2030,7 +2030,7 @@ tasks:
     phase: 1
     title: Sign-in/sign-up API operations and screen contracts
     primary: backend-lead
-    status: BACKLOG
+    status: IN_PROGRESS
     deps: []
     deps_contract:
       - P1-013

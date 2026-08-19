@@ -21,6 +21,91 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/auth/sign-up": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create an adult account. Starts PENDING_VERIFICATION -- consent must be accepted before sign-in succeeds (docs/product/family-lifecycle.md). Issues no session. Failure is deliberately undifferentiated: a duplicate email reports the same error as any other problem, because confirming an address is registered is an account-enumeration oracle. */
+        post: operations["signUp"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/consent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Record that required consent was accepted, moving the account to ACTIVE. This endpoint records only *that* consent happened -- what is consented to, under which rule, is a legal question owned by P1-034, and per docs/security/legal-ru.md nothing here supports a compliance claim. */
+        post: operations["acceptConsent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/sign-in": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Exchange credentials for a session id, scoped to one family the account is an ACTIVE member of -- authenticating proves who you are, not what you may act on. The returned sessionId is the opaque bearer value; it maps to a revocable record, not a signed token (ADR-0006 D2). Wrong password, unknown email, suspended account and non-membership all return the same failure. Throttled per email+client address. */
+        post: operations["signIn"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/sign-out": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Revoke the caller own session. Idempotent. */
+        post: operations["signOut"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/child-sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** A parent provisions a session for their child device. Child access is never self-service: a ChildProfile carries no credentials by contract, so there is nothing a child could present (ADR-0006 D3). Requires a parent session, and the child must belong to that session family. */
+        post: operations["provisionChildSession"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/families": {
         parameters: {
             query?: never;
@@ -264,6 +349,15 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** @description The opaque bearer value plus its lifetime. sessionId maps to a revocable server-side record (ADR-0006 D2) rather than being a self-contained signed token -- that is what makes docs/product/family-lifecycle.md revocation promise enforceable. */
+        IssuedSession: {
+            /** Format: uuid */
+            sessionId: string;
+            /** Format: date-time */
+            expiresAt: string;
+            /** @enum {string} */
+            role: "parent" | "child";
+        };
         HealthStatus: {
             /** @enum {string} */
             status: "ok";
@@ -519,6 +613,154 @@ export interface operations {
                     "application/json": components["schemas"]["HealthStatus"];
                 };
             };
+            "5XX": components["responses"]["Error"];
+        };
+    };
+    signUp: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: email */
+                    email: string;
+                    password: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Account created. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        accountId: string;
+                        /** Format: uuid */
+                        parentId: string;
+                        status: string;
+                    };
+                };
+            };
+            400: components["responses"]["Error"];
+            "5XX": components["responses"]["Error"];
+        };
+    };
+    acceptConsent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: uuid */
+                    accountId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Consent recorded; account is ACTIVE. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        accountId: string;
+                        status: string;
+                    };
+                };
+            };
+            "5XX": components["responses"]["Error"];
+        };
+    };
+    signIn: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: email */
+                    email: string;
+                    password: string;
+                    /** Format: uuid */
+                    familyId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Session issued. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IssuedSession"];
+                };
+            };
+            401: components["responses"]["Error"];
+            "5XX": components["responses"]["Error"];
+        };
+    };
+    signOut: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Session revoked. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            "5XX": components["responses"]["Error"];
+        };
+    };
+    provisionChildSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: uuid */
+                    childId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Child session issued. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IssuedSession"];
+                };
+            };
+            401: components["responses"]["Error"];
             "5XX": components["responses"]["Error"];
         };
     };

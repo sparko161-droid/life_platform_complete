@@ -40,7 +40,7 @@ import { generateSyntheticDomainFamilies } from "@life/fixtures";
 import { computeBalance } from "@life/domain-types";
 import type { RewardLedgerEntry } from "@life/domain-types";
 import { AppModule } from "../src/app.module.js";
-import { signSessionToken } from "../src/auth/session.js";
+import { createRealChildSession, createRealParentSession } from "./helpers/real-session.js";
 import { closePool, getPool } from "../src/db/pool.js";
 import { rowToRewardLedgerEntry } from "../src/db/rows.js";
 
@@ -48,7 +48,6 @@ let dbAvailable = false;
 let app: INestApplication | undefined;
 
 before(async () => {
-  process.env.SESSION_JWT_SECRET ??= "test-only-secret-not-a-real-credential";
   try {
     await getPool().query("SELECT 1");
     const check = await getPool().query("SELECT to_regclass('public.families') AS exists");
@@ -101,14 +100,13 @@ const fixtureTemplate = fixture!.templates[0]!;
 test("full journey: parent creates task -> child completes with proof -> parent approves -> reward ledger, all via HTTP against real Postgres", async (t) => {
   if (skipIfNoDb(t)) return;
   const server = app!.getHttpServer();
-  const parentId = randomUUID();
-  const parentToken = signSessionToken({ actorId: parentId, role: "parent" });
-  const asParent = (req: request.Test) => req.set("Authorization", `Bearer ${parentToken}`);
-
-  // --- 1. Parent registers the family -------------------------------
-  const familyRes = await asParent(request(server).post("/api/v1/families")).send({ ownerParentId: parentId });
-  assert.equal(familyRes.status, 201);
-  const familyId: string = familyRes.body.familyId;
+  // --- 1. A real parent account with a real session ------------------
+  // Signing in is now part of the journey, not something a test can skip:
+  // SessionGuard resolves the bearer value against the sessions table.
+  const parent = await createRealParentSession();
+  const parentId = parent.parentId;
+  const asParent = (req: request.Test) => req.set("Authorization", `Bearer ${parent.sessionId}`);
+  const familyId: string = parent.familyId;
 
   const familyRow = await selectOne<{ status: string; version: number }>(
     "SELECT status, version FROM families WHERE family_id = $1",
@@ -184,8 +182,8 @@ test("full journey: parent creates task -> child completes with proof -> parent 
   assert.equal(assignedRow.assigned_to_child_id, childId);
   assert.equal(assignedRow.family_id, familyId);
 
-  // --- 6. The child starts it (a real child session, not the parent's)
-  const childToken = signSessionToken({ actorId: childId, role: "child", familyId });
+  // --- 6. The child starts it (a real parent-provisioned session)
+  const childToken = await createRealChildSession(familyId, childId, parentId);
   const asChild = (req: request.Test) => req.set("Authorization", `Bearer ${childToken}`);
 
   const startRes = await asChild(request(server).post(`/api/v1/task-assignments/${assignmentId}/start`)).set(
@@ -273,11 +271,10 @@ test("full journey: parent creates task -> child completes with proof -> parent 
 test("rejection branch: rejected proof never grants the task reward", async (t) => {
   if (skipIfNoDb(t)) return;
   const server = app!.getHttpServer();
-  const parentId = randomUUID();
-  const parentToken = signSessionToken({ actorId: parentId, role: "parent" });
-  const asParent = (req: request.Test) => req.set("Authorization", `Bearer ${parentToken}`);
-
-  const familyId: string = (await asParent(request(server).post("/api/v1/families")).send({ ownerParentId: parentId })).body.familyId;
+  const parent = await createRealParentSession();
+  const parentId = parent.parentId;
+  const asParent = (req: request.Test) => req.set("Authorization", `Bearer ${parent.sessionId}`);
+  const familyId: string = parent.familyId;
   const childId: string = (
     await asParent(request(server).post(`/api/v1/families/${familyId}/children`)).send({
       displayName: fixtureChild.displayName,
@@ -297,7 +294,7 @@ test("rejection branch: rejected proof never grants the task reward", async (t) 
     await asParent(request(server).post(`/api/v1/task-templates/${templateId}/assignments`)).send({ assignedToChildId: childId })
   ).body.taskAssignmentId;
 
-  const childToken = signSessionToken({ actorId: childId, role: "child", familyId });
+  const childToken = await createRealChildSession(familyId, childId, parentId);
   const asChild = (req: request.Test) => req.set("Authorization", `Bearer ${childToken}`);
   await asChild(request(server).post(`/api/v1/task-assignments/${assignmentId}/start`)).set("Idempotency-Key", `rej-start-${assignmentId}`);
   await asChild(request(server).post(`/api/v1/task-assignments/${assignmentId}/completions`))

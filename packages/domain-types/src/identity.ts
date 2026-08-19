@@ -195,7 +195,20 @@ export const SessionSchema = z
     accountId: AccountId.optional(),
     parentId: ParentId.optional(),
     childId: ChildId.optional(),
-    familyId: FamilyId,
+    /**
+     * Absent on a PARENT *bootstrap* session -- the state a parent is in
+     * between signing up and belonging to any family. ADR-0006 constraint
+     * 3 says parent identity "exists independently of, and prior to,
+     * family membership", and family-service.ts says createFamily is for
+     * "any authenticated parent (bootstraps the family)". Requiring
+     * familyId here contradicted both and made onboarding impossible: no
+     * family meant no session, and no session meant no way to create a
+     * family. Found in P1-031 (DISC-P1-031-1).
+     *
+     * Always present on a CHILD session -- a child only ever exists
+     * inside a family.
+     */
+    familyId: FamilyId.optional(),
     /** Required for CHILD sessions: the parent who provisioned this device. */
     issuedByParentId: ParentId.optional(),
     issuedAt: z.string().datetime(),
@@ -217,6 +230,14 @@ export const SessionSchema = z
         ctx.issues.push({ code: "custom", message: "A PARENT session must not carry childId", input: v, path: ["childId"] });
       }
     } else {
+      if (!v.familyId) {
+        ctx.issues.push({
+          code: "custom",
+          message: "A CHILD session requires familyId -- a child only exists inside a family",
+          input: v,
+          path: ["familyId"],
+        });
+      }
       if (!v.childId) {
         ctx.issues.push({ code: "custom", message: "A CHILD session requires childId", input: v, path: ["childId"] });
       }
@@ -259,6 +280,16 @@ export const SESSION_CLASSIFICATION: ClassificationMap<
   expiresAt: "FAMILY",
   revokedAt: "FAMILY",
 };
+
+/**
+ * True for a PARENT session that has not yet joined a family -- it may
+ * bootstrap one (createFamily) and nothing else. Distinguishing this
+ * explicitly keeps callers from treating a missing familyId as an
+ * ordinary optional field.
+ */
+export function isBootstrapSession(session: Session): boolean {
+  return session.subjectKind === "PARENT" && !session.familyId;
+}
 
 /** True when a session is usable at `now`: not revoked and not expired. */
 export function isSessionActive(session: Session, now: string): boolean {

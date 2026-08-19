@@ -1,18 +1,21 @@
 /**
- * Session token issuance/verification (P1-026).
+ * Session claims -- the shape the guard attaches to a request.
  *
- * openapi.yaml already commits to `BearerAuth` (JWT) as this API's
- * security scheme -- this module implements that, not a new choice.
- * Scope, per tasks/packets/BLK-P1-006-007-persistence-api-pack.md: "a
- * request is provably bound to one real actor," not full auth (password
- * reset, OAuth, MFA are explicitly out of scope). A claims payload of
- * `{actorId, familyId, role}` is exactly what
- * services/api/src/repositories/auth.ts's requireActiveParentMember(OrSystem)
- * needs to check -- and, just as importantly, this is what the P1-021 red
- * team assessment's whole point was: actorId must come from a verified
- * token, never a client-supplied request-body field.
+ * **P1-031 removed the JWT implementation that used to live here.**
+ * `SessionGuard` now resolves an opaque identifier against the `sessions`
+ * table (see `session-lookup.ts` and
+ * docs/adr/0006-identity-and-session-model.md D2), so `signSessionToken`,
+ * `verifySessionToken` and `SESSION_JWT_SECRET` had no callers left.
+ *
+ * They were deleted rather than kept "just in case": leaving a working
+ * token-minting function next to a system that no longer trusts minted
+ * tokens is an invitation to reintroduce exactly the hole P1-031 closed,
+ * where anything correctly signed was accepted and revocation could not
+ * stop live traffic.
+ *
+ * What remains is the claims contract itself, which the guard produces
+ * and `repositories/auth.ts` consumes.
  */
-import jwt from "jsonwebtoken";
 
 /** @public */
 export type SessionRole = "parent" | "child" | "system";
@@ -21,50 +24,11 @@ export type SessionRole = "parent" | "child" | "system";
 export interface SessionClaims {
   actorId: string;
   role: SessionRole;
-  /** Absent only for `role: "system"` (the automated Verification Engine has no single family). */
+  /**
+   * Absent for `role: "system"` (the Verification Engine is a service
+   * principal, not a user) and for a parent *bootstrap* session -- one
+   * held by an authenticated parent who does not belong to any family
+   * yet and may only create one (DISC-P1-031-1).
+   */
   familyId?: string;
-}
-
-export class InvalidSessionError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "InvalidSessionError";
-  }
-}
-
-function getSecret(): string {
-  const secret = process.env.SESSION_JWT_SECRET;
-  if (!secret) {
-    throw new Error("SESSION_JWT_SECRET is not set (see .env.example)");
-  }
-  return secret;
-}
-
-/**
- * Signs a session token. Only used by test fixtures and whatever future
- * login endpoint issues real sessions -- request handlers only ever
- * verify, never sign.
- * @public
- */
-export function signSessionToken(claims: SessionClaims, expiresInSeconds = 3600): string {
-  return jwt.sign(claims, getSecret(), { expiresIn: expiresInSeconds });
-}
-
-/** @public */
-export function verifySessionToken(token: string): SessionClaims {
-  try {
-    const decoded = jwt.verify(token, getSecret());
-    if (typeof decoded !== "object" || decoded === null || typeof decoded.actorId !== "string" || typeof decoded.role !== "string") {
-      throw new InvalidSessionError("Token payload is missing actorId/role");
-    }
-    const claims: SessionClaims = {
-      actorId: decoded.actorId,
-      role: decoded.role as SessionRole,
-      ...(typeof decoded.familyId === "string" ? { familyId: decoded.familyId } : {}),
-    };
-    return claims;
-  } catch (err) {
-    if (err instanceof InvalidSessionError) throw err;
-    throw new InvalidSessionError(err instanceof Error ? err.message : "Invalid session token");
-  }
 }

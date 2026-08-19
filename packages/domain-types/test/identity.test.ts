@@ -255,3 +255,32 @@ test("no pre-existing schema gained a credential field", async () => {
     }
   }
 });
+
+// ---------------------------------------------------------------------------
+// Bootstrap sessions (DISC-P1-031-1)
+// ---------------------------------------------------------------------------
+
+test("a PARENT session may omit familyId -- the bootstrap state before joining any family", async () => {
+  // ADR-0006 constraint 3: parent identity exists prior to family
+  // membership, and family-service.ts's createFamily is for "any
+  // authenticated parent (bootstraps the family)". Requiring familyId
+  // here made onboarding impossible: no family meant no session, and no
+  // session meant no way to create a family.
+  const { isBootstrapSession } = await import("../src/identity.js");
+  const { familyId: _f, ...bootstrap } = parentSession;
+  const parsed = SessionSchema.safeParse(bootstrap);
+  assert.equal(parsed.success, true, JSON.stringify(parsed.error?.issues));
+  assert.equal(isBootstrapSession(parsed.data!), true);
+});
+
+test("a family-scoped parent session is not a bootstrap session", async () => {
+  const { isBootstrapSession } = await import("../src/identity.js");
+  assert.equal(isBootstrapSession(SessionSchema.parse(parentSession)), false);
+});
+
+test("a CHILD session still requires familyId -- a child only exists inside a family", () => {
+  const { familyId: _f, ...noFamily } = childSession;
+  const result = SessionSchema.safeParse(noFamily);
+  assert.equal(result.success, false);
+  assert.ok(JSON.stringify(result.error?.issues).includes("only exists inside a family"));
+});

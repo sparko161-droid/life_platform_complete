@@ -1,5 +1,36 @@
 # Planning Change Log
 
+## 0.20 (identity 0.2.0, openapi 0.4.0 — P1-031)
+
+Two additive changes and one correction to work from the previous task.
+
+- **openapi 0.3.0 → 0.4.0**: five identity operations (sign-up, consent,
+  sign-in, sign-out, child provisioning). Nothing existing changed shape.
+- **identity 0.1.0 → 0.2.0**: `Session.familyId` became optional and
+  `isBootstrapSession` was added.
+
+The correction is worth stating plainly, because it was a flaw in the
+contract P1-029 froze one task earlier. `SessionSchema` required
+`familyId`, which contradicted **ADR-0006's own constraint 3** — "parent
+identity exists independently of, and prior to, family membership" — and
+`family-service.ts`'s "createFamily: any authenticated parent (bootstraps
+the family)". The practical effect: onboarding was impossible. No family
+meant no session; no session meant no way to create a family.
+
+`familyId` is now optional for PARENT sessions — a *bootstrap* session,
+which may only create a family — and still required for CHILD, since a
+child only ever exists inside one. Both the zod schema and the database
+CHECK enforce that split.
+
+Also in this task: `SessionGuard` switched from verifying a signed JWT to
+resolving an opaque id against the `sessions` table. Until then P1-030's
+revocation did not protect live traffic — a signature stays valid until it
+expires, so a revoked parent kept working until their token aged out. The
+JWT machinery (`signSessionToken`, `verifySessionToken`,
+`SESSION_JWT_SECRET`, the `jsonwebtoken` dependency) was **deleted**
+rather than kept: leaving a working token minter beside a system that no
+longer trusts minted tokens invites reintroducing the same hole.
+
 ## 0.19 (contracts — P1-029, the Identity domain)
 
 `docs/architecture/domain-map.md` has always listed Identity first and
