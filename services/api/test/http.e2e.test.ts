@@ -93,7 +93,15 @@ test("full vertical slice: create family -> add child -> template -> assign -> s
     birthYear: 2016,
   });
   assert.equal(childRes.status, 201);
-  const childId = childRes.body.childId;
+  // openapi.yaml's 201 for this operation is a ChildProfile, not a
+  // Family -- asserting the actual shape, not just the status, is what
+  // caught the controller returning the wrong aggregate.
+  assert.equal(childRes.body.familyId, familyId);
+  assert.equal(childRes.body.displayName, "Аня");
+  assert.equal(childRes.body.birthYear, 2016);
+  assert.ok(childRes.body.childId, "response must be a ChildProfile carrying childId");
+  assert.equal(childRes.body.children, undefined, "must not be the whole Family aggregate");
+  const childId: string = childRes.body.childId;
 
   const templateRes = await authed(request(server).post(`/api/v1/families/${familyId}/task-templates`)).send({
     title: "Убрать в комнате",

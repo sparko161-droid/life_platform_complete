@@ -44,14 +44,22 @@ export class FamilyController {
     @Session() session: SessionClaims,
     @Body() body: { displayName: string; birthYear: number },
   ) {
-    return withTransaction((client) =>
+    const childId = randomUUID();
+    const family = await withTransaction((client) =>
       familyRepository.addChild(client, familyId, {
-        childId: randomUUID() as any,
+        childId: childId as any,
         displayName: body.displayName,
         birthYear: body.birthYear,
         actorId: session.actorId as any,
         now: new Date().toISOString(),
       }),
     );
+    // openapi.yaml's 201 response for this operation is a ChildProfile,
+    // not the whole Family the repository returns -- addChild's domain
+    // function operates on the Family aggregate, so the new child has to
+    // be picked back out of it here.
+    const child = family.children.find((c) => c.childId === childId);
+    if (!child) throw new RepositoryNotFoundError("ChildProfile", childId);
+    return child;
   }
 }
