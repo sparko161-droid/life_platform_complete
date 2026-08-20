@@ -590,9 +590,9 @@ tasks:
         finding: 'RESCOPED after investigation -- the gap is larger than first recorded. The original finding was "no login operation in openapi.yaml". The real finding is that **the Identity domain has no contract at all**: packages/domain-types has no Account, User, Credential or Session entity, and neither ParentMembership nor ChildProfile carries any credential field. `docs/architecture/domain-map.md` lists Identity as a domain and says "Identity/Family -> nearly all domains", but P0-009''s contract pack froze Family/Task/Verification/Media/Reward and never covered it. `packages/domain-types/src/family-service.ts` states the assumption out loud -- "createFamily: any authenticated parent" -- without anything defining what an authenticated parent is. So `ParentId` is a branded UUID that, today, originates nowhere.'
         why_it_matters: 'This is not a missing endpoint that can be added to unblock a screen; it is a missing frozen domain that the whole authorization layer already depends on. Concretely: (1) every authenticated screen in P1-003/P1-004/P1-016 is unreachable by a real human -- the httpOnly cookie has nothing to put in it, and the vertical slice, though proven end to end in tests, cannot be demonstrated in a browser; (2) P1-025''s authorization checks resolve an actorId against parent_memberships, but nothing establishes that the caller *is* that actor except a token only tests mint; (3) adding an Account entity is a new frozen contract, which per contracts/registry.yaml''s own versioning policy is a contract-pack change, not an implementation detail.'
         affected_domains: []
-        architecture_impact: 'Introduces the Identity domain to the contract pack for the first time -- a new frozen entity plus its relationship to ParentMembership/ChildProfile, and a decision about whether identity is owned in-house or delegated to a provider (MASTER_SPEC''s Phase 5 already anticipates Alice/Telegram/MAX integrations, any of which could be an identity provider rather than only a task surface).'
-        security_impact: 'docs/adr/README.md lists "major security/privacy decision" as a mandatory ADR trigger, and docs/security/threat-model.md names account takeover and child impersonation as top threats. Credential storage, session lifetime, rotation and revocation (family-lifecycle.md already promises "Revocation immediately invalidates protected access tokens/session grants" -- which nothing currently implements) all get decided here.'
-        ux_impact: 'No sign-in screen exists in packages/ux-contracts'' SCREEN_IDS. P-FAMILY-SETUP is named in SPECIFIED_SCREEN_IDS but has no frozen contract, so the entry point to the whole product is unspecified.'
+        architecture_impact: Introduces the Identity domain to the contract pack for the first time -- a new frozen entity plus its relationship to ParentMembership/ChildProfile, and a decision about whether identity is owned in-house or delegated to a provider (MASTER_SPEC's Phase 5 already anticipates Alice/Telegram/MAX integrations, any of which could be an identity provider rather than only a task surface).
+        security_impact: docs/adr/README.md lists "major security/privacy decision" as a mandatory ADR trigger, and docs/security/threat-model.md names account takeover and child impersonation as top threats. Credential storage, session lifetime, rotation and revocation (family-lifecycle.md already promises "Revocation immediately invalidates protected access tokens/session grants" -- which nothing currently implements) all get decided here.
+        ux_impact: No sign-in screen exists in packages/ux-contracts' SCREEN_IDS. P-FAMILY-SETUP is named in SPECIFIED_SCREEN_IDS but has no frozen contract, so the entry point to the whole product is unspecified.
         recommended_solution: 'Treat this as its own designed piece of work with a Human Architect decision and an ADR, not a task appended to the frontend stream: freeze an Identity contract (account, credential handling, session lifecycle, revocation), decide in-house vs delegated identity, then implement issuance endpoints + the httpOnly-cookie route handler (@life/web-session already provides sessionCookieOptions) and the sign-in screen contracts. Child access is a distinct sub-decision, and the frozen contracts already constrain it: ChildProfile has no credential fields, so child access must be parent-provisioned (device pairing or a parent-issued code) unless the contract itself changes.'
         alternatives:
           - 'Have the frontend mint its own tokens with the shared secret -- rejected outright: it would put the signing secret in the web tier and let any browser forge any actor, defeating the entire P1-025 authorization layer.'
@@ -1900,19 +1900,11 @@ tasks:
     blocked_reason: null
     human_decisions:
       - decision_id: HD-P1-033-1
-        question: 'Which markets does Phase 1 actually target? docs/security/legal-ru.md scopes the RU launch, but the obligation set (152-ФЗ vs GDPR vs COPPA-class rules) depends entirely on this and must not be guessed.'
-        decision: >-
-          Russia only for Phase 1. The Human Architect delegated this to be determined from the project itself, and the project answers it unambiguously: docs/security/legal-ru.md is titled "Russian Legal Workstream" and scopes a RU launch; every user-facing string is Russian and mechanically enforced by @life/ui-language; and MASTER_SPEC's named surfaces include MAX and Alice, which are RU-only products. Governing obligation set is therefore 152-FZ plus its minors provisions. GDPR and COPPA are explicitly NOT in scope and must not be designed for speculatively -- adding a market later is a new decision, not an assumption to bake in now.
+        question: Which markets does Phase 1 actually target? docs/security/legal-ru.md scopes the RU launch, but the obligation set (152-ФЗ vs GDPR vs COPPA-class rules) depends entirely on this and must not be guessed.
+        decision: 'Russia only for Phase 1. The Human Architect delegated this to be determined from the project itself, and the project answers it unambiguously: docs/security/legal-ru.md is titled "Russian Legal Workstream" and scopes a RU launch; every user-facing string is Russian and mechanically enforced by @life/ui-language; and MASTER_SPEC''s named surfaces include MAX and Alice, which are RU-only products. Governing obligation set is therefore 152-FZ plus its minors provisions. GDPR and COPPA are explicitly NOT in scope and must not be designed for speculatively -- adding a market later is a new decision, not an assumption to bake in now.'
         decided_at: '2026-08-19'
       - decision_id: HD-P1-033-2
-        question: >-
-          Is qualified external counsel engaged, and on what timeline?
-          docs/security/legal-ru.md requires legal review before public launch; this task prepares that review and
-          consumes its output, it cannot replace it. STILL OPEN BY DIRECTION: the Human Architect has directed that the
-          AI Legal Counsel Lead drafts these documents for now without human proofreading. That is a working
-          arrangement, not an answer to this question -- every artifact that role produces must carry an AI-authored /
-          not-reviewed-by-qualified-counsel caveat, docs/security/legal-ru.md's rule stands unchanged (no production
-          claim of legal compliance follows from this work), and this must be resolved before any public launch.
+        question: 'Is qualified external counsel engaged, and on what timeline? docs/security/legal-ru.md requires legal review before public launch; this task prepares that review and consumes its output, it cannot replace it. STILL OPEN BY DIRECTION: the Human Architect has directed that the AI Legal Counsel Lead drafts these documents for now without human proofreading. That is a working arrangement, not an answer to this question -- every artifact that role produces must carry an AI-authored / not-reviewed-by-qualified-counsel caveat, docs/security/legal-ru.md''s rule stands unchanged (no production claim of legal compliance follows from this work), and this must be resolved before any public launch.'
         decision: null
         decided_at: null
     origin_discovery: null
@@ -1940,9 +1932,8 @@ tasks:
     blocked_reason: null
     human_decisions:
       - decision_id: HD-P1-034-1
-        question: 'What is the minimum age for a child profile, and what parental consent is required to create one? ChildProfileSchema currently accepts birthYear 2000-2030 with no consent gate at all.'
-        decision: >-
-          Target age range is 4 to 12 years inclusive (Human Architect). Two consequences are engineering work, not prose: (1) ChildProfileSchema's birthYear range of 2000-2030 contradicts it -- at a 2026 reference date the supported range is about 2014-2022, and 2030 is a future year no living child can be born in. Narrowing a frozen contract is a breaking change, so it is recorded here for P1-034 to schedule rather than applied unilaterally. (2) A floor of 4 puts every child user under the 152-FZ minors provisions with no exception, so parental consent is required for every child profile with no per-age branch -- simpler to enforce, and worth stating now rather than discovering later. The consent content itself remains an open legal question.
+        question: What is the minimum age for a child profile, and what parental consent is required to create one? ChildProfileSchema currently accepts birthYear 2000-2030 with no consent gate at all.
+        decision: 'Target age range is 4 to 12 years inclusive (Human Architect). Two consequences are engineering work, not prose: (1) ChildProfileSchema''s birthYear range of 2000-2030 contradicts it -- at a 2026 reference date the supported range is about 2014-2022, and 2030 is a future year no living child can be born in. Narrowing a frozen contract is a breaking change, so it is recorded here for P1-034 to schedule rather than applied unilaterally. (2) A floor of 4 puts every child user under the 152-FZ minors provisions with no exception, so parental consent is required for every child profile with no per-age branch -- simpler to enforce, and worth stating now rather than discovering later. The consent content itself remains an open legal question.'
         decided_at: '2026-08-19'
     origin_discovery: null
     discovered_from: null
@@ -1950,7 +1941,7 @@ tasks:
       wave: UNASSIGNED
       priority: P1
       acceptance_criteria: 'The consent model docs/product/family-lifecycle.md already promises ("The invitee must authenticate, accept and complete required consent/verification") is specified: what consent is captured, from whom, when, how it is recorded, how it is withdrawn, and what the product must stop doing on withdrawal. Parental rights (access, correction, deletion, export on behalf of a child) are specified as flows, not aspirations.'
-      test_strategy: 'Each consent state and parental right maps to a named enforcement point in the codebase or is explicitly listed as not-yet-enforced with an owning task -- the same standard DISC records are held to.'
+      test_strategy: Each consent state and parental right maps to a named enforcement point in the codebase or is explicitly listed as not-yet-enforced with an owning task -- the same standard DISC records are held to.
       source_reference: docs/product/family-lifecycle.md
   - id: P1-035
     phase: 1
@@ -1998,8 +1989,8 @@ tasks:
     execution:
       wave: W7
       priority: P0
-      acceptance_criteria: 'packages/domain-types carries frozen Account, Credential and Session contracts with data-classification maps, contracts/registry.yaml gains a matching group, and ADR-0006 records D1 (in-house with authProvider seam), D2 (server-side sessions) and D4 (reset/MFA/recovery out of scope) with alternatives and a reversal plan. Additive only -- no existing schema changes shape, proven by @life/versioning''s checkSchemaCompatibility rather than asserted.'
-      test_strategy: 'Schema fixtures per entity, a classification-completeness test matching the existing pattern, and a compatibility check proving the contract-pack bump is additive.'
+      acceptance_criteria: packages/domain-types carries frozen Account, Credential and Session contracts with data-classification maps, contracts/registry.yaml gains a matching group, and ADR-0006 records D1 (in-house with authProvider seam), D2 (server-side sessions) and D4 (reset/MFA/recovery out of scope) with alternatives and a reversal plan. Additive only -- no existing schema changes shape, proven by @life/versioning's checkSchemaCompatibility rather than asserted.
+      test_strategy: Schema fixtures per entity, a classification-completeness test matching the existing pattern, and a compatibility check proving the contract-pack bump is additive.
       source_reference: tasks/packets/P1-IDENTITY-domain-pack.md
   - id: P1-030
     phase: 1
@@ -2023,7 +2014,7 @@ tasks:
     execution:
       wave: W7
       priority: P0
-      acceptance_criteria: 'Migrations and repositories for accounts/credentials/sessions; Argon2id hashing with per-account salt; session issue/validate/revoke; and revokeParent actually invalidating live sessions, closing the promise docs/product/family-lifecycle.md already makes ("Revocation immediately invalidates protected access tokens/session grants") and which nothing implements today.'
+      acceptance_criteria: Migrations and repositories for accounts/credentials/sessions; Argon2id hashing with per-account salt; session issue/validate/revoke; and revokeParent actually invalidating live sessions, closing the promise docs/product/family-lifecycle.md already makes ("Revocation immediately invalidates protected access tokens/session grants") and which nothing implements today.
       test_strategy: 'Integration tests against real Postgres: a revoked parent''s live session stops working on the next request; a wrong password never yields a session; a password hash is never reversible or logged.'
       source_reference: tasks/packets/P1-IDENTITY-domain-pack.md
   - id: P1-031
@@ -2044,37 +2035,16 @@ tasks:
       - discovery_id: DISC-P1-031-1
         source_task: P1-031
         type: ARCHITECTURE_GAP
-        finding: >-
-          SessionSchema (frozen one task earlier by P1-029) required familyId, which made onboarding impossible: a
-          session could only be issued for a family the parent already belonged to, but creating a family required a
-          session. No family meant no session; no session meant no family. Found while rewriting the e2e suites to
-          authenticate for real -- the switch from self-minted tokens to genuine sign-in is what exposed it, not code
-          review.
-        why_it_matters: >-
-          The requirement contradicted ADR-0006's own constraint 3 ("parent identity exists independently of, and prior
-          to, family membership") and family-service.ts's stated contract ("createFamily: any authenticated parent
-          (bootstraps the family)"). A contract that contradicts its own ADR is worse than a missing one, because
-          everything downstream is built assuming the ADR holds. No real user could ever have registered.
+        finding: 'SessionSchema (frozen one task earlier by P1-029) required familyId, which made onboarding impossible: a session could only be issued for a family the parent already belonged to, but creating a family required a session. No family meant no session; no session meant no family. Found while rewriting the e2e suites to authenticate for real -- the switch from self-minted tokens to genuine sign-in is what exposed it, not code review.'
+        why_it_matters: 'The requirement contradicted ADR-0006''s own constraint 3 ("parent identity exists independently of, and prior to, family membership") and family-service.ts''s stated contract ("createFamily: any authenticated parent (bootstraps the family)"). A contract that contradicts its own ADR is worse than a missing one, because everything downstream is built assuming the ADR holds. No real user could ever have registered.'
         affected_domains: []
-        architecture_impact: >-
-          Session.familyId is now optional for PARENT sessions -- a bootstrap session that may only create a family --
-          and still required for CHILD, since a child only exists inside one. Enforced in both the zod schema and the
-          database CHECK constraint. identity contract group 0.1.0 -> 0.2.0.
-        security_impact: >-
-          A bootstrap session is deliberately narrow: it carries no familyId, so every family-scoped authorization check
-          in P1-025 fails closed for it. Nothing had to be relaxed to make onboarding work, which is the property worth
-          preserving if this is ever revisited.
-        ux_impact: >-
-          Sign-in now returns familyId only when the session is family-scoped, so a client can tell whether it must
-          create a family before anything else.
+        architecture_impact: Session.familyId is now optional for PARENT sessions -- a bootstrap session that may only create a family -- and still required for CHILD, since a child only exists inside one. Enforced in both the zod schema and the database CHECK constraint. identity contract group 0.1.0 -> 0.2.0.
+        security_impact: 'A bootstrap session is deliberately narrow: it carries no familyId, so every family-scoped authorization check in P1-025 fails closed for it. Nothing had to be relaxed to make onboarding work, which is the property worth preserving if this is ever revisited.'
+        ux_impact: Sign-in now returns familyId only when the session is family-scoped, so a client can tell whether it must create a family before anything else.
         recommended_solution: Fixed in this task.
         alternatives:
-          - >-
-            Create the family during sign-up. Rejected: it forces a family to exist before a parent has decided
-            anything about it, and leaves no state for a parent who has authenticated but not yet set up.
-          - >-
-            Let createFamily accept an unauthenticated caller. Rejected outright -- it would let anyone create a family
-            naming any parentId, reintroducing the class of gap P1-025 closed.
+          - 'Create the family during sign-up. Rejected: it forces a family to exist before a parent has decided anything about it, and leaves no state for a parent who has authenticated but not yet set up.'
+          - Let createFamily accept an unauthenticated caller. Rejected outright -- it would let anyone create a family naming any parentId, reintroducing the class of gap P1-025 closed.
         priority: HIGH
         blocking: false
         proposed_task: null
@@ -2085,8 +2055,8 @@ tasks:
     execution:
       wave: W7
       priority: P0
-      acceptance_criteria: 'openapi.yaml carries sign-up, sign-in, sign-out and child-provisioning operations with the generated client regenerated in the same change; packages/ux-contracts gains a frozen contract for the entry screen (P-FAMILY-SETUP is named in SPECIFIED_SCREEN_IDS today but has no contract, so the product''s entry point is unspecified).'
-      test_strategy: 'Per-operation integration tests including the negative paths -- wrong credentials, replayed sign-in, and a child-provisioning attempt by a non-member -- plus the existing generate:check gate.'
+      acceptance_criteria: openapi.yaml carries sign-up, sign-in, sign-out and child-provisioning operations with the generated client regenerated in the same change; packages/ux-contracts gains a frozen contract for the entry screen (P-FAMILY-SETUP is named in SPECIFIED_SCREEN_IDS today but has no contract, so the product's entry point is unspecified).
+      test_strategy: Per-operation integration tests including the negative paths -- wrong credentials, replayed sign-in, and a child-provisioning attempt by a non-member -- plus the existing generate:check gate.
       source_reference: tasks/packets/P1-IDENTITY-domain-pack.md
   - id: P1-032
     phase: 1
@@ -2107,30 +2077,15 @@ tasks:
       - discovery_id: DISC-P1-032-1
         source_task: P1-032
         type: MISSING_REQUIREMENT
-        finding: >-
-          apps/child-web has no screen that accepts a provisioned session. P1-032 delivered the API for child
-          provisioning and the parent-side flow that calls it, but the session id produced there still has no way to
-          reach the child's browser. A child cannot begin using their own device.
-        why_it_matters: >-
-          The task title says "child provisioning", and the API half is genuinely done, so this is exactly the kind of
-          gap that gets read as finished. It is not: the child surface is unreachable by a real child today, which
-          means the child half of the vertical slice is still only demonstrable through tests.
+        finding: apps/child-web has no screen that accepts a provisioned session. P1-032 delivered the API for child provisioning and the parent-side flow that calls it, but the session id produced there still has no way to reach the child's browser. A child cannot begin using their own device.
+        why_it_matters: 'The task title says "child provisioning", and the API half is genuinely done, so this is exactly the kind of gap that gets read as finished. It is not: the child surface is unreachable by a real child today, which means the child half of the vertical slice is still only demonstrable through tests.'
         affected_domains: []
         architecture_impact: null
-        security_impact: >-
-          How a provisioned session reaches a child device is a security design question, not a UI detail. A link or
-          code carrying a live session must be short-lived and single-use, or it becomes a durable credential -- which
-          is the exact thing ADR-0006 D3 avoids by giving children no credentials at all.
-        ux_impact: >-
-          C-TODAY and the rest of the child surface exist but cannot be entered.
-        recommended_solution: >-
-          Add a child-surface entry that exchanges a short-lived, single-use provisioning artefact for the httpOnly
-          session cookie on the child's device, mirroring the parent sign-in route handler. The artefact must not be
-          the session id itself.
+        security_impact: How a provisioned session reaches a child device is a security design question, not a UI detail. A link or code carrying a live session must be short-lived and single-use, or it becomes a durable credential -- which is the exact thing ADR-0006 D3 avoids by giving children no credentials at all.
+        ux_impact: C-TODAY and the rest of the child surface exist but cannot be entered.
+        recommended_solution: Add a child-surface entry that exchanges a short-lived, single-use provisioning artefact for the httpOnly session cookie on the child's device, mirroring the parent sign-in route handler. The artefact must not be the session id itself.
         alternatives:
-          - >-
-            Show the session id for manual entry -- rejected: it is a bearer credential, and putting it on screen to be
-            typed or photographed defeats the httpOnly posture the whole web tier is built around.
+          - 'Show the session id for manual entry -- rejected: it is a bearer credential, and putting it on screen to be typed or photographed defeats the httpOnly posture the whole web tier is built around.'
         priority: HIGH
         blocking: false
         proposed_task: null
@@ -2142,5 +2097,43 @@ tasks:
       wave: W7
       priority: P0
       acceptance_criteria: 'A human can sign in through the browser on both surfaces and reach an authenticated screen: the Next route handler sets the httpOnly cookie via @life/web-session''s sessionCookieOptions, and a child reaches their surface through parent provisioning without ever holding a credential of their own.'
-      test_strategy: 'E2E through the real stack, closing the gap that the vertical slice is currently only demonstrable by tests that mint their own token.'
+      test_strategy: E2E through the real stack, closing the gap that the vertical slice is currently only demonstrable by tests that mint their own token.
       source_reference: tasks/packets/P1-IDENTITY-domain-pack.md
+  - id: P1-036
+    phase: 1
+    title: Child device pairing and child-surface entry
+    primary: frontend-lead
+    status: IN_PROGRESS
+    deps: []
+    deps_contract: []
+    deps_implementation:
+      - P1-032
+    reviewer: security-engineering
+    gate_owners:
+      - child-safety-lead
+      - qa-lead
+    discovery_links:
+      - discovery_id: DISC-P1-036-1
+        source_task: P1-036
+        type: ARCHITECTURE_GAP
+        finding: 'Recorded again because it keeps costing time, and DISC-P1-028-1 predicted exactly this: create-child-task emits a task at BACKLOG, and the CLI still has no command to move BACKLOG -> ANALYSIS -> ARCHITECTURE_CHECK, so a discovery-created task cannot reach READY through the CLI. This task''s admission metadata and status were written by hand for the second time.'
+        why_it_matters: AGENTS.md requires status changes to go through the locked, validated CLI, and task-admission.md requires discovery-driven work to be traced. Every task create-child-task produces forces a violation of the first to satisfy the second. The workaround is now habitual, which is how a control stops being a control.
+        affected_domains: []
+        architecture_impact: null
+        security_impact: null
+        ux_impact: null
+        recommended_solution: Implement the fix DISC-P1-028-1 already specified -- an analyze/architecture-check command pair, or widen admit to walk the whole path when admission metadata is complete.
+        alternatives: []
+        priority: MEDIUM
+        blocking: false
+        proposed_task: null
+    blocked_reason: null
+    human_decisions: []
+    origin_discovery: DISC-P1-032-1
+    discovered_from: P1-032
+    execution:
+      wave: W7
+      priority: P0
+      acceptance_criteria: 'A child can begin using their own device without ever holding a credential: the parent generates a short-lived, single-use pairing code on their surface, and the child device exchanges it for an httpOnly session cookie via a Next route handler. The code is not the session id, is consumed on first use, and expires quickly. Child-web gains the entry screen, and C-TODAY becomes reachable by a real child rather than only by tests.'
+      test_strategy: 'E2E over HTTP against real Postgres: pairing code redeems exactly once, a second redemption fails, an expired code fails, a code for another family''s child fails, and the resulting child session can actually call /child/today. Plus a guard that the pairing artefact is never equal to the session id it yields.'
+      source_reference: discovery:DISC-P1-032-1
