@@ -2103,7 +2103,7 @@ tasks:
     phase: 1
     title: Child device pairing and child-surface entry
     primary: frontend-lead
-    status: IN_PROGRESS
+    status: DONE
     deps: []
     deps_contract: []
     deps_implementation:
