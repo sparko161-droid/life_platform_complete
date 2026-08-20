@@ -1,6 +1,6 @@
 import { Body, Controller, ForbiddenException, Get, Param, Post, UseGuards } from "@nestjs/common";
 import { randomUUID } from "node:crypto";
-import { familyRepository } from "../repositories/index.js";
+import { familyRepository, identityRepository } from "../repositories/index.js";
 import { withTransaction } from "../db/pool.js";
 import { Session } from "../auth/session.decorator.js";
 import { SessionGuard } from "../auth/session.guard.js";
@@ -12,21 +12,31 @@ import { RepositoryNotFoundError } from "../repositories/errors.js";
 export class FamilyController {
   // POST /families -- createFamily
   @Post("api/v1/families")
-  async createFamily(@Session() session: SessionClaims, @Body() body: { ownerParentId: string }) {
-    // The frozen contract accepts ownerParentId in the body (there is no
-    // existing family membership yet to check against for a brand-new
-    // family) -- but it must equal the session's own actor, never an
-    // arbitrary id, per the same principle the P1-021 findings exist for.
-    if (body.ownerParentId !== session.actorId) {
+  async createFamily(@Session() session: SessionClaims, @Body() body: { ownerParentId?: string }) {
+    // The owner is always the authenticated actor. `ownerParentId` is
+    // vestigial: it was frozen into the contract by P0-009, before
+    // sessions existed, when the request had no other way to say who was
+    // acting. It is now optional -- omit it and the session decides.
+    //
+    // When it *is* sent it must still match, so an older client cannot
+    // create a family owned by someone else. Rejecting a mismatch rather
+    // than silently ignoring the field keeps a wrong client loud instead
+    // of quietly wrong.
+    if (body.ownerParentId !== undefined && body.ownerParentId !== session.actorId) {
       throw new ForbiddenException({ error: { code: "OWNER_MUST_BE_SELF", message: "ownerParentId must match the authenticated actor." } });
     }
-    return withTransaction((client) =>
-      familyRepository.createFamily(client, {
+    return withTransaction(async (client) => {
+      const family = await familyRepository.createFamily(client, {
         familyId: randomUUID() as any,
         ownerId: session.actorId as any,
         now: new Date().toISOString(),
-      }),
-    );
+      });
+      // The caller is now a member of the family they just made, so their
+      // bootstrap session is scoped to it here rather than making them
+      // sign out and back in to continue onboarding.
+      await identityRepository.scopeSessionToFamily(client, session.sessionId, family.familyId, session.actorId);
+      return family;
+    });
   }
 
   // GET /families/{familyId} -- getFamily

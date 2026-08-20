@@ -52,11 +52,21 @@ export async function resolveSession(
     // Spread rather than assign: familyId is absent on a bootstrap
     // session, and exactOptionalPropertyTypes distinguishes "key omitted"
     // from "key set to undefined".
-    return { actorId: session.parentId, role: "parent", ...(session.familyId ? { familyId: session.familyId } : {}) };
+    return {
+      sessionId: session.sessionId,
+      actorId: session.parentId,
+      role: "parent",
+      ...(session.familyId ? { familyId: session.familyId } : {}),
+    };
   }
 
   if (!session.childId) return null;
   // A CHILD session always has a familyId (schema and CHECK both require
   // it), but the type is optional, so it is spread the same way.
-  return { actorId: session.childId, role: "child", ...(session.familyId ? { familyId: session.familyId } : {}) };
+  return {
+    sessionId: session.sessionId,
+    actorId: session.childId,
+    role: "child",
+    ...(session.familyId ? { familyId: session.familyId } : {}),
+  };
 }

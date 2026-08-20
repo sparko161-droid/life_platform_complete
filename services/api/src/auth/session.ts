@@ -22,6 +22,12 @@ export type SessionRole = "parent" | "child" | "system";
 
 /** @public */
 export interface SessionClaims {
+  /**
+   * The session's own id. Present so a handler can act on the session it
+   * is running under -- signing it out, or scoping it to a family the
+   * caller just created -- without re-parsing the Authorization header.
+   */
+  sessionId: string;
   actorId: string;
   role: SessionRole;
   /**

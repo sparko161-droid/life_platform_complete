@@ -22,6 +22,9 @@ export interface NavItem {
 
 /** Russian labels per primary-nav screen (docs/ux/ui-language.md: no English in UI). */
 const NAV_LABELS: Partial<Record<ScreenId, string>> = {
+  // P-REGISTRATION and P-FAMILY-SETUP are frozen screens but not
+  // primaryNav, so they need no label -- primaryNavFor only demands one
+  // for screens it actually renders.
   "C-TODAY": "Мой день",
   "C-GAME-LOBBY": "Игры",
   "P-DASH": "Обзор",

@@ -1,13 +1,16 @@
 openapi: 3.1.0
 info:
   title: Life Platform API
-  # 0.4.0 (P1-031): additive minor -- adds the five identity operations
-  # (sign-up, consent, sign-in, sign-out, child provisioning). No existing
-  # operation or schema changed shape. This is the REST API surface own
-  # version, deliberately independent of contracts/registry.yaml
-  # contract_pack_version -- separate versioned surfaces per
+  # 0.5.0 (P1-032): relaxes two request bodies, both loosening -- an
+  # existing client keeps working. sign-in's familyId became optional
+  # (omit it for a bootstrap session), and createFamily's ownerParentId
+  # became optional (the session decides the owner; sending a mismatched
+  # value is still refused). 0.4.0 (P1-031) added the five identity
+  # operations. This is the REST API surface's own version, deliberately
+  # independent of contracts/registry.yaml's contract_pack_version --
+  # separate versioned surfaces per
   # docs/architecture/versioning-and-compatibility.md.
-  version: 0.4.0
+  version: 0.5.0
   description: >
     Canonical external REST contract for the Life Platform API, per
     docs/architecture/api-contracts.md. P0-005 established the reusable
@@ -138,13 +141,15 @@ paths:
     post:
       operationId: signIn
       summary: >-
-        Exchange credentials for a session id, scoped to one family the
-        account is an ACTIVE member of -- authenticating proves who you
-        are, not what you may act on. The returned sessionId is the
-        opaque bearer value; it maps to a revocable record, not a signed
-        token (ADR-0006 D2). Wrong password, unknown email, suspended
-        account and non-membership all return the same failure.
-        Throttled per email+client address.
+        Exchange credentials for a session id. When familyId is given the
+        session is scoped to a family the account is an ACTIVE member of
+        -- authenticating proves who you are, not what you may act on.
+        When it is omitted the result is a bootstrap session, which may
+        only create a family (ADR-0006 constraint 3, DISC-P1-031-1).
+        The returned sessionId is the opaque bearer value; it maps to a
+        revocable record, not a signed token (ADR-0006 D2). Wrong
+        password, unknown email, suspended account and non-membership all
+        return the same failure. Throttled per email+client address.
       tags: [identity]
       security: []
       requestBody:
@@ -153,7 +158,7 @@ paths:
           application/json:
             schema:
               type: object
-              required: [email, password, familyId]
+              required: [email, password]
               properties:
                 email:
                   type: string
@@ -163,6 +168,10 @@ paths:
                 familyId:
                   type: string
                   format: uuid
+                  description: >-
+                    Omit to receive a *bootstrap* session: an authenticated
+                    parent who belongs to no family yet and may only create
+                    one. Required for anything else -- see IssuedSession.
               additionalProperties: false
       responses:
         "200":
@@ -232,7 +241,12 @@ paths:
           application/json:
             schema:
               type: object
-              required: [ownerParentId]
+              description: >-
+                ownerParentId is optional and vestigial: the owner is the
+                authenticated actor. It predates sessions (P0-009), when a
+                request had no other way to say who was acting. Sending it
+                is allowed but it must match the session, so an older
+                client cannot create a family owned by someone else.
               properties:
                 ownerParentId:
                   type: string
@@ -735,6 +749,12 @@ components:
         role:
           type: string
           enum: [parent, child]
+        familyId:
+          type: string
+          format: uuid
+          description: >-
+            Absent on a bootstrap session. A client uses its absence to
+            know it must create a family before anything else.
 
     HealthStatus:
       type: object

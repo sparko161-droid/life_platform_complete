@@ -141,11 +141,10 @@ export class AuthController {
   @Post("api/v1/auth/sign-out")
   @HttpCode(204)
   @UseGuards(SessionGuard)
-  async signOut(@Req() req: Request) {
-    const bearer = req.headers.authorization?.slice("Bearer ".length);
-    if (bearer) {
-      await withTransaction((client) => identityRepository.revokeSession(client, bearer, new Date().toISOString()));
-    }
+  async signOut(@Session() session: SessionClaims) {
+    await withTransaction((client) =>
+      identityRepository.revokeSession(client, session.sessionId, new Date().toISOString()),
+    );
   }
 
   // POST /auth/child-sessions -- a parent provisions a session for their
