@@ -63,7 +63,13 @@ export interface ScreenContract {
   states: readonly string[];
 }
 
-export const SCREENS: Record<ScreenId, ScreenContract> = {
+// `satisfies` rather than a type annotation, deliberately: an annotation
+// widens every `states` array to `readonly string[]`, which throws away
+// exactly the information a consumer needs. With `satisfies` the shape is
+// still checked, but each screen keeps its literal state union -- so
+// `ScreenStates<"C-TODAY">` is the real list, and a UI can be made to
+// prove it handles all of them at compile time rather than by hand.
+export const SCREENS = {
   "P-REGISTRATION": {
     id: "P-REGISTRATION",
     surface: "parent",
@@ -212,4 +218,14 @@ export const SCREENS: Record<ScreenId, ScreenContract> = {
     primaryNav: false,
     states: ["LOADING", "EMPTY", "ACTIVE", "SENDING", "FAILED", "MODERATED", "BLOCKED", "PERMISSION_CHANGED", "OFFLINE"],
   },
-};
+} as const satisfies Record<ScreenId, ScreenContract>;
+
+/**
+ * The literal state union a given screen declares.
+ *
+ * This is what makes "every declared state has a rendering path"
+ * checkable instead of aspirational: a consumer keyed on
+ * `ScreenStates<Id>` fails to compile the moment the contract gains a
+ * state it does not handle.
+ */
+export type ScreenStates<Id extends ScreenId> = (typeof SCREENS)[Id]["states"][number];
