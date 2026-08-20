@@ -22,6 +22,12 @@
  */
 
 export const SCREEN_IDS = [
+  // Entry screens, frozen by P1-032 once the sign-in flow existed to
+  // write a contract against. ADR-0005 requires a template-conformant
+  // document before a screen enters this list, which is why they were
+  // only "specified" until now.
+  "P-REGISTRATION",
+  "P-FAMILY-SETUP",
   "C-TODAY",
   "C-TASK",
   "C-CAMERA",
@@ -58,6 +64,55 @@ export interface ScreenContract {
 }
 
 export const SCREENS: Record<ScreenId, ScreenContract> = {
+  "P-REGISTRATION": {
+    id: "P-REGISTRATION",
+    surface: "parent",
+    route: "/parent/sign-in",
+    owner: "UI/UX Lead + Backend Lead",
+    docRef: "docs/ux/screens/parent-registration.md",
+    // Nothing leads here: it is the entry point, reached by an
+    // unauthenticated visitor rather than from another screen.
+    entryFrom: [],
+    exitTo: ["P-FAMILY-SETUP", "P-DASH"],
+    // Not in the nav: a signed-in parent has no reason to navigate back
+    // to sign-in, and showing it would imply they are not signed in.
+    primaryNav: false,
+    states: [
+      "LOADING",
+      "READY",
+      "SUBMITTING",
+      "VALIDATION_ERROR",
+      "SIGN_IN_FAILED",
+      "TOO_MANY_ATTEMPTS",
+      "NETWORK_ERROR",
+      "OFFLINE",
+    ],
+  },
+  "P-FAMILY-SETUP": {
+    id: "P-FAMILY-SETUP",
+    surface: "parent",
+    route: "/parent/family-setup",
+    owner: "UI/UX Lead + Family Domain Lead",
+    docRef: "docs/ux/screens/family-setup.md",
+    entryFrom: ["P-REGISTRATION"],
+    exitTo: ["P-DASH"],
+    // Reachable from the nav so a parent can return to add another
+    // child, but it is not the first tab.
+    primaryNav: false,
+    states: [
+      "LOADING",
+      "NO_FAMILY",
+      "CREATING_FAMILY",
+      "FAMILY_READY_NO_CHILDREN",
+      "ADDING_CHILD",
+      "CHILD_ADDED",
+      "PROVISIONING_CHILD_ACCESS",
+      "CHILD_ACCESS_READY",
+      "VALIDATION_ERROR",
+      "NETWORK_ERROR",
+      "OFFLINE",
+    ],
+  },
   "C-TODAY": {
     id: "C-TODAY",
     surface: "child",
@@ -108,7 +163,7 @@ export const SCREENS: Record<ScreenId, ScreenContract> = {
     route: "/parent/dashboard",
     owner: "Frontend Lead",
     docRef: "docs/ux/screens/parent-dashboard.md",
-    entryFrom: ["P-TASK-BUILDER", "P-APPROVALS", "P-REWARDS"],
+    entryFrom: ["P-REGISTRATION", "P-FAMILY-SETUP", "P-TASK-BUILDER", "P-APPROVALS", "P-REWARDS"],
     exitTo: ["P-APPROVALS", "P-TASK-BUILDER", "P-REWARDS"],
     primaryNav: true,
     states: ["NORMAL", "NO_ACTIVITY", "CHILD_OFFLINE", "PENDING_APPROVALS", "NOTIFICATION_OVERLOAD", "MULTIPLE_CHILDREN"],

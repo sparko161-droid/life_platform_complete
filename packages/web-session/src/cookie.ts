@@ -1,8 +1,10 @@
 /**
  * Session cookie policy (P1-010).
  *
- * The API issues a Bearer JWT (services/api/src/auth/session.ts). The
- * browser must never be able to read it: a child device is frequently a
+ * The API issues an opaque session id that maps to a revocable
+ * server-side record -- P1-031 replaced the earlier JWT, see
+ * docs/adr/0006-identity-and-session-model.md D2. The browser must never
+ * be able to read it: a child device is frequently a
  * shared device, and an XSS on a child surface that yields a session
  * token would hand an attacker the child's whole family scope. So the
  * token lives in an **httpOnly** cookie that only the Next server can
@@ -49,9 +51,9 @@ export function sessionCookieOptions(opts: { isDevelopment?: boolean; maxAgeSeco
     secure: !opts.isDevelopment,
     sameSite: "strict",
     path: "/",
-    // Matches the API's own default token lifetime (1h). A cookie that
-    // outlives the token would leave the user "logged in" with a token
-    // the API rejects, which reads as a broken app rather than an
+    // Matches DEFAULT_SESSION_TTL_SECONDS in the API (1h). A cookie that
+    // outlives the session record would leave the user "logged in" with
+    // an id the API rejects, which reads as a broken app rather than an
     // expiry.
     maxAge: opts.maxAgeSeconds ?? 3600,
   };

@@ -64,7 +64,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Exchange credentials for a session id, scoped to one family the account is an ACTIVE member of -- authenticating proves who you are, not what you may act on. The returned sessionId is the opaque bearer value; it maps to a revocable record, not a signed token (ADR-0006 D2). Wrong password, unknown email, suspended account and non-membership all return the same failure. Throttled per email+client address. */
+        /** Exchange credentials for a session id. When familyId is given the session is scoped to a family the account is an ACTIVE member of -- authenticating proves who you are, not what you may act on. When it is omitted the result is a bootstrap session, which may only create a family (ADR-0006 constraint 3, DISC-P1-031-1). The returned sessionId is the opaque bearer value; it maps to a revocable record, not a signed token (ADR-0006 D2). Wrong password, unknown email, suspended account and non-membership all return the same failure. Throttled per email+client address. */
         post: operations["signIn"];
         delete?: never;
         options?: never;
@@ -357,6 +357,11 @@ export interface components {
             expiresAt: string;
             /** @enum {string} */
             role: "parent" | "child";
+            /**
+             * Format: uuid
+             * @description Absent on a bootstrap session. A client uses its absence to know it must create a family before anything else.
+             */
+            familyId?: string;
         };
         HealthStatus: {
             /** @enum {string} */
@@ -697,8 +702,11 @@ export interface operations {
                     /** Format: email */
                     email: string;
                     password: string;
-                    /** Format: uuid */
-                    familyId: string;
+                    /**
+                     * Format: uuid
+                     * @description Omit to receive a *bootstrap* session: an authenticated parent who belongs to no family yet and may only create one. Required for anything else -- see IssuedSession.
+                     */
+                    familyId?: string;
                 };
             };
         };
@@ -774,7 +782,7 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": {
-                    ownerParentId: string;
+                    ownerParentId?: string;
                 };
             };
         };

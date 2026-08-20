@@ -12,12 +12,17 @@ import { RepositoryNotFoundError } from "../repositories/errors.js";
 export class FamilyController {
   // POST /families -- createFamily
   @Post("api/v1/families")
-  async createFamily(@Session() session: SessionClaims, @Body() body: { ownerParentId: string }) {
-    // The frozen contract accepts ownerParentId in the body (there is no
-    // existing family membership yet to check against for a brand-new
-    // family) -- but it must equal the session's own actor, never an
-    // arbitrary id, per the same principle the P1-021 findings exist for.
-    if (body.ownerParentId !== session.actorId) {
+  async createFamily(@Session() session: SessionClaims, @Body() body: { ownerParentId?: string }) {
+    // The owner is always the authenticated actor. `ownerParentId` is
+    // vestigial: it was frozen into the contract by P0-009, before
+    // sessions existed, when the request had no other way to say who was
+    // acting. It is now optional -- omit it and the session decides.
+    //
+    // When it *is* sent it must still match, so an older client cannot
+    // create a family owned by someone else. Rejecting a mismatch rather
+    // than silently ignoring the field keeps a wrong client loud instead
+    // of quietly wrong.
+    if (body.ownerParentId !== undefined && body.ownerParentId !== session.actorId) {
       throw new ForbiddenException({ error: { code: "OWNER_MUST_BE_SELF", message: "ownerParentId must match the authenticated actor." } });
     }
     return withTransaction((client) =>

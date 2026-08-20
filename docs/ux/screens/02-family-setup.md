@@ -1,6 +1,10 @@
 # Экран: создание семьи
 
-**ID:** P-FAMILY-SETUP
+> Earlier product sketch. It declares no screen id: the frozen,
+> template-conformant contract owns it, per
+> `docs/adr/0005-canonical-screen-ids.md` ("The nine early sketches that
+> duplicate a contract were kept as product source but no longer declare
+> an id").
 **Прежний ID:** UX-FAM-01 (выведен из употребления, см. `docs/ux/screen-id-scheme.md`)
 **Владелец:** UI/UX Lead + Family Domain Lead
 

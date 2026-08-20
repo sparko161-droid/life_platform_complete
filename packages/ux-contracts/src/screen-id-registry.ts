@@ -38,8 +38,9 @@ import { SCREEN_IDS, type ScreenId } from "./screens.js";
  * because Phase 1 did not need it yet.
  */
 export const SPECIFIED_SCREEN_IDS = [
-  "P-REGISTRATION",
-  "P-FAMILY-SETUP",
+  // P-REGISTRATION and P-FAMILY-SETUP graduated to SCREEN_IDS in P1-032,
+  // once the sign-in and setup flows existed to write template-conformant
+  // contracts against (ADR-0005 requires one before a screen is frozen).
   "P-CHILD-PROFILE",
   "P-SOCIAL",
   "P-CHAT",
