@@ -2092,7 +2092,7 @@ tasks:
     phase: 1
     title: Web sign-in flow and child provisioning
     primary: frontend-lead
-    status: BACKLOG
+    status: DONE
     deps: []
     deps_contract:
       - P1-013
@@ -2103,7 +2103,37 @@ tasks:
     gate_owners:
       - child-safety-lead
       - qa-lead
-    discovery_links: []
+    discovery_links:
+      - discovery_id: DISC-P1-032-1
+        source_task: P1-032
+        type: MISSING_REQUIREMENT
+        finding: >-
+          apps/child-web has no screen that accepts a provisioned session. P1-032 delivered the API for child
+          provisioning and the parent-side flow that calls it, but the session id produced there still has no way to
+          reach the child's browser. A child cannot begin using their own device.
+        why_it_matters: >-
+          The task title says "child provisioning", and the API half is genuinely done, so this is exactly the kind of
+          gap that gets read as finished. It is not: the child surface is unreachable by a real child today, which
+          means the child half of the vertical slice is still only demonstrable through tests.
+        affected_domains: []
+        architecture_impact: null
+        security_impact: >-
+          How a provisioned session reaches a child device is a security design question, not a UI detail. A link or
+          code carrying a live session must be short-lived and single-use, or it becomes a durable credential -- which
+          is the exact thing ADR-0006 D3 avoids by giving children no credentials at all.
+        ux_impact: >-
+          C-TODAY and the rest of the child surface exist but cannot be entered.
+        recommended_solution: >-
+          Add a child-surface entry that exchanges a short-lived, single-use provisioning artefact for the httpOnly
+          session cookie on the child's device, mirroring the parent sign-in route handler. The artefact must not be
+          the session id itself.
+        alternatives:
+          - >-
+            Show the session id for manual entry -- rejected: it is a bearer credential, and putting it on screen to be
+            typed or photographed defeats the httpOnly posture the whole web tier is built around.
+        priority: HIGH
+        blocking: false
+        proposed_task: null
     blocked_reason: null
     human_decisions: []
     origin_discovery: DISC-P1-010-1
