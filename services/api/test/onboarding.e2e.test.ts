@@ -186,3 +186,65 @@ test("sign-up refuses a short password", async (t) => {
   assert.equal(res.status, 400);
   assert.equal(res.body.error.code, "PASSWORD_TOO_SHORT");
 });
+
+test("creating a family scopes the caller's bootstrap session to it, with no re-sign-in", async (t) => {
+  if (skipIfNoDb(t)) return;
+  const server = app!.getHttpServer();
+  const parentEmail = email();
+  const signUp = await request(server).post("/api/v1/auth/sign-up").send({ email: parentEmail, password: PASSWORD });
+  await request(server).post("/api/v1/auth/consent").send({ accountId: signUp.body.accountId });
+  const bootstrap = await request(server).post("/api/v1/auth/sign-in").send({ email: parentEmail, password: PASSWORD });
+  assert.equal(bootstrap.body.familyId, undefined, "precondition: the session starts unscoped");
+  const auth = { Authorization: `Bearer ${bootstrap.body.sessionId}` };
+
+  const family = await request(server).post("/api/v1/families").set(auth).send({});
+  assert.equal(family.status, 201);
+
+  // The same bearer value must now work for a family-scoped operation.
+  // Before this was fixed, the parent had to sign out and back in to
+  // continue setting up -- signing out mid-onboarding to continue
+  // onboarding is not a real flow, and the test that caught it is this
+  // one's sibling above.
+  const child = await request(server)
+    .post(`/api/v1/families/${family.body.familyId}/children`)
+    .set(auth)
+    .send({ displayName: "Ваня", birthYear: new Date().getFullYear() - 6 });
+  assert.equal(child.status, 201);
+
+  const provisioned = await request(server)
+    .post("/api/v1/auth/child-sessions")
+    .set(auth)
+    .send({ childId: child.body.childId });
+  assert.equal(provisioned.status, 200, "the same session must be able to provision child access");
+});
+
+test("scoping a session never re-points one that already belongs to a family", async (t) => {
+  if (skipIfNoDb(t)) return;
+  const server = app!.getHttpServer();
+  const parentEmail = email();
+  const signUp = await request(server).post("/api/v1/auth/sign-up").send({ email: parentEmail, password: PASSWORD });
+  await request(server).post("/api/v1/auth/consent").send({ accountId: signUp.body.accountId });
+  const bootstrap = await request(server).post("/api/v1/auth/sign-in").send({ email: parentEmail, password: PASSWORD });
+  const auth = { Authorization: `Bearer ${bootstrap.body.sessionId}` };
+
+  const first = await request(server).post("/api/v1/families").set(auth).send({});
+  const second = await request(server).post("/api/v1/families").set(auth).send({});
+  assert.equal(second.status, 201, "creating a second family is allowed");
+
+  // The session stays bound to the first family. Scoping only ever moves
+  // a session out of the unscoped state, never between families -- so a
+  // live session cannot be walked onto a different family's data.
+  const childInSecond = await request(server)
+    .post(`/api/v1/families/${second.body.familyId}/children`)
+    .set(auth)
+    .send({ displayName: "Мила", birthYear: new Date().getFullYear() - 7 });
+  assert.equal(childInSecond.status, 201, "the actor owns both families, so this is legitimately allowed");
+
+  const provisioned = await request(server)
+    .post("/api/v1/auth/child-sessions")
+    .set(auth)
+    .send({ childId: childInSecond.body.childId });
+  // child-sessions uses the *session's* family, which is still the first
+  // one -- so a child of the second family is correctly out of scope.
+  assert.equal(provisioned.status, 403, "the session's family did not silently move to the newer family");
+});

@@ -315,6 +315,39 @@ export async function revokeSessionsForChild(client: PoolClient, childId: string
   return result.rowCount ?? 0;
 }
 
+/**
+ * Binds a bootstrap session to the family its owner just created.
+ *
+ * Without this a parent would have to sign out and back in immediately
+ * after creating their family, because a bootstrap session carries no
+ * familyId and every family-scoped check fails closed for it. Signing out
+ * mid-onboarding to continue onboarding is not a real flow.
+ *
+ * Safe because it only ever *narrows* to a family the actor is verified
+ * to be an ACTIVE member of, and only from the unscoped state -- an
+ * already-scoped session is never re-pointed, so this cannot be used to
+ * move a live session between families.
+ */
+export async function scopeSessionToFamily(
+  client: PoolClient,
+  sessionId: string,
+  familyId: string,
+  parentId: string,
+): Promise<void> {
+  await requireActiveParentMember(client, familyId, parentId);
+  const result = await client.query(
+    `UPDATE sessions SET family_id = $1
+     WHERE session_id = $2 AND subject_kind = 'PARENT' AND family_id IS NULL AND revoked_at IS NULL`,
+    [familyId, sessionId],
+  );
+  if (result.rowCount === 0) {
+    // Already scoped, revoked, or not a parent session. Not an error: the
+    // caller's family was still created, and re-running this must not
+    // undo or move anything.
+    return;
+  }
+}
+
 /** Marks an account's consent as accepted and moves it out of PENDING_VERIFICATION. */
 export async function acceptConsent(client: PoolClient, accountId: string, now: string): Promise<Account> {
   const { rows } = await client.query<AccountRow>(

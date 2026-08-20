@@ -1,6 +1,6 @@
 import { Body, Controller, ForbiddenException, Get, Param, Post, UseGuards } from "@nestjs/common";
 import { randomUUID } from "node:crypto";
-import { familyRepository } from "../repositories/index.js";
+import { familyRepository, identityRepository } from "../repositories/index.js";
 import { withTransaction } from "../db/pool.js";
 import { Session } from "../auth/session.decorator.js";
 import { SessionGuard } from "../auth/session.guard.js";
@@ -25,13 +25,18 @@ export class FamilyController {
     if (body.ownerParentId !== undefined && body.ownerParentId !== session.actorId) {
       throw new ForbiddenException({ error: { code: "OWNER_MUST_BE_SELF", message: "ownerParentId must match the authenticated actor." } });
     }
-    return withTransaction((client) =>
-      familyRepository.createFamily(client, {
+    return withTransaction(async (client) => {
+      const family = await familyRepository.createFamily(client, {
         familyId: randomUUID() as any,
         ownerId: session.actorId as any,
         now: new Date().toISOString(),
-      }),
-    );
+      });
+      // The caller is now a member of the family they just made, so their
+      // bootstrap session is scoped to it here rather than making them
+      // sign out and back in to continue onboarding.
+      await identityRepository.scopeSessionToFamily(client, session.sessionId, family.familyId, session.actorId);
+      return family;
+    });
   }
 
   // GET /families/{familyId} -- getFamily
