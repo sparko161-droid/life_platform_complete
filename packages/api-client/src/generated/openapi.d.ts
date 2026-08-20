@@ -106,6 +106,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/auth/child-pairing-codes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Issue a short, single-use code a parent reads out to set up a child's device. Deliberately not the session id: a session id is a bearer credential, and one read aloud or photographed would defeat the httpOnly posture the web tier is built around (DISC-P1-032-1). Issuing invalidates any code the child already has outstanding, so there is never more than one live at a time. */
+        post: operations["issueChildPairingCode"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/child-pairing-codes/redeem": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Exchange a pairing code for a child session. Unauthenticated by necessity -- the child's device has no session yet, which is the problem being solved. Unknown, expired and already-redeemed codes all fail identically, so a guessed code cannot be confirmed as real. */
+        post: operations["redeemChildPairingCode"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/families": {
         parameters: {
             query?: never;
@@ -769,6 +803,67 @@ export interface operations {
                 };
             };
             401: components["responses"]["Error"];
+            "5XX": components["responses"]["Error"];
+        };
+    };
+    issueChildPairingCode: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: uuid */
+                    childId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Code issued. Shown to the parent once and never returned again. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        code: string;
+                        /** Format: date-time */
+                        expiresAt: string;
+                    };
+                };
+            };
+            401: components["responses"]["Error"];
+            "5XX": components["responses"]["Error"];
+        };
+    };
+    redeemChildPairingCode: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    code: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Child session issued. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IssuedSession"];
+                };
+            };
+            403: components["responses"]["Error"];
             "5XX": components["responses"]["Error"];
         };
     };

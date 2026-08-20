@@ -1,6 +1,9 @@
 openapi: 3.1.0
 info:
   title: Life Platform API
+  # 0.6.0 (P1-036): additive -- adds the two child-pairing operations
+  # that let a child device obtain a session without ever holding a
+  # credential (DISC-P1-032-1). Nothing existing changed shape.
   # 0.5.0 (P1-032): relaxes two request bodies, both loosening -- an
   # existing client keeps working. sign-in's familyId became optional
   # (omit it for a bootstrap session), and createFamily's ownerParentId
@@ -10,7 +13,7 @@ info:
   # independent of contracts/registry.yaml's contract_pack_version --
   # separate versioned surfaces per
   # docs/architecture/versioning-and-compatibility.md.
-  version: 0.5.0
+  version: 0.6.0
   description: >
     Canonical external REST contract for the Life Platform API, per
     docs/architecture/api-contracts.md. P0-005 established the reusable
@@ -226,6 +229,82 @@ paths:
               schema:
                 $ref: "#/components/schemas/IssuedSession"
         "401":
+          $ref: "#/components/responses/Error"
+        "5XX":
+          $ref: "#/components/responses/Error"
+
+  /auth/child-pairing-codes:
+    post:
+      operationId: issueChildPairingCode
+      summary: >-
+        Issue a short, single-use code a parent reads out to set up a
+        child's device. Deliberately not the session id: a session id is a
+        bearer credential, and one read aloud or photographed would defeat
+        the httpOnly posture the web tier is built around
+        (DISC-P1-032-1). Issuing invalidates any code the child already
+        has outstanding, so there is never more than one live at a time.
+      tags: [identity]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [childId]
+              properties:
+                childId:
+                  type: string
+                  format: uuid
+              additionalProperties: false
+      responses:
+        "200":
+          description: Code issued. Shown to the parent once and never returned again.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [code, expiresAt]
+                properties:
+                  code:
+                    type: string
+                  expiresAt:
+                    type: string
+                    format: date-time
+        "401":
+          $ref: "#/components/responses/Error"
+        "5XX":
+          $ref: "#/components/responses/Error"
+
+  /auth/child-pairing-codes/redeem:
+    post:
+      operationId: redeemChildPairingCode
+      summary: >-
+        Exchange a pairing code for a child session. Unauthenticated by
+        necessity -- the child's device has no session yet, which is the
+        problem being solved. Unknown, expired and already-redeemed codes
+        all fail identically, so a guessed code cannot be confirmed as
+        real.
+      tags: [identity]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code]
+              properties:
+                code:
+                  type: string
+              additionalProperties: false
+      responses:
+        "200":
+          description: Child session issued.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IssuedSession"
+        "403":
           $ref: "#/components/responses/Error"
         "5XX":
           $ref: "#/components/responses/Error"

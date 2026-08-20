@@ -10,7 +10,7 @@ import {
 } from "@nestjs/common";
 import type { Request } from "express";
 import { withTransaction } from "../db/pool.js";
-import { identityRepository } from "../repositories/index.js";
+import { identityRepository, pairingRepository } from "../repositories/index.js";
 import { Session } from "../auth/session.decorator.js";
 import { SessionGuard } from "../auth/session.guard.js";
 import type { SessionClaims } from "../auth/session.js";
@@ -172,5 +172,48 @@ export class AuthController {
       }),
     );
     return { sessionId: childSession.sessionId, expiresAt: childSession.expiresAt, role: "child" };
+  }
+
+  // POST /auth/child-pairing-codes -- a parent issues a short code to type
+  // on the child device. Closes DISC-P1-032-1: provisionChildSession above
+  // returns a session id, and a session id is a bearer credential that
+  // must never be read aloud or photographed. This is the artefact that
+  // is safe to hand over instead -- short-lived, single-use, and not a
+  // session.
+  @Post("api/v1/auth/child-pairing-codes")
+  @HttpCode(200)
+  @UseGuards(SessionGuard)
+  async issuePairingCode(@Session() session: SessionClaims, @Body() body: { childId?: string }) {
+    if (session.role !== "parent") {
+      throw new UnauthorizedException({
+        error: { code: "PARENT_SESSION_REQUIRED", message: "Только родитель может выдать код." },
+      });
+    }
+    if (!body.childId || !session.familyId) {
+      throw new BadRequestException({ error: { code: "INVALID_INPUT", message: "Укажите ребёнка." } });
+    }
+    return withTransaction((client) =>
+      pairingRepository.issuePairingCode(client, {
+        familyId: session.familyId!,
+        childId: body.childId!,
+        issuedByParentId: session.actorId,
+        now: new Date().toISOString(),
+      }),
+    );
+  }
+
+  // POST /auth/child-pairing-codes/redeem -- the child device exchanges
+  // the code for a session. Unauthenticated by necessity: the device has
+  // no session yet, which is the entire problem being solved.
+  @Post("api/v1/auth/child-pairing-codes/redeem")
+  @HttpCode(200)
+  async redeemPairingCode(@Body() body: { code?: string }) {
+    if (!body.code) {
+      throw new BadRequestException({ error: { code: "INVALID_INPUT", message: "Введите код." } });
+    }
+    const session = await withTransaction((client) =>
+      pairingRepository.redeemPairingCode(client, body.code!, new Date().toISOString()),
+    );
+    return { sessionId: session.sessionId, expiresAt: session.expiresAt, role: "child" };
   }
 }

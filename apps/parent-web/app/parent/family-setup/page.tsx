@@ -31,6 +31,7 @@ export default function Page() {
   const [childName, setChildName] = useState("");
   const [birthYear, setBirthYear] = useState("");
   const [childId, setChildId] = useState<string | null>(null);
+  const [pairingCode, setPairingCode] = useState<string | null>(null);
 
   async function call<T>(path: string, body: unknown): Promise<T | null> {
     setBusy(true);
@@ -89,8 +90,15 @@ export default function Page() {
   }
 
   async function openChildAccess(): Promise<void> {
-    const session = await call<{ sessionId: string }>("/api/v1/auth/child-sessions", { childId });
-    if (session) setStep("CHILD_ACCESS_READY");
+    // A pairing code, not the session itself. The session id this
+    // eventually becomes is a bearer credential, and putting one on
+    // screen to be read aloud or photographed would defeat the httpOnly
+    // posture the whole web tier is built around (DISC-P1-032-1).
+    const issued = await call<{ code: string }>("/api/v1/auth/child-pairing-codes", { childId });
+    if (issued) {
+      setPairingCode(issued.code);
+      setStep("CHILD_ACCESS_READY");
+    }
   }
 
   return (
@@ -155,14 +163,19 @@ export default function Page() {
             {step === "CHILD_ADDED" ? (
               <>
                 <p className="mb-2 text-sm text-ink-muted">
-                  Ребёнку не нужен пароль — доступ открывает родитель на устройстве ребёнка.
+                  Ребёнку не нужен пароль. Вы получите короткий код — введите его на устройстве ребёнка.
                 </p>
                 <Button onClick={openChildAccess} disabled={busy}>
-                  {busy ? "Подождите…" : "Открыть доступ"}
+                  {busy ? "Подождите…" : "Получить код"}
                 </Button>
               </>
             ) : (
-              <p className="text-sm text-ink-muted">Доступ открыт.</p>
+              <>
+                <p className="mb-2 text-sm text-ink-muted">
+                  Введите этот код на устройстве ребёнка. Он действует 5 минут и только один раз.
+                </p>
+                <p className="text-center text-3xl font-semibold tracking-[0.3em] text-ink">{pairingCode}</p>
+              </>
             )}
           </Card>
         )}
