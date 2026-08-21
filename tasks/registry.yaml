@@ -758,7 +758,7 @@ tasks:
     phase: 1
     title: Implement vertical slice API/client wiring and recovery states
     primary: frontend-lead
-    status: IN_PROGRESS
+    status: DONE
     deps: []
     deps_contract:
       - P1-013
