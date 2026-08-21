@@ -267,7 +267,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Fetch a task assignment. */
+        /** Fetch a task assignment. Readable only within the family the caller's session is scoped to, and by a child only for their own assignments (P1-037). An assignment that does not exist and one that belongs to someone else are refused identically, so this cannot be used to discover which ids are real -- which is why there is no 404 here. */
         get: operations["getTaskAssignment"];
         put?: never;
         post?: never;
@@ -1139,6 +1139,7 @@ export interface operations {
                     "application/json": components["schemas"]["TaskAssignment"];
                 };
             };
+            403: components["responses"]["Error"];
             "5XX": components["responses"]["Error"];
         };
     };

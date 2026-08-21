@@ -214,12 +214,15 @@ test("publishTaskTemplate is idempotent: publishing an already-ACTIVE template r
   assert.equal(second.body.version, first.body.version, "a replayed publish must not bump the version");
 });
 
-test("GET /api/v1/task-assignments/:id returns 404 for an unknown id", async (t) => {
+test("GET /api/v1/task-assignments/:id refuses an unknown id the same way as someone else's", async (t) => {
   if (skipIfNoDb(t)) return;
   const parent = await createRealParentSession();
   const res = await request(app!.getHttpServer())
     .get(`/api/v1/task-assignments/${randomUUID()}`)
     .set("Authorization", `Bearer ${parent.sessionId}`);
-  assert.equal(res.status, 404);
-  assert.equal(res.body.error.code, "NOT_FOUND");
+  // Was 404 until P1-037. A distinct "no such thing" answer tells a
+  // caller which ids are real, which is exactly the probe the scope
+  // guard exists to close; openapi.yaml never promised 404 here.
+  assert.equal(res.status, 403);
+  assert.equal(res.body.error.code, "NOT_IN_FAMILY");
 });
