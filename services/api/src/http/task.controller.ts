@@ -1,8 +1,6 @@
 import {
-  BadRequestException,
   Body,
   Controller,
-  ForbiddenException,
   Get,
   Headers,
   HttpCode,
@@ -12,13 +10,20 @@ import {
   UseGuards,
 } from "@nestjs/common";
 import { randomUUID } from "node:crypto";
-import type { PoolClient } from "pg";
-import { familyRepository, rewardRepository, taskRepository } from "../repositories/index.js";
+import { rewardRepository, taskRepository } from "../repositories/index.js";
 import { withTransaction } from "../db/pool.js";
 import { Session } from "../auth/session.decorator.js";
 import { SessionGuard } from "../auth/session.guard.js";
 import type { SessionClaims } from "../auth/session.js";
 import { RepositoryNotFoundError } from "../repositories/errors.js";
+import {
+  assertChildInFamily,
+  assertFamily,
+  loadAssignmentInScope,
+  loadTemplateInScope,
+  requireParent,
+  resolveChildScope,
+} from "../auth/scope.js";
 import { buildCursorPage, decodeCursor } from "./pagination.js";
 
 @Controller()
@@ -26,7 +31,13 @@ import { buildCursorPage, decodeCursor } from "./pagination.js";
 export class TaskController {
   // GET /families/{familyId}/task-templates -- listTaskTemplates
   @Get("api/v1/families/:familyId/task-templates")
-  async listTaskTemplates(@Param("familyId") familyId: string, @Query("cursor") cursor?: string, @Query("limit") limit?: string) {
+  async listTaskTemplates(
+    @Param("familyId") familyId: string,
+    @Session() session: SessionClaims,
+    @Query("cursor") cursor?: string,
+    @Query("limit") limit?: string,
+  ) {
+    assertFamily(session, familyId);
     const pageSize = clampLimit(limit);
     const rows = await withTransaction((client) =>
       taskRepository.listTaskTemplatesByFamily(client, familyId, {
@@ -45,6 +56,8 @@ export class TaskController {
     @Body()
     body: { title: string; verificationStrategy: string; rewardXp: number; rewardCoins: number },
   ) {
+    assertFamily(session, familyId);
+    requireParent(session);
     return withTransaction((client) =>
       taskRepository.createTemplate(client, {
         taskTemplateId: randomUUID() as any,
@@ -67,9 +80,9 @@ export class TaskController {
     @Session() session: SessionClaims,
     @Headers("idempotency-key") _idempotencyKey: string,
   ) {
+    requireParent(session);
     return withTransaction(async (client) => {
-      const current = await taskRepository.loadTaskTemplate(client, taskTemplateId);
-      if (!current) throw new RepositoryNotFoundError("TaskTemplate", taskTemplateId);
+      const current = await loadTemplateInScope(client, session, taskTemplateId);
       // Idempotent replay: already ACTIVE returns unchanged rather than
       // failing PUBLISH_TEMPLATE_INVALID_TRANSITION, same rule as
       // startTaskAssignment's repeat taps.
@@ -88,23 +101,28 @@ export class TaskController {
     @Session() session: SessionClaims,
     @Body() body: { assignedToChildId: string; dueAt?: string },
   ) {
-    return withTransaction((client) =>
-      taskRepository.assignTask(client, taskTemplateId, {
+    requireParent(session);
+    return withTransaction(async (client) => {
+      // Both ends are checked: the template must be this family's, and
+      // so must the child. Guarding only one would let a caller assign
+      // their own template to someone else's child, or someone else's
+      // template to their own.
+      await loadTemplateInScope(client, session, taskTemplateId);
+      await assertChildInFamily(client, session, body.assignedToChildId);
+      return taskRepository.assignTask(client, taskTemplateId, {
         taskAssignmentId: randomUUID() as any,
         assignedToChildId: body.assignedToChildId as any,
         actorId: session.actorId as any,
         ...(body.dueAt ? { dueAt: body.dueAt } : {}),
         now: new Date().toISOString(),
-      }),
-    );
+      });
+    });
   }
 
   // GET /task-assignments/{taskAssignmentId} -- getTaskAssignment
   @Get("api/v1/task-assignments/:taskAssignmentId")
-  async getTaskAssignment(@Param("taskAssignmentId") taskAssignmentId: string) {
-    const assignment = await withTransaction((client) => taskRepository.readTaskAssignment(client, taskAssignmentId));
-    if (!assignment) throw new RepositoryNotFoundError("TaskAssignment", taskAssignmentId);
-    return assignment;
+  async getTaskAssignment(@Param("taskAssignmentId") taskAssignmentId: string, @Session() session: SessionClaims) {
+    return withTransaction((client) => loadAssignmentInScope(client, session, taskAssignmentId));
   }
 
   // POST /task-assignments/{taskAssignmentId}/completions -- submitTaskCompletion
@@ -115,8 +133,9 @@ export class TaskController {
     @Headers("idempotency-key") _idempotencyKey: string,
     @Body() body: { mediaEvidenceId?: string; counterValue?: number; timerSeconds?: number; selfReportNote?: string },
   ) {
-    const { completion } = await withTransaction((client) =>
-      taskRepository.submitTask(client, taskAssignmentId, {
+    const { completion } = await withTransaction(async (client) => {
+      await loadAssignmentInScope(client, session, taskAssignmentId);
+      return taskRepository.submitTask(client, taskAssignmentId, {
         taskCompletionId: randomUUID() as any,
         actorId: session.actorId as any,
         ...(body.mediaEvidenceId ? { mediaEvidenceId: body.mediaEvidenceId as any } : {}),
@@ -124,8 +143,8 @@ export class TaskController {
         ...(body.timerSeconds !== undefined ? { timerSeconds: body.timerSeconds } : {}),
         ...(body.selfReportNote ? { selfReportNote: body.selfReportNote } : {}),
         now: new Date().toISOString(),
-      }),
-    );
+      });
+    });
     return completion;
   }
 
@@ -138,8 +157,7 @@ export class TaskController {
     @Headers("idempotency-key") _idempotencyKey: string,
   ) {
     return withTransaction(async (client) => {
-      const current = await taskRepository.readTaskAssignment(client, taskAssignmentId);
-      if (!current) throw new RepositoryNotFoundError("TaskAssignment", taskAssignmentId);
+      const current = await loadAssignmentInScope(client, session, taskAssignmentId);
       // Idempotent replay: "repeat taps must not create duplicate
       // attempts" (docs/ux/core-path-contracts.md) -- already IN_PROGRESS
       // returns the current state instead of erroring.
@@ -156,9 +174,13 @@ export class TaskController {
     @Session() session: SessionClaims,
     @Headers("idempotency-key") _idempotencyKey: string,
   ) {
+    // A child must not approve their own work. Nothing checked this
+    // before, so a child session could approve its own assignment and
+    // grant itself the reward below -- the approval step existed but
+    // decided nothing.
+    requireParent(session);
     return withTransaction(async (client) => {
-      const current = await taskRepository.readTaskAssignment(client, taskAssignmentId);
-      if (!current) throw new RepositoryNotFoundError("TaskAssignment", taskAssignmentId);
+      const current = await loadAssignmentInScope(client, session, taskAssignmentId);
       // Idempotent replay: "does not grant the reward a second time"
       // (task-to-reward.md) -- already APPROVED (or further along)
       // returns the current state; the reward grant below is also
@@ -207,9 +229,9 @@ export class TaskController {
     // rows at all today. Accepted but not yet stored; recorded as a
     // known follow-up rather than silently dropped without disclosure
     // (see this task's handoff).
+    requireParent(session);
     return withTransaction(async (client) => {
-      const current = await taskRepository.readTaskAssignment(client, taskAssignmentId);
-      if (!current) throw new RepositoryNotFoundError("TaskAssignment", taskAssignmentId);
+      const current = await loadAssignmentInScope(client, session, taskAssignmentId);
       if (current.status === "REJECTED") return current;
 
       const now = new Date().toISOString();
@@ -247,43 +269,6 @@ export class TaskController {
     }));
     return { childId: targetChildId, assignments, everHadTasks, generatedAt: new Date().toISOString() };
   }
-}
-
-/**
- * Decides whose day a caller may read.
- *
- * A child reads their own and only their own. A mismatched childId is
- * refused rather than quietly ignored: silently substituting the right
- * one would hide a client bug, and returning the requested one would be
- * the vulnerability.
- */
-async function resolveChildScope(
-  client: PoolClient,
-  session: SessionClaims,
-  requested: string | undefined,
-): Promise<string> {
-  if (session.role === "child") {
-    if (requested && requested !== session.actorId) {
-      throw new ForbiddenException({
-        error: { code: "CHILD_SCOPE_MISMATCH", message: "Можно посмотреть только свой день." },
-      });
-    }
-    return session.actorId;
-  }
-
-  if (!requested || !session.familyId) {
-    throw new BadRequestException({ error: { code: "INVALID_INPUT", message: "Укажите ребёнка." } });
-  }
-  const family = await familyRepository.readFamily(client, session.familyId);
-  if (!family?.children.some((c) => c.childId === requested)) {
-    // Same failure whether the child does not exist or belongs to
-    // someone else. Distinguishing them would turn this into a probe for
-    // which child ids are real.
-    throw new ForbiddenException({
-      error: { code: "CHILD_NOT_IN_FAMILY", message: "Этот ребёнок не из вашей семьи." },
-    });
-  }
-  return requested;
 }
 
 function clampLimit(raw: string | undefined): number {

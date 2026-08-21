@@ -6,6 +6,7 @@ import { Session } from "../auth/session.decorator.js";
 import { SessionGuard } from "../auth/session.guard.js";
 import type { SessionClaims } from "../auth/session.js";
 import { RepositoryNotFoundError } from "../repositories/errors.js";
+import { assertFamily, requireParent } from "../auth/scope.js";
 
 @Controller()
 @UseGuards(SessionGuard)
@@ -41,7 +42,13 @@ export class FamilyController {
 
   // GET /families/{familyId} -- getFamily
   @Get("api/v1/families/:familyId")
-  async getFamily(@Param("familyId") familyId: string) {
+  async getFamily(@Param("familyId") familyId: string, @Session() session: SessionClaims) {
+    // DISC-P1-004-2: this had no authorization at all. Any authenticated
+    // session could read any family by id -- including its children's
+    // names and birth years, which are CHILD_PROFILE data. A family id
+    // is a UUID rather than a guessable value, but that is obscurity,
+    // not authorization.
+    assertFamily(session, familyId);
     const family = await withTransaction((client) => familyRepository.readFamily(client, familyId));
     if (!family) throw new RepositoryNotFoundError("Family", familyId);
     return family;
@@ -54,6 +61,10 @@ export class FamilyController {
     @Session() session: SessionClaims,
     @Body() body: { displayName: string; birthYear: number },
   ) {
+    assertFamily(session, familyId);
+    // Adding a child requires the CHILD_POLICY capability
+    // (docs/product/family-lifecycle.md); a child session holds none.
+    requireParent(session);
     const childId = randomUUID();
     const family = await withTransaction((client) =>
       familyRepository.addChild(client, familyId, {
