@@ -89,6 +89,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/auth/session": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Describe the caller's own session -- who it acts as, in what role, and which family it is scoped to. Added by P1-003 (DISC-P1-003-1): a browser surface holds its session in an httpOnly cookie it cannot read, so this is the only way for it to discover the familyId every family-scoped path needs. The session id itself is deliberately NOT returned: it is the bearer credential, and handing it to client script would defeat the httpOnly posture it is stored under. */
+        get: operations["getCurrentSession"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/auth/child-sessions": {
         parameters: {
             query?: never;
@@ -383,6 +400,18 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** @description What a session is allowed to act as. Never includes the session id -- see getCurrentSession. */
+        SessionScope: {
+            /** Format: uuid */
+            actorId: string;
+            /** @enum {string} */
+            role: "parent" | "child";
+            /**
+             * Format: uuid
+             * @description Absent on a bootstrap session, exactly as in IssuedSession. A parent surface uses its absence to know it must send the user to family setup rather than a family-scoped screen.
+             */
+            familyId?: string;
+        };
         /** @description The opaque bearer value plus its lifetime. sessionId maps to a revocable server-side record (ADR-0006 D2) rather than being a self-contained signed token -- that is what makes docs/product/family-lifecycle.md revocation promise enforceable. */
         IssuedSession: {
             /** Format: uuid */
@@ -774,6 +803,28 @@ export interface operations {
                 };
                 content?: never;
             };
+            "5XX": components["responses"]["Error"];
+        };
+    };
+    getCurrentSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The caller's session scope. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionScope"];
+                };
+            };
+            401: components["responses"]["Error"];
             "5XX": components["responses"]["Error"];
         };
     };

@@ -1,6 +1,10 @@
 openapi: 3.1.0
 info:
   title: Life Platform API
+  # 0.7.0 (P1-003): additive -- adds getCurrentSession, so a web surface
+  # can learn which family its httpOnly session is scoped to without a
+  # second, client-readable copy of familyId (DISC-P1-003-1). Nothing
+  # existing changed shape.
   # 0.6.0 (P1-036): additive -- adds the two child-pairing operations
   # that let a child device obtain a session without ever holding a
   # credential (DISC-P1-032-1). Nothing existing changed shape.
@@ -13,7 +17,7 @@ info:
   # independent of contracts/registry.yaml's contract_pack_version --
   # separate versioned surfaces per
   # docs/architecture/versioning-and-compatibility.md.
-  version: 0.6.0
+  version: 0.7.0
   description: >
     Canonical external REST contract for the Life Platform API, per
     docs/architecture/api-contracts.md. P0-005 established the reusable
@@ -196,6 +200,31 @@ paths:
       responses:
         "204":
           description: Session revoked.
+        "5XX":
+          $ref: "#/components/responses/Error"
+
+  /auth/session:
+    get:
+      operationId: getCurrentSession
+      summary: >-
+        Describe the caller's own session -- who it acts as, in what
+        role, and which family it is scoped to. Added by P1-003
+        (DISC-P1-003-1): a browser surface holds its session in an
+        httpOnly cookie it cannot read, so this is the only way for it to
+        discover the familyId every family-scoped path needs. The session
+        id itself is deliberately NOT returned: it is the bearer
+        credential, and handing it to client script would defeat the
+        httpOnly posture it is stored under.
+      tags: [identity]
+      responses:
+        "200":
+          description: The caller's session scope.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionScope"
+        "401":
+          $ref: "#/components/responses/Error"
         "5XX":
           $ref: "#/components/responses/Error"
 
@@ -810,6 +839,27 @@ components:
         format: uuid
 
   schemas:
+    SessionScope:
+      type: object
+      required: [actorId, role]
+      description: >-
+        What a session is allowed to act as. Never includes the session
+        id -- see getCurrentSession.
+      properties:
+        actorId:
+          type: string
+          format: uuid
+        role:
+          type: string
+          enum: [parent, child]
+        familyId:
+          type: string
+          format: uuid
+          description: >-
+            Absent on a bootstrap session, exactly as in IssuedSession.
+            A parent surface uses its absence to know it must send the
+            user to family setup rather than a family-scoped screen.
+
     IssuedSession:
       type: object
       required: [sessionId, expiresAt, role]

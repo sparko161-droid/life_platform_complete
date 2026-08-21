@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Get,
   HttpCode,
   Post,
   Req,
@@ -145,6 +146,29 @@ export class AuthController {
     await withTransaction((client) =>
       identityRepository.revokeSession(client, session.sessionId, new Date().toISOString()),
     );
+  }
+
+  // GET /auth/session -- what the caller's own session is scoped to.
+  //
+  // Added by P1-003 (DISC-P1-003-1). The web tier keeps the session id
+  // in an httpOnly cookie it cannot read, which is deliberate -- but it
+  // meant a parent surface loading fresh had no way to learn which
+  // family it was acting in, and every family-scoped path needs that in
+  // its URL. The alternative was a second, client-readable copy of
+  // familyId in a cookie: a duplicate source of truth for the value
+  // that decides the security boundary, which is worse than an endpoint.
+  //
+  // Deliberately does not echo the session id back. That value is the
+  // bearer credential; returning it here would hand it to client script
+  // and undo the httpOnly posture the whole web tier is built around.
+  @Get("api/v1/auth/session")
+  @UseGuards(SessionGuard)
+  currentSession(@Session() session: SessionClaims) {
+    return {
+      actorId: session.actorId,
+      role: session.role,
+      ...(session.familyId ? { familyId: session.familyId } : {}),
+    };
   }
 
   // POST /auth/child-sessions -- a parent provisions a session for their
