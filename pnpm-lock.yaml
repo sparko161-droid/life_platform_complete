@@ -32,6 +32,9 @@ importers:
       '@life/ui':
         specifier: workspace:*
         version: link:../../packages/ui
+      '@life/ux-contracts':
+        specifier: workspace:*
+        version: link:../../packages/ux-contracts
       '@life/web-session':
         specifier: workspace:*
         version: link:../../packages/web-session
