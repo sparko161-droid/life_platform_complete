@@ -337,7 +337,7 @@ tasks:
     phase: 1
     title: Parent task builder UX
     primary: frontend-lead
-    status: PLANNED
+    status: DONE
     deps: []
     deps_contract:
       - P1-013
@@ -349,7 +349,24 @@ tasks:
     gate_owners:
       - qa-lead
       - child-experience-lead
-    discovery_links: []
+    discovery_links:
+      - discovery_id: DISC-P1-003-1
+        source_task: P1-003
+        type: ARCHITECTURE_GAP
+        finding: 'A browser surface had no way to learn which family its own session is scoped to. The session id lives in an httpOnly cookie the client script cannot read (deliberately, P1-032), familyId is returned only once at sign-in, and every family-scoped path needs it in the URL. The task builder is the first screen a parent can land on directly rather than arrive at holding in-memory state, so it is where this became unbuildable.'
+        why_it_matters: 'The available workaround was a second, client-readable copy of familyId in a cookie -- a duplicate source of truth for the value that decides the security boundary (docs/product/actors-and-permissions.md: "Family is the security boundary for child data"). Every parent screen after this one would have inherited it.'
+        affected_domains:
+          - identity
+        architecture_impact: 'Adds getCurrentSession to the REST surface (openapi 0.6.0 -> 0.7.0, additive). Introspection of the caller''s own session becomes part of the contract rather than an inference from sign-in.'
+        security_impact: 'The endpoint deliberately does not return the session id. Echoing the bearer value back would hand it to client script and undo the httpOnly posture the whole web tier is built around; a test asserts it never appears in the response.'
+        ux_impact: 'A parent whose session is unscoped is sent to family setup instead of a screen that would fail closed with nothing to show.'
+        recommended_solution: 'Implemented in this task: GET /api/v1/auth/session returns actorId, role and familyId when present.'
+        alternatives:
+          - 'A client-readable familyId cookie. Rejected: duplicate source of truth for the security boundary, and it goes stale the moment a session is rescoped.'
+          - 'Return familyId in every response envelope. Rejected: changes every existing operation to fix one missing read.'
+        priority: MEDIUM
+        blocking: false
+        proposed_task: null
     blocked_reason: null
     human_decisions: []
     origin_discovery: null
