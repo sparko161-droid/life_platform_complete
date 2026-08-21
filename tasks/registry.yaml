@@ -2189,7 +2189,7 @@ tasks:
     phase: 1
     title: Enforce family-scope authorization on every family-scoped endpoint
     primary: backend-lead
-    status: IN_PROGRESS
+    status: DONE
     deps: []
     deps_contract: []
     deps_implementation: []
