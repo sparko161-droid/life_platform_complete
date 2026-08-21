@@ -143,8 +143,16 @@ export default function Page() {
       {assignments && assignments.length > 0 ? (
         <ul className="flex flex-col gap-2">
           {assignments.map((a) => (
-            <li key={a.taskAssignmentId} className="rounded-control border border-line px-3 py-3">
-              {a.status}
+            <li key={a.taskAssignmentId}>
+              {/* C-TODAY -> C-TASK is a declared exit edge in the screen
+                  contract; without this link it was an edge nothing could
+                  actually traverse. */}
+              <a
+                href={`/child/task/${a.taskAssignmentId}`}
+                className="block min-h-11 rounded-control border border-line px-3 py-3 text-ink"
+              >
+                {a.status}
+              </a>
             </li>
           ))}
         </ul>
