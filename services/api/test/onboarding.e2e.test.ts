@@ -238,13 +238,26 @@ test("scoping a session never re-points one that already belongs to a family", a
     .post(`/api/v1/families/${second.body.familyId}/children`)
     .set(auth)
     .send({ displayName: "Мила", birthYear: new Date().getFullYear() - 7 });
-  assert.equal(childInSecond.status, 201, "the actor owns both families, so this is legitimately allowed");
+  // Refused since P1-037, and this assertion used to say the opposite.
+  // ADR-0006: authenticating proves who you are, not what you may act
+  // on -- the session is scoped to the first family, so owning the
+  // second one is not the same as currently acting in it. The parent
+  // signs in again scoped to that family. That is also what the comment
+  // directly above always said the rule was.
+  assert.equal(childInSecond.status, 403, "a session scoped to one family does not act on another");
 
-  const provisioned = await request(server)
-    .post("/api/v1/auth/child-sessions")
+  // And the session still reports the first family, which is the
+  // property this test is really about: creating a second family must
+  // not walk a live session onto it.
+  const scope = await request(server).get("/api/v1/auth/session").set(auth);
+  assert.equal(scope.body.familyId, first.body.familyId);
+  assert.notEqual(scope.body.familyId, second.body.familyId);
+
+  // Acting in the first family still works, so the guard has not simply
+  // frozen the session out of everything.
+  const childInFirst = await request(server)
+    .post(`/api/v1/families/${first.body.familyId}/children`)
     .set(auth)
-    .send({ childId: childInSecond.body.childId });
-  // child-sessions uses the *session's* family, which is still the first
-  // one -- so a child of the second family is correctly out of scope.
-  assert.equal(provisioned.status, 403, "the session's family did not silently move to the newer family");
+    .send({ displayName: "Мила", birthYear: new Date().getFullYear() - 7 });
+  assert.equal(childInFirst.status, 201);
 });

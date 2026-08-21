@@ -21,6 +21,25 @@ test("task id still rejects a genuinely malformed id", () => {
   assert.throws(() => taskSchema.parse(baseTask({ id: "P1-2" }))); // needs at least 3 digits
 });
 
+test("the admission path is walkable one step at a time", () => {
+  // `admit` walks BACKLOG -> ANALYSIS -> ARCHITECTURE_CHECK -> READY in
+  // one command, because create-child-task emits a task at BACKLOG and
+  // no verb used to move it (DISC-P1-028-1, recorded again as
+  // DISC-P1-036-1). It walks through this table rather than around it,
+  // so the table has to actually contain the path -- shortening it here
+  // would silently turn admit into a hand-edit with extra steps.
+  const path = ["BACKLOG", "ANALYSIS", "ARCHITECTURE_CHECK", "READY"] as const;
+  for (let i = 0; i < path.length - 1; i += 1) {
+    assert.equal(isValidTransition(path[i]!, path[i + 1]!), true, `${path[i]} -> ${path[i + 1]}`);
+  }
+});
+
+test("admission cannot be short-circuited by skipping a stage", () => {
+  assert.equal(isValidTransition("BACKLOG", "READY"), false);
+  assert.equal(isValidTransition("BACKLOG", "ARCHITECTURE_CHECK"), false);
+  assert.equal(isValidTransition("ANALYSIS", "READY"), false);
+});
+
 test("READY -> IN_PROGRESS is allowed", () => {
   assert.equal(isValidTransition("READY", "IN_PROGRESS"), true);
 });

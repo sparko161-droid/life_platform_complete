@@ -4,7 +4,7 @@ import { withTransaction } from "../db/pool.js";
 import { Session } from "../auth/session.decorator.js";
 import { SessionGuard } from "../auth/session.guard.js";
 import type { SessionClaims } from "../auth/session.js";
-import { RepositoryNotFoundError } from "../repositories/errors.js";
+import { loadRewardInScope, resolveChildScope } from "../auth/scope.js";
 import { buildCursorPage, decodeCursor } from "./pagination.js";
 
 @Controller()
@@ -12,14 +12,22 @@ import { buildCursorPage, decodeCursor } from "./pagination.js";
 export class RewardController {
   // GET /children/{childId}/reward-ledger -- listRewardLedger
   @Get("api/v1/children/:childId/reward-ledger")
-  async listLedger(@Param("childId") childId: string, @Query("cursor") cursor?: string, @Query("limit") limit?: string) {
+  async listLedger(
+    @Param("childId") childId: string,
+    @Session() session: SessionClaims,
+    @Query("cursor") cursor?: string,
+    @Query("limit") limit?: string,
+  ) {
     const pageSize = clampLimit(limit);
-    const rows = await withTransaction((client) =>
-      rewardRepository.listRewardLedgerByChild(client, childId, {
+    const rows = await withTransaction(async (client) => {
+      // A ledger is a child's own earnings history; the same scoping
+      // rule as /child/today applies, and for the same reason.
+      const target = await resolveChildScope(client, session, childId);
+      return rewardRepository.listRewardLedgerByChild(client, target, {
         limit: pageSize + 1,
         ...(cursor ? { afterPostedAt: decodeCursor(cursor) } : {}),
-      }),
-    );
+      });
+    });
     return buildCursorPage(rows, pageSize, (e) => e.postedAt);
   }
 
@@ -43,8 +51,7 @@ export class RewardController {
     // already REDEEMING or REDEEMED returns the current state rather
     // than erroring on a repeat.
     return withTransaction(async (client) => {
-      const current = await rewardRepository.loadReward(client, rewardId);
-      if (!current) throw new RepositoryNotFoundError("Reward", rewardId);
+      const current = await loadRewardInScope(client, session, rewardId);
       if (current.status === "REDEEMING" || current.status === "REDEEMED") return current;
       return rewardRepository.initiateRedemption(client, rewardId, {
         familyId: current.familyId,

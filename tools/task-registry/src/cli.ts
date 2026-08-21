@@ -174,9 +174,35 @@ program
         );
       }
 
-      const admitted = transition(task, "READY");
-      saveRegistry(path, replaceTask(registry, admitted));
-      console.log(`${id} admitted: ${task.status} -> READY`);
+      // Walk the whole admission path rather than requiring the caller
+      // to be standing on ARCHITECTURE_CHECK already.
+      //
+      // DISC-P1-028-1 predicted this and DISC-P1-036-1 recorded it
+      // happening: create-child-task emits a task at BACKLOG, no verb
+      // walked BACKLOG -> ANALYSIS -> ARCHITECTURE_CHECK, so every
+      // discovery-created task had its status edited by hand -- which is
+      // precisely the unrecorded state change the lifecycle exists to
+      // prevent. Admission is a single decision (readyAdmissionProblems
+      // above, already checked); the intermediate states are stages of
+      // that one decision, not separate approvals, so walking them here
+      // records the path without inventing an approval nobody gave.
+      //
+      // Each step still goes through the same TRANSITIONS table, so an
+      // unreachable status fails exactly as it did before.
+      const PATH: TaskState[] = ["ANALYSIS", "ARCHITECTURE_CHECK", "READY"];
+      const from = task.status;
+      if (from === "READY") {
+        // Idempotent rather than a no-op that reports a transition which
+        // did not happen.
+        console.log(`${id} is already READY.`);
+        return;
+      }
+      let current = task;
+      for (const next of PATH.slice(PATH.indexOf(from as TaskState) + 1)) {
+        current = transition(current, next);
+      }
+      saveRegistry(path, replaceTask(registry, current));
+      console.log(`${id} admitted: ${from} -> READY`);
     });
   });
 
