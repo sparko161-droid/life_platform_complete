@@ -1,6 +1,12 @@
 openapi: 3.1.0
 info:
   title: Life Platform API
+  # 0.8.0 (P1-004): getChildToday's childId becomes optional -- loosening,
+  # so an existing client keeps working. A child session now derives the
+  # scope from the session instead of trusting the query, which is what
+  # the operation always claimed to do. Its response gains everHadTasks
+  # and its cards gain title/rewardXp/rewardCoins (ChildTodayCard, a
+  # superset of TaskAssignment): both are additions a reader may ignore.
   # 0.7.0 (P1-003): additive -- adds getCurrentSession, so a web surface
   # can learn which family its httpOnly session is scoped to without a
   # second, client-readable copy of familyId (DISC-P1-003-1). Nothing
@@ -17,7 +23,7 @@ info:
   # independent of contracts/registry.yaml's contract_pack_version --
   # separate versioned surfaces per
   # docs/architecture/versioning-and-compatibility.md.
-  version: 0.7.0
+  version: 0.8.0
   description: >
     Canonical external REST contract for the Life Platform API, per
     docs/architecture/api-contracts.md. P0-005 established the reusable
@@ -632,12 +638,20 @@ paths:
         Authoritative view for the child's «Мой день» screen (C-TODAY,
         packages/ux-contracts). docs/architecture/vertical-slice/api-and-events.md:
         "returns authoritative task cards, progress, streak and available
-        actions." Scoped to the requesting child's own assignments only.
+        actions." Scoped to the requesting child's own assignments only,
+        and that is enforced from the session rather than taken from the
+        query (P1-004).
       tags: [task, vertical-slice]
       parameters:
         - name: childId
           in: query
-          required: true
+          required: false
+          description: >-
+            Which child's day to read. Optional for a child session and
+            ignored unless it matches -- a child may only read their own
+            day, and a mismatch is refused rather than silently
+            substituted. Required for a parent session, and the child
+            must belong to the family that session is scoped to.
           schema:
             type: string
             format: uuid
@@ -1141,7 +1155,7 @@ components:
 
     ChildTodayView:
       type: object
-      required: [childId, assignments, generatedAt]
+      required: [childId, assignments, everHadTasks, generatedAt]
       description: >-
         GET /child/today's response (P1-014, vertical slice). An
         aggregate read model, not a stored entity -- built from current
@@ -1159,13 +1173,43 @@ components:
         assignments:
           type: array
           items:
-            $ref: "#/components/schemas/TaskAssignment"
+            $ref: "#/components/schemas/ChildTodayCard"
+        everHadTasks:
+          type: boolean
+          description: >-
+            Whether this child has ever been assigned anything, archived
+            included. Added by P1-004: C-TODAY declares both FIRST_DAY
+            and NO_TASKS, they are identical in the assignment list, and
+            only the server can tell them apart.
         streak:
           type: integer
           minimum: 0
         generatedAt:
           type: string
           format: date-time
+
+    ChildTodayCard:
+      allOf:
+        - $ref: "#/components/schemas/TaskAssignment"
+        - type: object
+          required: [title, rewardXp, rewardCoins]
+          description: >-
+            A TaskAssignment plus the part of its template a child needs
+            to recognise the task. Added by P1-004: a bare assignment
+            carries no title, so a screen built on one could only show a
+            status -- and a status is an internal label
+            (docs/ux/ui-language.md forbids showing those to a child).
+            A superset of TaskAssignment, so an existing reader keeps
+            working.
+          properties:
+            title:
+              type: string
+            rewardXp:
+              type: integer
+              minimum: 0
+            rewardCoins:
+              type: integer
+              minimum: 0
 
     VerificationResult:
       type: object

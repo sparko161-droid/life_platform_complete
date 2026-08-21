@@ -185,7 +185,11 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
     );
   }
 
-  const uiState = deriveUiTaskState({ assignmentStatus: assignment.status as never, rejectedByParent: true });
+  // No rejectedByParent claim: the assignment does not say who rejected
+  // it, and asserting a parent did would be inventing a fact. The
+  // contract already defaults an ambiguous rejection to the more
+  // conservative framing, which is exactly the case we are in.
+  const uiState = deriveUiTaskState({ assignmentStatus: assignment.status as never });
   const screenState = toScreenState(uiState, online, sendFailed);
   const copy = TASK_COPY.render(screenState);
 

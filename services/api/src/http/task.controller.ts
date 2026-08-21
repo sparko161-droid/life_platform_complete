@@ -1,6 +1,19 @@
-import { Body, Controller, Get, Headers, HttpCode, Param, Post, Query, UseGuards } from "@nestjs/common";
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  ForbiddenException,
+  Get,
+  Headers,
+  HttpCode,
+  Param,
+  Post,
+  Query,
+  UseGuards,
+} from "@nestjs/common";
 import { randomUUID } from "node:crypto";
-import { rewardRepository, taskRepository } from "../repositories/index.js";
+import type { PoolClient } from "pg";
+import { familyRepository, rewardRepository, taskRepository } from "../repositories/index.js";
 import { withTransaction } from "../db/pool.js";
 import { Session } from "../auth/session.decorator.js";
 import { SessionGuard } from "../auth/session.guard.js";
@@ -213,11 +226,64 @@ export class TaskController {
   }
 
   // GET /child/today -- getChildToday
+  //
+  // childId is a *query parameter*, which means it is a claim by the
+  // caller. openapi.yaml says this view is "scoped to the requesting
+  // child's own assignments only", and until P1-004 nothing enforced
+  // that: any child session could read any child's day by changing one
+  // value in the URL. The session decides the scope here instead.
+  //
+  // It stays a parameter rather than being dropped because a parent
+  // legitimately reads a child's day -- but then the child must be one
+  // of theirs, which is checked against the family the session is
+  // scoped to ("Family is the security boundary for child data",
+  // docs/product/actors-and-permissions.md).
   @Get("api/v1/child/today")
-  async today(@Query("childId") childId: string) {
-    const assignments = await withTransaction((client) => taskRepository.listActiveAssignmentsByChild(client, childId));
-    return { childId, assignments, generatedAt: new Date().toISOString() };
+  async today(@Session() session: SessionClaims, @Query("childId") childId?: string) {
+    const targetChildId = await withTransaction((client) => resolveChildScope(client, session, childId));
+    const { assignments, everHadTasks } = await withTransaction(async (client) => ({
+      assignments: await taskRepository.listTodayCardsByChild(client, targetChildId),
+      everHadTasks: await taskRepository.hasEverBeenAssigned(client, targetChildId),
+    }));
+    return { childId: targetChildId, assignments, everHadTasks, generatedAt: new Date().toISOString() };
   }
+}
+
+/**
+ * Decides whose day a caller may read.
+ *
+ * A child reads their own and only their own. A mismatched childId is
+ * refused rather than quietly ignored: silently substituting the right
+ * one would hide a client bug, and returning the requested one would be
+ * the vulnerability.
+ */
+async function resolveChildScope(
+  client: PoolClient,
+  session: SessionClaims,
+  requested: string | undefined,
+): Promise<string> {
+  if (session.role === "child") {
+    if (requested && requested !== session.actorId) {
+      throw new ForbiddenException({
+        error: { code: "CHILD_SCOPE_MISMATCH", message: "Можно посмотреть только свой день." },
+      });
+    }
+    return session.actorId;
+  }
+
+  if (!requested || !session.familyId) {
+    throw new BadRequestException({ error: { code: "INVALID_INPUT", message: "Укажите ребёнка." } });
+  }
+  const family = await familyRepository.readFamily(client, session.familyId);
+  if (!family?.children.some((c) => c.childId === requested)) {
+    // Same failure whether the child does not exist or belongs to
+    // someone else. Distinguishing them would turn this into a probe for
+    // which child ids are real.
+    throw new ForbiddenException({
+      error: { code: "CHILD_NOT_IN_FAMILY", message: "Этот ребёнок не из вашей семьи." },
+    });
+  }
+  return requested;
 }
 
 function clampLimit(raw: string | undefined): number {

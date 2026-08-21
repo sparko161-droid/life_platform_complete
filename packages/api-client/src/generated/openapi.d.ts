@@ -318,7 +318,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Authoritative view for the child's «Мой день» screen (C-TODAY, packages/ux-contracts). docs/architecture/vertical-slice/api-and-events.md: "returns authoritative task cards, progress, streak and available actions." Scoped to the requesting child's own assignments only. */
+        /** Authoritative view for the child's «Мой день» screen (C-TODAY, packages/ux-contracts). docs/architecture/vertical-slice/api-and-events.md: "returns authoritative task cards, progress, streak and available actions." Scoped to the requesting child's own assignments only, and that is enforced from the session rather than taken from the query (P1-004). */
         get: operations["getChildToday"];
         put?: never;
         post?: never;
@@ -549,10 +549,17 @@ export interface components {
         ChildTodayView: {
             /** Format: uuid */
             childId: string;
-            assignments: components["schemas"]["TaskAssignment"][];
+            assignments: components["schemas"]["ChildTodayCard"][];
+            /** @description Whether this child has ever been assigned anything, archived included. Added by P1-004: C-TODAY declares both FIRST_DAY and NO_TASKS, they are identical in the assignment list, and only the server can tell them apart. */
+            everHadTasks: boolean;
             streak?: number;
             /** Format: date-time */
             generatedAt: string;
+        };
+        ChildTodayCard: components["schemas"]["TaskAssignment"] & {
+            title: string;
+            rewardXp: number;
+            rewardCoins: number;
         };
         VerificationResult: {
             /** Format: uuid */
@@ -1196,8 +1203,9 @@ export interface operations {
     };
     getChildToday: {
         parameters: {
-            query: {
-                childId: string;
+            query?: {
+                /** @description Which child's day to read. Optional for a child session and ignored unless it matches -- a child may only read their own day, and a mismatch is refused rather than silently substituted. Required for a parent session, and the child must belong to the family that session is scoped to. */
+                childId?: string;
             };
             header?: never;
             path?: never;

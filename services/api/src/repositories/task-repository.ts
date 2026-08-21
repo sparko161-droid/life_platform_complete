@@ -281,12 +281,53 @@ export async function listTaskTemplatesByFamily(
  * `/child/today` (P1-014's ChildTodayView) needs. ARCHIVED is excluded:
  * it is post-lifecycle housekeeping, not something «Мой день» shows.
  */
-export async function listActiveAssignmentsByChild(client: PoolClient, childId: string): Promise<TaskAssignment[]> {
+/**
+ * A today card: the assignment plus the bit of its template a child
+ * actually needs to recognise the task.
+ *
+ * A bare TaskAssignment carries no title, so a child screen built on one
+ * can only show a status -- which is an internal label, and
+ * docs/ux/ui-language.md forbids showing those. Joining here rather than
+ * making the client fetch each template keeps one round trip and one
+ * consistent snapshot (P1-004).
+ */
+export interface ChildTodayCard extends TaskAssignment {
+  title: string;
+  rewardXp: number;
+  rewardCoins: number;
+}
+
+export async function listTodayCardsByChild(client: PoolClient, childId: string): Promise<ChildTodayCard[]> {
   const { rows } = await client.query(
-    "SELECT task_assignment_id, task_template_id, family_id, assigned_to_child_id, status, version, assigned_at, due_at FROM task_assignments WHERE assigned_to_child_id = $1 AND status != 'ARCHIVED' ORDER BY assigned_at ASC",
+    `SELECT a.task_assignment_id, a.task_template_id, a.family_id, a.assigned_to_child_id, a.status,
+            a.version, a.assigned_at, a.due_at, t.title, t.reward_xp, t.reward_coins
+       FROM task_assignments a
+       JOIN task_templates t ON t.task_template_id = a.task_template_id
+      WHERE a.assigned_to_child_id = $1 AND a.status != 'ARCHIVED'
+      ORDER BY a.assigned_at ASC`,
     [childId],
   );
-  return rows.map(rowToTaskAssignment);
+  return rows.map((row) => ({
+    ...rowToTaskAssignment(row),
+    title: row.title as string,
+    rewardXp: Number(row.reward_xp),
+    rewardCoins: Number(row.reward_coins),
+  }));
+}
+
+/**
+ * Whether this child has ever been assigned anything, archived included.
+ *
+ * C-TODAY declares both FIRST_DAY and NO_TASKS, and they are identical
+ * in today's data while meaning very different things to a child. This
+ * is the one fact that separates them, and only the server has it.
+ */
+export async function hasEverBeenAssigned(client: PoolClient, childId: string): Promise<boolean> {
+  const { rows } = await client.query(
+    "SELECT 1 FROM task_assignments WHERE assigned_to_child_id = $1 LIMIT 1",
+    [childId],
+  );
+  return rows.length > 0;
 }
 
 export { loadTaskAssignment, loadTaskTemplate };
