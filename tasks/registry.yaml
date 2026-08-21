@@ -381,7 +381,7 @@ tasks:
     phase: 1
     title: Child today/tasks UX
     primary: frontend-lead
-    status: PLANNED
+    status: DONE
     deps: []
     deps_contract:
       - P1-013
@@ -394,7 +394,38 @@ tasks:
       - qa-lead
       - child-experience-lead
       - child-safety-lead
-    discovery_links: []
+    discovery_links:
+      - discovery_id: DISC-P1-004-1
+        source_task: P1-004
+        type: SECURITY_FINDING
+        finding: 'GET /child/today took childId as a query parameter and used it verbatim. openapi.yaml described the view as "scoped to the requesting child''s own assignments only", but nothing enforced that: any child session could read any other child''s day -- in any family -- by editing one value in the URL.'
+        why_it_matters: 'Task assignments are classified CHILD_PRIVATE (TASK_ASSIGNMENT_CLASSIFICATION), and "Family is the security boundary for child data" (docs/product/actors-and-permissions.md). The endpoint enforced neither boundary. It shipped in P1-014 and was exercised by tests that always passed the caller''s own id, so no existing test could see it.'
+        affected_domains:
+          - task
+        architecture_impact: 'Scope is now derived from the session. childId becomes optional (openapi 0.7.0 -> 0.8.0, loosening) and is only honoured for a parent reading a child of the family their session is scoped to.'
+        security_impact: 'Closes cross-child and cross-family read of CHILD_PRIVATE data. A mismatched childId is refused rather than silently corrected, so a client bug stays visible; unknown and other-family ids fail identically so the endpoint is not a probe for real child ids.'
+        ux_impact: 'The child surface no longer needs to know its own id, which it had no safe way to learn.'
+        recommended_solution: 'Implemented in this task, with e2e tests asserting each refusal.'
+        alternatives:
+          - 'Drop childId entirely. Rejected: a parent legitimately reads a child''s day, and removing it would break that before P1-003''s dashboard needs it.'
+        priority: HIGH
+        blocking: false
+        proposed_task: null
+      - discovery_id: DISC-P1-004-2
+        source_task: P1-004
+        type: SECURITY_FINDING
+        finding: 'GET /families/{familyId} performs no membership check at all -- any authenticated session can read any family by id, including its children''s names and birth years. Found while adding the family-membership check that DISC-P1-004-1 needed; not fixed here because it is a different endpoint with its own callers.'
+        why_it_matters: 'Same boundary as DISC-P1-004-1 and the same classification (CHILD_PROFILE_CLASSIFICATION). A family id is a UUID rather than a guessable value, which limits exposure but is obscurity, not authorization.'
+        affected_domains:
+          - family
+        architecture_impact: null
+        security_impact: 'Unauthorized read of FAMILY and child-profile data by any authenticated caller who obtains a family id.'
+        ux_impact: null
+        recommended_solution: 'Refuse unless the session is scoped to that family (or an ACTIVE member of it), matching what openapi.yaml already claims for the operation. Worth a sweep of every family-scoped path in the same pass rather than one endpoint at a time.'
+        alternatives: []
+        priority: HIGH
+        blocking: false
+        proposed_task: null
     blocked_reason: null
     human_decisions: []
     origin_discovery: null

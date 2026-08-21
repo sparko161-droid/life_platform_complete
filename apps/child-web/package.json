@@ -6,7 +6,7 @@
   "scripts": {
     "lint": "echo TODO",
     "typecheck": "tsc --noEmit",
-    "test": "echo \"No tests yet\"",
+    "test": "node --import tsx --test ./test/*.test.ts",
     "build": "next build",
     "dev": "next dev",
     "start": "next start"
@@ -24,6 +24,7 @@
     "@types/node": "^26.2.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "tsx": "^4.19.2",
     "tailwindcss": "^4.0.0",
     "typescript": "^5.9.2"
   }
